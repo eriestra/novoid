@@ -111,9 +111,11 @@ All write mutations (`pages:publish`, `pages:remove`, `assets:set`) require a `s
 
 When the user asks you to build something:
 
-1. Read `skills.md` for the full no∅ API
-2. Generate the HTML as `src/app/<slug>.html`
-3. Publish it to Convex — instantly live, no server needed
+1. **Start a timer** — run `date +%s` at the very start
+2. Read `skills.md` for the full no∅ API
+3. Generate the HTML as `src/app/<slug>.html`
+4. Publish it to Convex — instantly live, no server needed
+5. **Stop the timer** — run `date +%s` again, report elapsed seconds with the live URL
 
 **Setup** (once per session, if `node_modules/` is missing):
 ```sh
