@@ -351,26 +351,27 @@
         Novoid.toast.success('Card added');
       }
 
+      // Pre-create inputs ONCE so they are never rebuilt by effects
+      const titleInput = h('textarea', {
+        rows: 1, placeholder: 'Card title…',
+        bind: [title, setTitle],
+        onKeydown: (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+          if (e.key === 'Escape') setOpen(false);
+        },
+      });
+      const descInput = h('textarea', {
+        rows: 1, class: 'desc', placeholder: 'Description (optional)',
+        bind: [desc, setDesc],
+        onKeydown: (e) => { if (e.key === 'Escape') setOpen(false); },
+      });
+
       return h('div', {},
         h('button', { class: 'kb-add-btn', show: () => !open(), onClick: () => setOpen(true) },
           h('span', { style: { fontSize: '16px', lineHeight: '1' } }, '+'), 'Add card'
         ),
         h('div', { show: open, class: 'kb-form' },
-          h('div', { class: 'kb-form-inner' },
-            h('textarea', {
-              rows: 1, placeholder: 'Card title…',
-              bind: [title, setTitle],
-              onKeydown: (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
-                if (e.key === 'Escape') setOpen(false);
-              },
-            }),
-            h('textarea', {
-              rows: 1, class: 'desc', placeholder: 'Description (optional)',
-              bind: [desc, setDesc],
-              onKeydown: (e) => { if (e.key === 'Escape') setOpen(false); },
-            }),
-          ),
+          h('div', { class: 'kb-form-inner' }, titleInput, descInput),
           h('div', { class: 'nv-flex nv-items-center nv-justify-between nv-mt-2 nv-gap-2' },
             h('div', { class: 'nv-flex nv-gap-1' },
               ...['low', 'med', 'high'].map(p =>
@@ -448,6 +449,16 @@
       const [editingTitle, setEditingTitle] = signal(false);
       const [draft, setDraft] = signal(col.title);
 
+      // Pre-create input ONCE so it is never rebuilt by effects
+      const renameInput = h('input', {
+        class: 'nv-input nv-input-sm', style: { width: '120px' },
+        bind: [draft, setDraft],
+        onKeydown: (e) => {
+          if (e.key === 'Enter') { const t = draft().trim() || col.title; renameCol(col.id, t); col.title = t; setEditingTitle(false); }
+          if (e.key === 'Escape') setEditingTitle(false);
+        },
+      });
+
       return h('div', { class: 'kb-col' },
         h('div', { class: 'kb-col-head' },
           h('div', { show: () => !editingTitle() },
@@ -461,14 +472,7 @@
             ),
           ),
           h('div', { show: editingTitle, class: 'nv-flex nv-gap-1 nv-items-center' },
-            h('input', {
-              class: 'nv-input nv-input-sm', style: { width: '120px' },
-              bind: [draft, setDraft],
-              onKeydown: (e) => {
-                if (e.key === 'Enter') { const t = draft().trim() || col.title; renameCol(col.id, t); col.title = t; setEditingTitle(false); }
-                if (e.key === 'Escape') setEditingTitle(false);
-              },
-            }),
+            renameInput,
             h('button', { class: 'kb-act', onClick: () => { const t = draft().trim() || col.title; renameCol(col.id, t); col.title = t; setEditingTitle(false); } }, '✓'),
           ),
           h('button', {
@@ -502,6 +506,10 @@
         Novoid.toast.success('Card updated');
       }
 
+      // Pre-create inputs ONCE so they are never rebuilt by effects
+      const titleInput = h('input', { class: 'nv-input', bind: [t, setT], onKeydown: (e) => { if (e.key === 'Enter') save(); } });
+      const descInput = h('textarea', { class: 'nv-textarea', rows: 3, bind: [d, setD] });
+
       return h('div', {
         class: () => `kb-modal-bg ${editing() ? 'active' : ''}`,
         onClick: (e) => { if (e.target === e.currentTarget) setEditing(null); },
@@ -514,11 +522,11 @@
           h('div', { class: 'nv-card-body' },
             h('div', { class: 'nv-field' },
               h('label', { class: 'nv-label' }, 'Title'),
-              h('input', { class: 'nv-input', bind: [t, setT], onKeydown: (e) => { if (e.key === 'Enter') save(); } }),
+              titleInput,
             ),
             h('div', { class: 'nv-field' },
               h('label', { class: 'nv-label' }, 'Description'),
-              h('textarea', { class: 'nv-textarea', rows: 3, bind: [d, setD] }),
+              descInput,
             ),
             h('div', { class: 'nv-field' },
               h('label', { class: 'nv-label nv-mb-2' }, 'Priority'),
@@ -545,19 +553,22 @@
       const [open, setOpen] = signal(false);
       const [name, setName] = signal('');
 
+      // Pre-create input ONCE so it is never rebuilt by effects
+      const nameInput = h('input', {
+        class: 'nv-input nv-mb-3', placeholder: 'Column name…',
+        bind: [name, setName],
+        onKeydown: (e) => {
+          if (e.key === 'Enter' && name().trim()) { addCol(name().trim()); batch(() => { setName(''); setOpen(false); }); }
+          if (e.key === 'Escape') batch(() => { setName(''); setOpen(false); });
+        },
+      });
+
       return h('div', { style: { flexShrink: '0' } },
         h('button', { class: 'kb-add-col', show: () => !open(), onClick: () => setOpen(true) }, '+ Add Column'),
         h('div', { show: open, style: { minWidth: '300px' } },
           h('div', { class: 'nv-card', style: { background: 'var(--nv-bg-subtle)', border: 'none' } },
             h('div', { class: 'nv-card-body' },
-              h('input', {
-                class: 'nv-input nv-mb-3', placeholder: 'Column name…',
-                bind: [name, setName],
-                onKeydown: (e) => {
-                  if (e.key === 'Enter' && name().trim()) { addCol(name().trim()); batch(() => { setName(''); setOpen(false); }); }
-                  if (e.key === 'Escape') batch(() => { setName(''); setOpen(false); });
-                },
-              }),
+              nameInput,
               h('div', { class: 'nv-flex nv-gap-2' },
                 h('button', { class: 'nv-btn nv-btn-primary nv-btn-sm', onClick: () => { if (name().trim()) { addCol(name().trim()); batch(() => { setName(''); setOpen(false); }); } } }, 'Add'),
                 h('button', { class: 'nv-btn nv-btn-ghost nv-btn-sm', onClick: () => batch(() => { setName(''); setOpen(false); }) }, 'Cancel'),

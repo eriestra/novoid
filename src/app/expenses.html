@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker | no∅</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/novoid.min.css">
+  <style>
+    :root {
+      --ex-bg: #0d1117;
+      --ex-bg-card: #161b22;
+      --ex-bg-card-hover: #1c2129;
+      --ex-bg-input: #0d1117;
+      --ex-border: #21262d;
+      --ex-border-light: #30363d;
+      --ex-text: #e6edf3;
+      --ex-text-muted: #8b949e;
+      --ex-text-subtle: #484f58;
+      --ex-green: #22c55e;
+      --ex-green-dim: #22c55e22;
+      --ex-red: #ef4444;
+      --ex-red-dim: #ef444422;
+      --ex-blue: #3b82f6;
+      --ex-blue-dim: #3b82f622;
+      --ex-yellow: #eab308;
+      --ex-yellow-dim: #eab30822;
+      --ex-purple: #a855f7;
+      --ex-purple-dim: #a855f722;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--ex-bg);
+      color: var(--ex-text);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .ex-app { max-width: 1320px; margin: 0 auto; padding: 0 1rem; }
+
+    /* Header */
+    .ex-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 0;
+      border-bottom: 1px solid var(--ex-border);
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .ex-logo {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ex-text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .ex-logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--ex-green), var(--ex-blue));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .ex-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+    /* Cards */
+    .ex-card {
+      background: var(--ex-bg-card);
+      border: 1px solid var(--ex-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      transition: border-color 0.2s;
+    }
+    .ex-card:hover { border-color: var(--ex-border-light); }
+    .ex-card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ex-text-muted);
+      margin-bottom: 0.5rem;
+    }
+    .ex-card-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .ex-card-sub {
+      font-size: 0.8rem;
+      color: var(--ex-text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Summary strip */
+    .ex-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 768px) {
+      .ex-summary { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .ex-summary { grid-template-columns: 1fr; }
+    }
+
+    /* Main layout */
+    .ex-main {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 1024px) {
+      .ex-main { grid-template-columns: 1fr; }
+    }
+
+    /* Tabs */
+    .ex-tabs {
+      display: flex;
+      gap: 0.25rem;
+      background: var(--ex-bg-card);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 1rem;
+      border: 1px solid var(--ex-border);
+    }
+    .ex-tab {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--ex-text-muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      transition: all 0.2s;
+      flex: 1;
+      text-align: center;
+    }
+    .ex-tab:hover { color: var(--ex-text); }
+    .ex-tab.active {
+      background: var(--ex-border);
+      color: var(--ex-text);
+    }
+
+    /* Form */
+    .ex-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .ex-form-grid .ex-full { grid-column: 1 / -1; }
+    @media (max-width: 480px) {
+      .ex-form-grid { grid-template-columns: 1fr; }
+      .ex-form-grid .ex-full { grid-column: auto; }
+    }
+    .ex-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--ex-text-muted);
+      margin-bottom: 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .ex-input, .ex-select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      background: var(--ex-bg-input);
+      border: 1px solid var(--ex-border);
+      border-radius: 8px;
+      color: var(--ex-text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .ex-input:focus, .ex-select:focus {
+      border-color: var(--ex-blue);
+      box-shadow: 0 0 0 3px var(--ex-blue-dim);
+    }
+    .ex-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b949e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2rem;
+    }
+
+    /* Buttons */
+    .ex-btn {
+      padding: 0.6rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .ex-btn:active { transform: scale(0.97); }
+    .ex-btn-green { background: var(--ex-green); color: #000; }
+    .ex-btn-green:hover { background: #16a34a; }
+    .ex-btn-red { background: var(--ex-red); color: #fff; }
+    .ex-btn-red:hover { background: #dc2626; }
+    .ex-btn-blue { background: var(--ex-blue); color: #fff; }
+    .ex-btn-blue:hover { background: #2563eb; }
+    .ex-btn-ghost {
+      background: transparent;
+      color: var(--ex-text-muted);
+      border: 1px solid var(--ex-border);
+    }
+    .ex-btn-ghost:hover { background: var(--ex-bg-card-hover); color: var(--ex-text); }
+    .ex-btn-sm { padding: 0.35rem 0.65rem; font-size: 0.78rem; border-radius: 6px; }
+    .ex-btn-icon {
+      width: 32px; height: 32px;
+      padding: 0; justify-content: center;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--ex-text-muted);
+      border: 1px solid transparent;
+    }
+    .ex-btn-icon:hover { background: var(--ex-bg-card-hover); color: var(--ex-text); border-color: var(--ex-border); }
+
+    /* Expense list */
+    .ex-list { display: flex; flex-direction: column; gap: 0; }
+    .ex-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--ex-border);
+      transition: background 0.15s;
+    }
+    .ex-item:hover { background: var(--ex-bg-card-hover); }
+    .ex-item:last-child { border-bottom: none; }
+    .ex-item-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .ex-item-info { flex: 1; min-width: 0; }
+    .ex-item-desc {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--ex-text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .ex-item-meta {
+      font-size: 0.75rem;
+      color: var(--ex-text-muted);
+      display: flex; gap: 0.5rem; align-items: center;
+    }
+    .ex-item-amount {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    .ex-item-actions { display: flex; gap: 0.25rem; opacity: 0; transition: opacity 0.15s; }
+    .ex-item:hover .ex-item-actions { opacity: 1; }
+
+    /* Category bar chart */
+    .ex-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.65rem;
+    }
+    .ex-bar-label {
+      width: 110px;
+      font-size: 0.8rem;
+      color: var(--ex-text-muted);
+      display: flex; align-items: center; gap: 0.4rem;
+      flex-shrink: 0;
+    }
+    .ex-bar-track {
+      flex: 1;
+      height: 8px;
+      background: var(--ex-border);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .ex-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      min-width: 2px;
+    }
+    .ex-bar-value {
+      width: 70px;
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ex-text-muted);
+      flex-shrink: 0;
+    }
+
+    /* Budget progress */
+    .ex-budget-row {
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--ex-border);
+    }
+    .ex-budget-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .ex-budget-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.35rem;
+    }
+    .ex-budget-cat {
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .ex-budget-nums {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--ex-text-muted);
+    }
+    .ex-budget-track {
+      height: 6px;
+      background: var(--ex-border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .ex-budget-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Filters */
+    .ex-filters {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .ex-search {
+      flex: 1;
+      min-width: 180px;
+    }
+    .ex-filter-select { width: auto; min-width: 140px; }
+
+    /* Chart container */
+    .ex-chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 200px;
+    }
+    .ex-chart-wrap svg { width: 100%; height: 100%; }
+
+    /* Modal overlay */
+    .ex-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .ex-modal {
+      background: var(--ex-bg-card);
+      border: 1px solid var(--ex-border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .ex-modal-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--ex-border);
+    }
+    .ex-modal-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .ex-modal-body { padding: 1.25rem; }
+    .ex-modal-footer {
+      display: flex; justify-content: flex-end; gap: 0.5rem;
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--ex-border);
+    }
+
+    /* Empty state */
+    .ex-empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--ex-text-subtle);
+    }
+    .ex-empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+    .ex-empty-text { font-size: 0.9rem; color: var(--ex-text-muted); }
+
+    /* Month selector */
+    .ex-month-nav {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .ex-month-label {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      min-width: 160px;
+      text-align: center;
+    }
+
+    /* Scrollable panel */
+    .ex-scroll { max-height: 400px; overflow-y: auto; }
+    .ex-scroll::-webkit-scrollbar { width: 4px; }
+    .ex-scroll::-webkit-scrollbar-track { background: transparent; }
+    .ex-scroll::-webkit-scrollbar-thumb { background: var(--ex-border-light); border-radius: 2px; }
+
+    /* Type indicator dot */
+    .ex-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Tooltip on chart */
+    .ex-chart-tooltip {
+      position: absolute;
+      background: var(--ex-bg-card);
+      border: 1px solid var(--ex-border);
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.78rem;
+      pointer-events: none;
+      z-index: 10;
+      white-space: nowrap;
+    }
+
+    /* Utility: green / red text */
+    .ex-green { color: var(--ex-green); }
+    .ex-red { color: var(--ex-red); }
+    .ex-blue { color: var(--ex-blue); }
+    .ex-yellow { color: var(--ex-yellow); }
+    .ex-purple { color: var(--ex-purple); }
+
+    /* Responsive font for card values */
+    @media (max-width: 640px) {
+      .ex-card-value { font-size: 1.35rem; }
+      .ex-header { padding: 1rem 0; }
+      .ex-item-actions { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../js/novoid.min.js"></script>
+  <script>
+    const { signal, computed, effect, batch, h, mount, list } = Novoid;
+
+    // --- Constants ---
+    const CATEGORIES = [
+      { id: 'food', name: 'Food', emoji: '\u{1F354}', color: '#f97316' },
+      { id: 'transport', name: 'Transport', emoji: '\u{1F697}', color: '#3b82f6' },
+      { id: 'housing', name: 'Housing', emoji: '\u{1F3E0}', color: '#a855f7' },
+      { id: 'entertainment', name: 'Entertainment', emoji: '\u{1F3AC}', color: '#ec4899' },
+      { id: 'health', name: 'Health', emoji: '\u{1FA7A}', color: '#22c55e' },
+      { id: 'shopping', name: 'Shopping', emoji: '\u{1F6CD}\uFE0F', color: '#eab308' },
+      { id: 'bills', name: 'Bills', emoji: '\u{1F4C4}', color: '#ef4444' },
+      { id: 'other', name: 'Other', emoji: '\u{1F4E6}', color: '#8b949e' },
+    ];
+    const STORAGE_KEY = 'novoid-expenses-v1';
+    const catMap = Object.fromEntries(CATEGORIES.map(c => [c.id, c]));
+
+    // --- Persistence ---
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return { expenses: [], incomes: [], budgets: {} };
+    }
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // --- Signals ---
+    const stored = loadData();
+    const [expenses, setExpenses] = signal(stored.expenses || []);
+    const [incomes, setIncomes] = signal(stored.incomes || []);
+    const [budgets, setBudgets] = signal(stored.budgets || {});
+
+    const now = new Date();
+    const [viewMonth, setViewMonth] = signal(now.getMonth());
+    const [viewYear, setViewYear] = signal(now.getFullYear());
+
+    const [filterCat, setFilterCat] = signal('all');
+    const [filterSearch, setFilterSearch] = signal('');
+    const [filterDateFrom, setFilterDateFrom] = signal('');
+    const [filterDateTo, setFilterDateTo] = signal('');
+
+    const [showAddModal, setShowAddModal] = signal(false);
+    const [showBudgetModal, setShowBudgetModal] = signal(false);
+    const [editingItem, setEditingItem] = signal(null);
+    const [addType, setAddType] = signal('expense');
+
+    // Form fields
+    const [formAmount, setFormAmount] = signal('');
+    const [formCategory, setFormCategory] = signal('food');
+    const [formDesc, setFormDesc] = signal('');
+    const [formDate, setFormDate] = signal(todayStr());
+
+    // Budget form
+    const [budgetCat, setBudgetCat] = signal('food');
+    const [budgetAmount, setBudgetAmount] = signal('');
+
+    // Persist on change
+    effect(() => {
+      saveData({
+        expenses: expenses(),
+        incomes: incomes(),
+        budgets: budgets(),
+      });
+    });
+
+    // --- Helpers ---
+    function todayStr() {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+    function fmt(n) { return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function monthName(m, y) {
+      return new Date(y, m).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    }
+    function parseDate(s) { const p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+
+    // --- Computed data ---
+    const monthExpenses = computed(() => {
+      const m = viewMonth(), y = viewYear();
+      return expenses().filter(e => {
+        const d = parseDate(e.date);
+        return d.getMonth() === m && d.getFullYear() === y;
+      });
+    });
+    const monthIncomes = computed(() => {
+      const m = viewMonth(), y = viewYear();
+      return incomes().filter(i => {
+        const d = parseDate(i.date);
+        return d.getMonth() === m && d.getFullYear() === y;
+      });
+    });
+    const totalExpenses = computed(() => monthExpenses().reduce((s, e) => s + e.amount, 0));
+    const totalIncome = computed(() => monthIncomes().reduce((s, i) => s + i.amount, 0));
+    const netBalance = computed(() => totalIncome() - totalExpenses());
+    const txCount = computed(() => monthExpenses().length + monthIncomes().length);
+
+    // Filtered expenses for list
+    const filteredItems = computed(() => {
+      let items = [];
+      // Combine expenses and incomes for list
+      monthExpenses().forEach(e => items.push({ ...e, type: 'expense' }));
+      monthIncomes().forEach(i => items.push({ ...i, type: 'income' }));
+
+      // Filter by category
+      const cat = filterCat();
+      if (cat !== 'all') {
+        items = items.filter(i => i.category === cat || (cat === 'income' && i.type === 'income'));
+      }
+
+      // Filter by search
+      const search = filterSearch().toLowerCase();
+      if (search) {
+        items = items.filter(i => i.description.toLowerCase().includes(search));
+      }
+
+      // Filter by date range
+      const from = filterDateFrom();
+      const to = filterDateTo();
+      if (from) items = items.filter(i => i.date >= from);
+      if (to) items = items.filter(i => i.date <= to);
+
+      // Sort by date descending
+      items.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+      return items;
+    });
+
+    // Category breakdown
+    const catBreakdown = computed(() => {
+      const map = {};
+      monthExpenses().forEach(e => {
+        map[e.category] = (map[e.category] || 0) + e.amount;
+      });
+      const total = totalExpenses();
+      return CATEGORIES.map(c => ({
+        ...c,
+        spent: map[c.id] || 0,
+        pct: total > 0 ? ((map[c.id] || 0) / total * 100) : 0,
+      })).filter(c => c.spent > 0).sort((a, b) => b.spent - a.spent);
+    });
+
+    // Daily spending for chart
+    const dailySpending = computed(() => {
+      const m = viewMonth(), y = viewYear();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const daily = new Array(daysInMonth).fill(0);
+      monthExpenses().forEach(e => {
+        const d = parseDate(e.date).getDate() - 1;
+        if (d >= 0 && d < daysInMonth) daily[d] += e.amount;
+      });
+      return daily;
+    });
+
+    // --- Actions ---
+    function prevMonth() {
+      batch(() => {
+        if (viewMonth() === 0) {
+          setViewMonth(11);
+          setViewYear(y => y - 1);
+        } else {
+          setViewMonth(m => m - 1);
+        }
+      });
+    }
+    function nextMonth() {
+      batch(() => {
+        if (viewMonth() === 11) {
+          setViewMonth(0);
+          setViewYear(y => y + 1);
+        } else {
+          setViewMonth(m => m + 1);
+        }
+      });
+    }
+
+    function openAddModal(type, item) {
+      batch(() => {
+        setAddType(type || 'expense');
+        if (item) {
+          setEditingItem(item);
+          setFormAmount(String(item.amount));
+          setFormCategory(item.category || 'food');
+          setFormDesc(item.description);
+          setFormDate(item.date);
+        } else {
+          setEditingItem(null);
+          setFormAmount('');
+          setFormCategory('food');
+          setFormDesc('');
+          setFormDate(todayStr());
+        }
+        setShowAddModal(true);
+      });
+    }
+
+    function saveItem() {
+      const amount = parseFloat(formAmount());
+      if (!amount || amount <= 0) return;
+      const desc = formDesc().trim() || (addType() === 'income' ? 'Income' : catMap[formCategory()].name);
+      const item = {
+        id: editingItem() ? editingItem().id : uid(),
+        amount,
+        category: addType() === 'income' ? 'income' : formCategory(),
+        description: desc,
+        date: formDate() || todayStr(),
+      };
+
+      if (addType() === 'income') {
+        if (editingItem()) {
+          setIncomes(prev => prev.map(i => i.id === item.id ? item : i));
+        } else {
+          setIncomes(prev => [...prev, item]);
+        }
+      } else {
+        if (editingItem()) {
+          setExpenses(prev => prev.map(e => e.id === item.id ? item : e));
+        } else {
+          setExpenses(prev => [...prev, item]);
+        }
+      }
+      setShowAddModal(false);
+      Novoid.toast.success(editingItem() ? 'Updated successfully' : 'Added successfully');
+    }
+
+    function deleteItem(item) {
+      if (item.type === 'income') {
+        setIncomes(prev => prev.filter(i => i.id !== item.id));
+      } else {
+        setExpenses(prev => prev.filter(e => e.id !== item.id));
+      }
+      Novoid.toast.danger('Deleted');
+    }
+
+    function saveBudget() {
+      const amt = parseFloat(budgetAmount());
+      if (!amt || amt <= 0) return;
+      setBudgets(prev => ({ ...prev, [budgetCat()]: amt }));
+      setShowBudgetModal(false);
+      Novoid.toast.success('Budget saved');
+    }
+
+    function exportCSV() {
+      const items = filteredItems();
+      if (items.length === 0) {
+        Novoid.toast.warning('No data to export');
+        return;
+      }
+      let csv = 'Date,Type,Category,Description,Amount\n';
+      items.forEach(item => {
+        const cat = item.type === 'income' ? 'Income' : (catMap[item.category] || {}).name || item.category;
+        const desc = item.description.replace(/"/g, '""');
+        csv += `${item.date},${item.type},${cat},"${desc}",${item.amount}\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `expenses-${viewYear()}-${String(viewMonth() + 1).padStart(2, '0')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      Novoid.toast.success('CSV exported');
+    }
+
+    // --- Components ---
+
+    function SummaryCard(title, valueFn, colorClass, subFn) {
+      return h('div', { class: 'ex-card' },
+        h('div', { class: 'ex-card-title' }, title),
+        h('div', { class: () => `ex-card-value ${colorClass}` }, valueFn),
+        subFn ? h('div', { class: 'ex-card-sub' }, subFn) : null
+      );
+    }
+
+    function MonthNav() {
+      return h('div', { class: 'ex-month-nav' },
+        h('button', { class: 'ex-btn-icon ex-btn', onClick: prevMonth }, '\u25C0'),
+        h('div', { class: 'ex-month-label' }, () => monthName(viewMonth(), viewYear())),
+        h('button', { class: 'ex-btn-icon ex-btn', onClick: nextMonth }, '\u25B6')
+      );
+    }
+
+    function CategoryBarChart() {
+      const container = h('div', { class: 'nv-flex nv-flex-col' });
+
+      effect(() => {
+        container.innerHTML = '';
+        const bd = catBreakdown();
+        if (bd.length === 0) {
+          container.appendChild(
+            h('div', { class: 'ex-empty', style: { padding: '2rem 1rem' } },
+              h('div', { style: { fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--ex-text-subtle)' } }, '\u{1F4CA}'),
+              h('div', { class: 'ex-empty-text' }, 'No expenses this month')
+            )
+          );
+          return;
+        }
+        bd.forEach(cat => {
+          container.appendChild(
+            h('div', { class: 'ex-bar-row' },
+              h('div', { class: 'ex-bar-label' },
+                h('span', {}, cat.emoji),
+                h('span', {}, cat.name)
+              ),
+              h('div', { class: 'ex-bar-track' },
+                h('div', { class: 'ex-bar-fill', style: { width: cat.pct + '%', background: cat.color } })
+              ),
+              h('div', { class: 'ex-bar-value' }, fmt(cat.spent))
+            )
+          );
+        });
+      });
+
+      return container;
+    }
+
+    function BudgetPanel() {
+      const container = h('div', {});
+
+      effect(() => {
+        container.innerHTML = '';
+        const b = budgets();
+        const bKeys = Object.keys(b).filter(k => b[k] > 0);
+        if (bKeys.length === 0) {
+          container.appendChild(
+            h('div', { class: 'ex-empty', style: { padding: '1.5rem 1rem' } },
+              h('div', { style: { fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--ex-text-subtle)' } }, '\u{1F4B0}'),
+              h('div', { class: 'ex-empty-text' }, 'No budgets set'),
+              h('div', { class: 'ex-empty-text', style: { marginTop: '0.5rem' } }, 'Click "Set Budget" to add one')
+            )
+          );
+          return;
+        }
+
+        const expByCategory = {};
+        monthExpenses().forEach(e => {
+          expByCategory[e.category] = (expByCategory[e.category] || 0) + e.amount;
+        });
+
+        bKeys.forEach(catId => {
+          const cat = catMap[catId];
+          if (!cat) return;
+          const budget = b[catId];
+          const spent = expByCategory[catId] || 0;
+          const pct = Math.min((spent / budget) * 100, 100);
+          const over = spent > budget;
+          const fillColor = over ? 'var(--ex-red)' : pct > 75 ? 'var(--ex-yellow)' : 'var(--ex-green)';
+
+          container.appendChild(
+            h('div', { class: 'ex-budget-row' },
+              h('div', { class: 'ex-budget-header' },
+                h('div', { class: 'ex-budget-cat' },
+                  h('span', {}, cat.emoji),
+                  h('span', {}, cat.name)
+                ),
+                h('div', { class: 'ex-budget-nums' },
+                  h('span', { style: { color: over ? 'var(--ex-red)' : 'var(--ex-text)' } }, fmt(spent)),
+                  ' / ',
+                  fmt(budget)
+                )
+              ),
+              h('div', { class: 'ex-budget-track' },
+                h('div', { class: 'ex-budget-fill', style: { width: pct + '%', background: fillColor } })
+              )
+            )
+          );
+        });
+      });
+
+      return container;
+    }
+
+    function SpendingChart() {
+      const wrap = h('div', { class: 'ex-chart-wrap' });
+
+      effect(() => {
+        wrap.innerHTML = '';
+        const data = dailySpending();
+        const max = Math.max(...data, 1);
+        const days = data.length;
+
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('viewBox', '0 0 600 200');
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+
+        // Grid lines
+        for (let i = 0; i <= 4; i++) {
+          const y = 10 + (i / 4) * 170;
+          const line = document.createElementNS(svgNS, 'line');
+          line.setAttribute('x1', '40');
+          line.setAttribute('y1', y);
+          line.setAttribute('x2', '590');
+          line.setAttribute('y2', y);
+          line.setAttribute('stroke', '#21262d');
+          line.setAttribute('stroke-width', '1');
+          svg.appendChild(line);
+
+          // Y axis labels
+          const label = document.createElementNS(svgNS, 'text');
+          label.setAttribute('x', '35');
+          label.setAttribute('y', y + 3);
+          label.setAttribute('text-anchor', 'end');
+          label.setAttribute('fill', '#484f58');
+          label.setAttribute('font-size', '10');
+          label.setAttribute('font-family', 'JetBrains Mono, monospace');
+          label.textContent = '$' + Math.round(max * (1 - i / 4));
+          svg.appendChild(label);
+        }
+
+        // Bars
+        if (days > 0) {
+          const barW = Math.max(2, (550 / days) - 2);
+          const gap = 550 / days;
+
+          data.forEach((val, i) => {
+            const x = 40 + i * gap + (gap - barW) / 2;
+            const barH = max > 0 ? (val / max) * 170 : 0;
+            const y = 180 - barH;
+
+            if (val > 0) {
+              const rect = document.createElementNS(svgNS, 'rect');
+              rect.setAttribute('x', x);
+              rect.setAttribute('y', y);
+              rect.setAttribute('width', barW);
+              rect.setAttribute('height', barH);
+              rect.setAttribute('rx', Math.min(barW / 2, 3));
+              rect.setAttribute('fill', '#3b82f6');
+              rect.setAttribute('opacity', '0.8');
+              svg.appendChild(rect);
+            }
+
+            // X axis labels (every 5th day + first + last)
+            if (i === 0 || i === days - 1 || (i + 1) % 5 === 0) {
+              const xLabel = document.createElementNS(svgNS, 'text');
+              xLabel.setAttribute('x', x + barW / 2);
+              xLabel.setAttribute('y', '196');
+              xLabel.setAttribute('text-anchor', 'middle');
+              xLabel.setAttribute('fill', '#484f58');
+              xLabel.setAttribute('font-size', '9');
+              xLabel.setAttribute('font-family', 'JetBrains Mono, monospace');
+              xLabel.textContent = i + 1;
+              svg.appendChild(xLabel);
+            }
+          });
+
+          // Add a line connecting the bars for a line-chart overlay
+          let pathD = '';
+          data.forEach((val, i) => {
+            const x = 40 + i * gap + gap / 2;
+            const y = 180 - (max > 0 ? (val / max) * 170 : 0);
+            pathD += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1);
+          });
+
+          // Area fill
+          const areaPath = document.createElementNS(svgNS, 'path');
+          const lastX = 40 + (days - 1) * gap + gap / 2;
+          const firstX = 40 + gap / 2;
+          areaPath.setAttribute('d', pathD + `L${lastX.toFixed(1)},180L${firstX.toFixed(1)},180Z`);
+          areaPath.setAttribute('fill', 'url(#areaGrad)');
+          areaPath.setAttribute('opacity', '0.3');
+
+          // Gradient definition
+          const defs = document.createElementNS(svgNS, 'defs');
+          const grad = document.createElementNS(svgNS, 'linearGradient');
+          grad.setAttribute('id', 'areaGrad');
+          grad.setAttribute('x1', '0'); grad.setAttribute('y1', '0');
+          grad.setAttribute('x2', '0'); grad.setAttribute('y2', '1');
+          const stop1 = document.createElementNS(svgNS, 'stop');
+          stop1.setAttribute('offset', '0%');
+          stop1.setAttribute('stop-color', '#3b82f6');
+          const stop2 = document.createElementNS(svgNS, 'stop');
+          stop2.setAttribute('offset', '100%');
+          stop2.setAttribute('stop-color', '#3b82f6');
+          stop2.setAttribute('stop-opacity', '0');
+          grad.appendChild(stop1);
+          grad.appendChild(stop2);
+          defs.appendChild(grad);
+          svg.appendChild(defs);
+
+          svg.appendChild(areaPath);
+
+          // Line
+          const linePath = document.createElementNS(svgNS, 'path');
+          linePath.setAttribute('d', pathD);
+          linePath.setAttribute('fill', 'none');
+          linePath.setAttribute('stroke', '#3b82f6');
+          linePath.setAttribute('stroke-width', '2');
+          linePath.setAttribute('stroke-linejoin', 'round');
+          svg.appendChild(linePath);
+
+          // Dots at data points
+          data.forEach((val, i) => {
+            if (val > 0) {
+              const cx = 40 + i * gap + gap / 2;
+              const cy = 180 - (max > 0 ? (val / max) * 170 : 0);
+              const dot = document.createElementNS(svgNS, 'circle');
+              dot.setAttribute('cx', cx);
+              dot.setAttribute('cy', cy);
+              dot.setAttribute('r', '3');
+              dot.setAttribute('fill', '#3b82f6');
+              dot.setAttribute('stroke', '#0d1117');
+              dot.setAttribute('stroke-width', '2');
+              svg.appendChild(dot);
+            }
+          });
+        }
+
+        wrap.appendChild(svg);
+      });
+
+      return wrap;
+    }
+
+    function ExpenseList() {
+      const listEl = h('div', { class: 'ex-list ex-scroll' });
+
+      effect(() => {
+        listEl.innerHTML = '';
+        const items = filteredItems();
+
+        if (items.length === 0) {
+          listEl.appendChild(
+            h('div', { class: 'ex-empty' },
+              h('div', { class: 'ex-empty-icon' }, '\u{1F4AD}'),
+              h('div', { class: 'ex-empty-text' }, 'No transactions found')
+            )
+          );
+          return;
+        }
+
+        items.forEach(item => {
+          const isIncome = item.type === 'income';
+          const cat = isIncome ? { emoji: '\u{1F4B5}', color: '#22c55e', name: 'Income' } : (catMap[item.category] || catMap.other);
+
+          listEl.appendChild(
+            h('div', { class: 'ex-item' },
+              h('div', {
+                class: 'ex-item-icon',
+                style: { background: (isIncome ? 'var(--ex-green-dim)' : cat.color + '22') }
+              }, cat.emoji),
+              h('div', { class: 'ex-item-info' },
+                h('div', { class: 'ex-item-desc' }, item.description),
+                h('div', { class: 'ex-item-meta' },
+                  h('span', {}, item.date),
+                  h('span', { class: 'ex-dot', style: { background: isIncome ? 'var(--ex-green)' : cat.color } }),
+                  h('span', {}, isIncome ? 'Income' : cat.name)
+                )
+              ),
+              h('div', {
+                class: 'ex-item-amount',
+                style: { color: isIncome ? 'var(--ex-green)' : 'var(--ex-red)' }
+              }, (isIncome ? '+' : '-') + fmt(item.amount)),
+              h('div', { class: 'ex-item-actions' },
+                h('button', {
+                  class: 'ex-btn ex-btn-icon ex-btn-sm',
+                  onClick: () => openAddModal(item.type, item),
+                  title: 'Edit',
+                }, '\u270F\uFE0F'),
+                h('button', {
+                  class: 'ex-btn ex-btn-icon ex-btn-sm',
+                  onClick: () => deleteItem(item),
+                  title: 'Delete',
+                  style: { color: 'var(--ex-red)' }
+                }, '\u{1F5D1}\uFE0F')
+              )
+            )
+          );
+        });
+      });
+
+      return listEl;
+    }
+
+    // Pre-create AddModal inputs ONCE to avoid focus loss on keystroke
+    const addAmountInput = h('input', {
+      class: 'ex-input',
+      type: 'number',
+      step: '0.01',
+      min: '0',
+      placeholder: '0.00',
+      bind: [formAmount, setFormAmount],
+    });
+    const addDateInput = h('input', {
+      class: 'ex-input',
+      type: 'date',
+      bind: [formDate, setFormDate],
+    });
+    const addCategorySelect = h('select', {
+      class: 'ex-select',
+      bind: [formCategory, setFormCategory],
+    },
+      ...CATEGORIES.map(c =>
+        h('option', { value: c.id }, c.emoji + ' ' + c.name)
+      )
+    );
+    const addDescInput = h('input', {
+      class: 'ex-input',
+      type: 'text',
+      placeholder: () => addType() === 'income' ? 'e.g. Salary' : 'e.g. Grocery shopping',
+      bind: [formDesc, setFormDesc],
+    });
+
+    function AddModal() {
+      return () => {
+        if (!showAddModal()) return null;
+
+        const isIncome = addType() === 'income';
+        const editing = editingItem();
+
+        return h('div', { class: 'ex-modal-overlay', onClick: (e) => { if (e.target === e.currentTarget) setShowAddModal(false); } },
+          h('div', { class: 'ex-modal' },
+            h('div', { class: 'ex-modal-header' },
+              h('div', { class: 'ex-modal-title' },
+                editing
+                  ? (isIncome ? 'Edit Income' : 'Edit Expense')
+                  : (isIncome ? 'Add Income' : 'Add Expense')
+              ),
+              h('button', { class: 'ex-btn ex-btn-icon', onClick: () => setShowAddModal(false) }, '\u2715')
+            ),
+            h('div', { class: 'ex-modal-body' },
+              // Type switcher
+              !editing ? h('div', { class: 'ex-tabs', style: { marginBottom: '1rem' } },
+                h('button', {
+                  class: () => 'ex-tab' + (addType() === 'expense' ? ' active' : ''),
+                  onClick: () => setAddType('expense')
+                }, 'Expense'),
+                h('button', {
+                  class: () => 'ex-tab' + (addType() === 'income' ? ' active' : ''),
+                  onClick: () => setAddType('income')
+                }, 'Income')
+              ) : null,
+              h('div', { class: 'ex-form-grid' },
+                h('div', {},
+                  h('label', { class: 'ex-label' }, 'Amount ($)'),
+                  addAmountInput
+                ),
+                h('div', {},
+                  h('label', { class: 'ex-label' }, 'Date'),
+                  addDateInput
+                ),
+                // Category (only for expenses)
+                h('div', { show: () => addType() === 'expense' },
+                  h('label', { class: 'ex-label' }, 'Category'),
+                  addCategorySelect
+                ),
+                h('div', { class: () => addType() === 'expense' ? '' : 'ex-full' },
+                  h('label', { class: 'ex-label' }, 'Description'),
+                  addDescInput
+                ),
+              )
+            ),
+            h('div', { class: 'ex-modal-footer' },
+              h('button', {
+                class: 'ex-btn ex-btn-ghost',
+                onClick: () => setShowAddModal(false)
+              }, 'Cancel'),
+              h('button', {
+                class: () => 'ex-btn ' + (addType() === 'income' ? 'ex-btn-green' : 'ex-btn-red'),
+                onClick: saveItem
+              }, () => editing ? 'Update' : 'Add')
+            )
+          )
+        );
+      };
+    }
+
+    // Pre-create BudgetModal inputs ONCE to avoid focus loss on keystroke
+    const budgetCatSelect = h('select', {
+      class: 'ex-select',
+      bind: [budgetCat, setBudgetCat],
+    },
+      ...CATEGORIES.map(c =>
+        h('option', { value: c.id }, c.emoji + ' ' + c.name)
+      )
+    );
+    const budgetAmountInput = h('input', {
+      class: 'ex-input',
+      type: 'number',
+      step: '0.01',
+      min: '0',
+      placeholder: () => {
+        const current = budgets()[budgetCat()];
+        return current ? 'Current: ' + fmt(current) : '0.00';
+      },
+      bind: [budgetAmount, setBudgetAmount],
+    });
+
+    function BudgetModal() {
+      return () => {
+        if (!showBudgetModal()) return null;
+
+        return h('div', { class: 'ex-modal-overlay', onClick: (e) => { if (e.target === e.currentTarget) setShowBudgetModal(false); } },
+          h('div', { class: 'ex-modal' },
+            h('div', { class: 'ex-modal-header' },
+              h('div', { class: 'ex-modal-title' }, 'Set Category Budget'),
+              h('button', { class: 'ex-btn ex-btn-icon', onClick: () => setShowBudgetModal(false) }, '\u2715')
+            ),
+            h('div', { class: 'ex-modal-body' },
+              h('div', { class: 'ex-form-grid' },
+                h('div', {},
+                  h('label', { class: 'ex-label' }, 'Category'),
+                  budgetCatSelect
+                ),
+                h('div', {},
+                  h('label', { class: 'ex-label' }, 'Monthly Budget ($)'),
+                  budgetAmountInput
+                )
+              )
+            ),
+            h('div', { class: 'ex-modal-footer' },
+              h('button', {
+                class: 'ex-btn ex-btn-ghost',
+                onClick: () => setShowBudgetModal(false)
+              }, 'Cancel'),
+              h('button', {
+                class: 'ex-btn ex-btn-blue',
+                onClick: saveBudget
+              }, 'Save Budget')
+            )
+          )
+        );
+      };
+    }
+
+    // Pre-create filter inputs ONCE to avoid focus loss on keystroke
+    const filterSearchInput = h('input', {
+      class: 'ex-input ex-search',
+      type: 'text',
+      placeholder: '\u{1F50D} Search transactions...',
+      bind: [filterSearch, setFilterSearch],
+    });
+    const filterCatSelect = h('select', {
+      class: 'ex-select ex-filter-select',
+      bind: [filterCat, setFilterCat],
+    },
+      h('option', { value: 'all' }, 'All Categories'),
+      h('option', { value: 'income' }, '\u{1F4B5} Income'),
+      ...CATEGORIES.map(c =>
+        h('option', { value: c.id }, c.emoji + ' ' + c.name)
+      )
+    );
+    const filterDateFromInput = h('input', {
+      class: 'ex-input',
+      type: 'date',
+      style: { width: 'auto', minWidth: '140px' },
+      placeholder: 'From',
+      bind: [filterDateFrom, setFilterDateFrom],
+    });
+    const filterDateToInput = h('input', {
+      class: 'ex-input',
+      type: 'date',
+      style: { width: 'auto', minWidth: '140px' },
+      placeholder: 'To',
+      bind: [filterDateTo, setFilterDateTo],
+    });
+
+    // --- Mount App ---
+    mount('#app', () => {
+      return h('div', { class: 'ex-app' },
+        // Header
+        h('header', { class: 'ex-header' },
+          h('div', { class: 'nv-flex nv-items-center nv-gap-4', style: { flexWrap: 'wrap' } },
+            h('div', { class: 'ex-logo' },
+              h('div', { class: 'ex-logo-icon' }, '$'),
+              'ExpenseTracker'
+            ),
+            MonthNav()
+          ),
+          h('div', { class: 'ex-header-actions' },
+            h('button', {
+              class: 'ex-btn ex-btn-ghost ex-btn-sm',
+              onClick: () => { setBudgetCat('food'); setBudgetAmount(''); setShowBudgetModal(true); }
+            }, '\u{1F4B0} Set Budget'),
+            h('button', {
+              class: 'ex-btn ex-btn-ghost ex-btn-sm',
+              onClick: exportCSV
+            }, '\u{1F4E5} Export CSV'),
+            h('button', {
+              class: 'ex-btn ex-btn-green ex-btn-sm',
+              onClick: () => openAddModal('income')
+            }, '+ Income'),
+            h('button', {
+              class: 'ex-btn ex-btn-red ex-btn-sm',
+              onClick: () => openAddModal('expense')
+            }, '+ Expense'),
+          )
+        ),
+
+        // Summary cards
+        h('div', { class: 'ex-summary' },
+          SummaryCard(
+            'Total Income',
+            () => fmt(totalIncome()),
+            'ex-green',
+            () => monthIncomes().length + ' transactions'
+          ),
+          SummaryCard(
+            'Total Expenses',
+            () => fmt(totalExpenses()),
+            'ex-red',
+            () => monthExpenses().length + ' transactions'
+          ),
+          SummaryCard(
+            'Net Balance',
+            () => (netBalance() >= 0 ? '+' : '') + fmt(netBalance()),
+            (() => {
+              // We need to return a class reactively; use a wrapper
+              return '';
+            })(),
+            () => netBalance() >= 0 ? 'You\'re in the green' : 'Spending exceeds income'
+          ),
+          SummaryCard(
+            'Transactions',
+            () => String(txCount()),
+            'ex-blue',
+            () => 'This month'
+          )
+        ),
+
+        // Main layout
+        h('div', { class: 'ex-main' },
+          // Left: charts + list
+          h('div', { class: 'nv-flex nv-flex-col nv-gap-4' },
+            // Daily spending chart
+            h('div', { class: 'ex-card' },
+              h('div', { class: 'nv-flex nv-justify-between nv-items-center nv-mb-4' },
+                h('div', { class: 'ex-card-title', style: { marginBottom: 0 } }, 'Daily Spending'),
+                h('div', { style: { fontSize: '0.75rem', color: 'var(--ex-text-subtle)', fontFamily: 'JetBrains Mono, monospace' } },
+                  () => 'Avg: ' + fmt(totalExpenses() / (dailySpending().length || 1)) + '/day'
+                )
+              ),
+              SpendingChart()
+            ),
+
+            // Category breakdown
+            h('div', { class: 'ex-card' },
+              h('div', { class: 'ex-card-title' }, 'Category Breakdown'),
+              CategoryBarChart()
+            ),
+
+            // Filters (inputs pre-created outside mount to avoid focus loss)
+            h('div', { class: 'ex-filters' },
+              filterSearchInput,
+              filterCatSelect,
+              filterDateFromInput,
+              filterDateToInput,
+            ),
+
+            // Expense list
+            h('div', { class: 'ex-card', style: { padding: 0, overflow: 'hidden' } },
+              h('div', { style: { padding: '1rem 1.25rem 0.5rem', borderBottom: '1px solid var(--ex-border)' } },
+                h('div', { class: 'nv-flex nv-justify-between nv-items-center' },
+                  h('div', { class: 'ex-card-title', style: { marginBottom: 0 } }, 'Transactions'),
+                  h('div', { style: { fontSize: '0.78rem', color: 'var(--ex-text-muted)', fontFamily: 'JetBrains Mono, monospace' } },
+                    () => filteredItems().length + ' items'
+                  )
+                )
+              ),
+              ExpenseList()
+            )
+          ),
+
+          // Right sidebar
+          h('div', { class: 'nv-flex nv-flex-col nv-gap-4' },
+            // Quick add
+            h('div', { class: 'ex-card' },
+              h('div', { class: 'ex-card-title' }, 'Quick Add'),
+              h('div', { class: 'nv-flex nv-gap-2' },
+                h('button', {
+                  class: 'ex-btn ex-btn-green',
+                  style: { flex: 1 },
+                  onClick: () => openAddModal('income')
+                }, '\u{1F4B5} Income'),
+                h('button', {
+                  class: 'ex-btn ex-btn-red',
+                  style: { flex: 1 },
+                  onClick: () => openAddModal('expense')
+                }, '\u{1F6D2} Expense')
+              )
+            ),
+
+            // Budget tracking
+            h('div', { class: 'ex-card' },
+              h('div', { class: 'nv-flex nv-justify-between nv-items-center', style: { marginBottom: '0.75rem' } },
+                h('div', { class: 'ex-card-title', style: { marginBottom: 0 } }, 'Budget Tracking'),
+                h('button', {
+                  class: 'ex-btn ex-btn-ghost ex-btn-sm',
+                  onClick: () => { setBudgetCat('food'); setBudgetAmount(''); setShowBudgetModal(true); }
+                }, '+ Add')
+              ),
+              BudgetPanel()
+            ),
+
+            // Top categories
+            h('div', { class: 'ex-card' },
+              h('div', { class: 'ex-card-title' }, 'Top Expenses'),
+              (() => {
+                const container = h('div', {});
+                effect(() => {
+                  container.innerHTML = '';
+                  const sorted = [...monthExpenses()].sort((a, b) => b.amount - a.amount).slice(0, 5);
+                  if (sorted.length === 0) {
+                    container.appendChild(
+                      h('div', { style: { textAlign: 'center', padding: '1rem', color: 'var(--ex-text-subtle)', fontSize: '0.85rem' } }, 'No expenses yet')
+                    );
+                    return;
+                  }
+                  sorted.forEach((e, i) => {
+                    const cat = catMap[e.category] || catMap.other;
+                    container.appendChild(
+                      h('div', {
+                        class: 'nv-flex nv-items-center nv-gap-3',
+                        style: { padding: '0.5rem 0', borderBottom: i < sorted.length - 1 ? '1px solid var(--ex-border)' : 'none' }
+                      },
+                        h('div', {
+                          style: {
+                            width: '28px', height: '28px',
+                            borderRadius: '6px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.85rem',
+                            background: cat.color + '22',
+                          }
+                        }, cat.emoji),
+                        h('div', { style: { flex: 1, minWidth: 0 } },
+                          h('div', { style: { fontSize: '0.85rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, e.description),
+                          h('div', { style: { fontSize: '0.72rem', color: 'var(--ex-text-muted)' } }, e.date)
+                        ),
+                        h('div', {
+                          style: { fontFamily: 'JetBrains Mono, monospace', fontSize: '0.82rem', fontWeight: 600, color: 'var(--ex-red)' }
+                        }, '-' + fmt(e.amount))
+                      )
+                    );
+                  });
+                });
+                return container;
+              })()
+            ),
+
+            // Monthly stats
+            h('div', { class: 'ex-card' },
+              h('div', { class: 'ex-card-title' }, 'Monthly Stats'),
+              (() => {
+                const container = h('div', {});
+                effect(() => {
+                  container.innerHTML = '';
+                  const exp = monthExpenses();
+                  if (exp.length === 0) {
+                    container.appendChild(
+                      h('div', { style: { textAlign: 'center', padding: '1rem', color: 'var(--ex-text-subtle)', fontSize: '0.85rem' } }, 'No data yet')
+                    );
+                    return;
+                  }
+                  const avg = totalExpenses() / exp.length;
+                  const maxExp = Math.max(...exp.map(e => e.amount));
+                  const minExp = Math.min(...exp.map(e => e.amount));
+                  const daily = dailySpending();
+                  const activeDays = daily.filter(d => d > 0).length;
+
+                  const statRow = (label, value) =>
+                    h('div', {
+                      class: 'nv-flex nv-justify-between nv-items-center',
+                      style: { padding: '0.4rem 0', borderBottom: '1px solid var(--ex-border)' }
+                    },
+                      h('span', { style: { fontSize: '0.82rem', color: 'var(--ex-text-muted)' } }, label),
+                      h('span', { style: { fontFamily: 'JetBrains Mono, monospace', fontSize: '0.82rem', fontWeight: 500 } }, value)
+                    );
+
+                  container.appendChild(h('div', {},
+                    statRow('Avg per expense', fmt(avg)),
+                    statRow('Largest expense', fmt(maxExp)),
+                    statRow('Smallest expense', fmt(minExp)),
+                    statRow('Active days', activeDays + ' / ' + daily.length),
+                    h('div', {
+                      class: 'nv-flex nv-justify-between nv-items-center',
+                      style: { padding: '0.4rem 0' }
+                    },
+                      h('span', { style: { fontSize: '0.82rem', color: 'var(--ex-text-muted)' } }, 'Daily average'),
+                      h('span', { style: { fontFamily: 'JetBrains Mono, monospace', fontSize: '0.82rem', fontWeight: 500 } },
+                        fmt(activeDays > 0 ? totalExpenses() / activeDays : 0)
+                      )
+                    )
+                  ));
+                });
+                return container;
+              })()
+            )
+          )
+        ),
+
+        // Modals
+        AddModal(),
+        BudgetModal(),
+
+        // Footer
+        h('footer', {
+          style: {
+            textAlign: 'center',
+            padding: '1.5rem 0',
+            borderTop: '1px solid var(--ex-border)',
+            color: 'var(--ex-text-subtle)',
+            fontSize: '0.78rem',
+            marginTop: '1rem',
+          }
+        },
+          'Built with no\u2205 \u2014 zero-build reactive framework'
+        )
+      );
+    });
+  </script>
+</body>
+</html>

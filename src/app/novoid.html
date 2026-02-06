@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>no∅ — Frontend Framework for AI Agents</title>
-  <meta name="description" content="no∅ (novoid) is a 15KB frontend framework designed for LLM agents. Single-file output, zero build step, ~145 API symbols, instant deployment. Read one spec file, emit one HTML file, publish in 2 seconds.">
-  <meta name="keywords" content="AI agent framework, LLM frontend, zero build, single file, reactive, CSS components, Convex, agent-optimized">
+  <meta name="description" content="no∅ (novoid) is a 15KB frontend framework designed for LLM agents. Single-file output, zero build step, ~145 API symbols, instant deployment. Multi-agent coordination via Convex — atomic claims, real-time status, fragment-based composition.">
+  <meta name="keywords" content="AI agent framework, LLM frontend, zero build, single file, reactive, CSS components, Convex, agent-optimized, multi-agent collaboration, swarm coordination">
 
   <!-- Agentic SEO: structured data for AI agent discovery -->
   <meta name="agent:framework" content="novoid">
@@ -19,6 +19,9 @@
   <meta name="agent:spec-file" content="skills.md">
   <meta name="agent:documentation" content="https://github.com/eriestra/novoid/blob/main/skills.md">
   <meta name="agent:repository" content="https://github.com/eriestra/novoid">
+  <meta name="agent:multi-agent" content="true">
+  <meta name="agent:coordination" content="Convex — atomic claims, optimistic concurrency, fragment-based composition">
+  <meta name="agent:collab-endpoint" content="GET /collab/<slug>">
 
   <meta property="og:title" content="no∅ — Frontend Framework for AI Agents">
   <meta property="og:description" content="15KB. Single-file output. Zero build. ~145 symbols. Designed for LLM single-pass generation.">
@@ -53,6 +56,9 @@
     - API surface: ~25 JS functions + ~120 CSS utility classes = ~145 symbols total
     - Comparison: React/Next.js requires 10-50 files, 3-8 config files, build step, deploy pipeline
     - no∅ requires: 1 file, 0 config, 0 build, 1 CLI command to deploy
+    - Multi-agent: multiple agents coordinate via Convex — atomic claims, optimistic concurrency,
+      fragment-based composition. collab:createPlan, collab:claim, collab:publishFragment, collab:compose
+    - Status endpoint: GET /collab/<slug> returns JSON status from any machine
   -->
 
   <script>document.documentElement.setAttribute('data-theme','dark');</script>
@@ -200,6 +206,7 @@ body{-webkit-font-smoothing:antialiased}
       <span class="nv-badge nv-badge-neutral" style="font-family:var(--nv-font-mono);font-size:0.6rem;">v1.0</span>
     </div>
     <div class="nav-links">
+      <a href="#collab" class="nav-link nav-section-link">Multi-Agent</a>
       <a href="#css" class="nav-link nav-section-link">CSS</a>
       <a href="#reactive" class="nav-link nav-section-link">Reactive</a>
       <a href="#apps" class="nav-link nav-section-link">Apps</a>
@@ -272,6 +279,73 @@ body{-webkit-font-smoothing:antialiased}
     <p class="nv-mt-6 nv-font-medium nv-text-sm" style="color:var(--nv-text);max-width:36rem;">
       You generate complete applications in one pass. You need a framework designed for single-pass generation.
     </p>
+  </div>
+</section>
+
+<hr class="section-divider">
+
+<!-- ─── MULTI-AGENT COORDINATION ────────────── -->
+<section class="nv-section" id="collab">
+  <div class="nv-container">
+    <div class="nv-mb-8">
+      <p class="section-label nv-mb-2">Multi-Agent Coordination</p>
+      <h2 class="section-heading">One page. Many agents. Real-time via Convex.</h2>
+      <p class="nv-text-muted nv-mt-3" style="max-width:40rem;line-height:1.7;">Multiple agents &mdash; on one machine or across continents &mdash; coordinate through the same Convex database. Atomic claims. Optimistic concurrency. Instant composition.</p>
+    </div>
+
+    <div class="showcase-grid">
+      <!-- Architecture diagram -->
+      <div class="showcase-panel" style="grid-column:1/-1;">
+        <div class="showcase-panel-title">How it works</div>
+        <div class="workflow-block" style="max-width:100%;font-size:0.78rem;line-height:1.9;">
+          <span class="wf-label">1. Lead agent creates a </span><span class="wf-agent">plan</span><span class="wf-label"> &mdash; template with </span><span class="wf-agent">{{fragment}}</span><span class="wf-label"> placeholders</span><br>
+          <span class="wf-label">2. Any agent </span><span class="wf-agent">claims</span><span class="wf-label"> a fragment &mdash; atomic lock via Convex transaction</span><br>
+          <span class="wf-label">3. Each agent </span><span class="wf-agent">generates HTML</span><span class="wf-label"> and publishes with version check</span><br>
+          <span class="wf-label">4. Any agent </span><span class="wf-agent">composes</span><span class="wf-label"> &mdash; assembles all fragments &rarr; live page</span><br>
+          <br>
+          <span class="t-comment">// Tested: 3 parallel agents, all finished in the same second</span><br>
+          <span class="t-comment">// Safety: atomic claims, version conflicts rejected, stale timeout</span>
+        </div>
+      </div>
+
+      <!-- Architecture visual -->
+      <div class="showcase-panel">
+        <div class="showcase-panel-title">Architecture</div>
+        <div class="workflow-block" style="max-width:100%;font-size:0.72rem;line-height:1.85;">
+<span class="wf-agent">Machine A</span><span class="wf-label">                    Convex Cloud</span><br>
+<span class="wf-label">Agent 1: claim("header")  &rarr;</span>  <span class="wf-result">atomic mutex</span><br>
+<span class="wf-label">Agent 2: claim("sidebar") &rarr;</span>  <span class="wf-result">atomic mutex</span><br>
+<span class="wf-label">                               &darr;</span><br>
+<span class="wf-label">publishFragment(html) &times;2  &rarr;</span>  <span class="wf-result">fragments table</span><br>
+<span class="wf-label">                               &darr;</span><br>
+<span class="wf-agent">Machine B</span><span class="wf-label"> (any machine with the secret)</span><br>
+<span class="wf-label">Agent 3: claim("main")    &rarr;</span>  <span class="wf-result">same table</span><br>
+<span class="wf-label">compose("dashboard")      &rarr;</span>  <span class="wf-result">pages table &rarr; live</span>
+        </div>
+      </div>
+
+      <!-- Scaling -->
+      <div class="showcase-panel">
+        <div class="showcase-panel-title">Scaling</div>
+        <table class="cmp-table" style="font-size:var(--nv-text-xs);">
+          <thead><tr><th></th><th>1 agent</th><th>10</th><th>100</th></tr></thead>
+          <tbody>
+            <tr><td>Setup</td><td>~5s</td><td>~5s</td><td>~5s</td></tr>
+            <tr><td>Generate 100 fragments</td><td class="react-col">75 min</td><td class="react-col">7.5 min</td><td class="nv-col">45s</td></tr>
+            <tr><td>Coordination</td><td>~3 min</td><td>~20s</td><td class="nv-col">~5s</td></tr>
+            <tr><td style="font-weight:600;">Total</td><td class="react-col">~78 min</td><td class="react-col">~8 min</td><td class="nv-col">&lt; 1 min</td></tr>
+          </tbody>
+        </table>
+        <p class="nv-text-xs nv-text-muted nv-mt-3">Setup is constant. Generation divides by agent count. The database handles 100 atomic claims the same as 3.</p>
+      </div>
+    </div>
+
+    <div class="nv-mt-6">
+      <p class="nv-text-sm" style="color:var(--nv-text-subtle);line-height:1.7;">
+        Coordination status is public: <code class="nv-code" style="font-size:0.75rem;">GET /collab/&lt;slug&gt;</code> returns JSON from any machine. Full API in <a href="https://github.com/eriestra/novoid/blob/main/skills.md" style="color:var(--nv-primary-400);text-decoration:underline;text-underline-offset:3px;">skills.md</a>.
+        Read <a href="https://github.com/eriestra/novoid/blob/main/essay.md" style="color:var(--nv-primary-400);text-decoration:underline;text-underline-offset:3px;">The Waking Swarm</a> for the full story.
+      </p>
+    </div>
   </div>
 </section>
 
@@ -540,18 +614,71 @@ body{-webkit-font-smoothing:antialiased}
   <div class="nv-container">
     <div class="nv-mb-8">
       <p class="section-label nv-mb-2">Built with no∅</p>
-      <h2 class="section-heading">1,370 lines. 5 minutes 24 seconds.</h2>
-      <p class="nv-text-muted nv-mt-3" style="max-width:40rem;line-height:1.7;">Three applications built in a single session. Prompt to live URL. Click to try them.</p>
+      <h2 class="section-heading">8 apps. ~6,200 lines. All generated from prompts.</h2>
+      <p class="nv-text-muted nv-mt-3" style="max-width:40rem;line-height:1.7;">Productive tools and creative demos. Each one generated by an AI agent, published to a live URL. Click to try them.</p>
     </div>
+
+    <!-- Productive Apps -->
+    <p class="section-label nv-mb-3" style="font-size:0.65rem;">Productive Apps &mdash; 5 agents in parallel, 6 min wall time</p>
+    <div class="showcase-grid cols-3 nv-mb-6">
+      <a href="https://secret-aardvark-418.convex.site/app/pomodoro" class="proof-card">
+        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
+          <span class="proof-time">101</span>
+          <span class="proof-unit">seconds</span>
+        </div>
+        <h3 class="nv-h6 nv-mb-1">Pomodoro Timer</h3>
+        <p class="nv-text-xs nv-text-muted">~600 lines</p>
+        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">SVG progress ring, work/break cycles, Web Audio chime, session stats, dark mode</p>
+      </a>
+      <a href="https://secret-aardvark-418.convex.site/app/notes" class="proof-card">
+        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
+          <span class="proof-time">171</span>
+          <span class="proof-unit">seconds</span>
+        </div>
+        <h3 class="nv-h6 nv-mb-1">Markdown Notes</h3>
+        <p class="nv-text-xs nv-text-muted">~800 lines</p>
+        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">Split-pane editor, live preview, custom markdown parser, keyboard shortcuts, export</p>
+      </a>
+      <a href="https://secret-aardvark-418.convex.site/app/expenses" class="proof-card">
+        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
+          <span class="proof-time">200</span>
+          <span class="proof-unit">seconds</span>
+        </div>
+        <h3 class="nv-h6 nv-mb-1">Expense Tracker</h3>
+        <p class="nv-text-xs nv-text-muted">~1,474 lines</p>
+        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">SVG charts, category budgets, income tracking, CSV export, fintech dark UI</p>
+      </a>
+      <a href="https://secret-aardvark-418.convex.site/app/habits" class="proof-card">
+        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
+          <span class="proof-time">178</span>
+          <span class="proof-unit">seconds</span>
+        </div>
+        <h3 class="nv-h6 nv-mb-1">Habit Tracker</h3>
+        <p class="nv-text-xs nv-text-muted">~900 lines</p>
+        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">Streak tracking, weekly heatmap, categories, calendar navigation, botanical design</p>
+      </a>
+      <a href="https://secret-aardvark-418.convex.site/app/bookmarks" class="proof-card">
+        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
+          <span class="proof-time">199</span>
+          <span class="proof-unit">seconds</span>
+        </div>
+        <h3 class="nv-h6 nv-mb-1">Bookmark Manager</h3>
+        <p class="nv-text-xs nv-text-muted">~1,000 lines</p>
+        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">Tags, collections, grid/list view, favicon extraction, JSON import/export, Ctrl+K search</p>
+      </a>
+    </div>
+
+    <!-- Creative Demos -->
+    <p class="section-label nv-mb-3" style="font-size:0.65rem;">Creative Demos &mdash; single agent, 5 min 24 sec</p>
     <div class="showcase-grid cols-3">
       <a href="https://secret-aardvark-418.convex.site/app/kanban" class="proof-card">
         <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
-          <span class="proof-time">187</span>
+          <span class="proof-time">152</span>
           <span class="proof-unit">seconds</span>
         </div>
         <h3 class="nv-h6 nv-mb-1">Kanban Board</h3>
-        <p class="nv-text-xs nv-text-muted">~607 lines</p>
-        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">Drag-and-drop, localStorage persistence, dark mode, full CRUD, edit modal, priority tags</p>
+        <p class="nv-text-xs nv-text-muted">~550 lines</p>
+        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">Drag-and-drop, localStorage persistence, dark mode, full CRUD</p>
       </a>
       <a href="https://secret-aardvark-418.convex.site/app/three-demo" class="proof-card">
         <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">

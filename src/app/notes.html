@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Notes — no∅</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/novoid.min.css">
+  <style>
+    :root {
+      --notes-bg: #faf8f5;
+      --notes-ink: #1a1a1a;
+      --notes-accent: #b8860b;
+      --notes-accent-light: #d4a843;
+      --notes-accent-faint: rgba(184, 134, 11, 0.08);
+      --notes-accent-border: rgba(184, 134, 11, 0.25);
+      --notes-sidebar-bg: #f3f0eb;
+      --notes-sidebar-hover: #ebe7e0;
+      --notes-border: #e0dbd3;
+      --notes-border-light: #ece8e1;
+      --notes-muted: #8a8278;
+      --notes-paper: #fffdf9;
+      --notes-preview-bg: #fffefb;
+      --notes-code-bg: #f5f2ed;
+      --notes-blockquote-border: var(--notes-accent);
+      --notes-selection: rgba(184, 134, 11, 0.15);
+    }
+
+    [data-theme="dark"] {
+      --notes-bg: #141210;
+      --notes-ink: #e8e4de;
+      --notes-accent: #d4a843;
+      --notes-accent-light: #e6c36a;
+      --notes-accent-faint: rgba(212, 168, 67, 0.1);
+      --notes-accent-border: rgba(212, 168, 67, 0.3);
+      --notes-sidebar-bg: #1a1816;
+      --notes-sidebar-hover: #242019;
+      --notes-border: #2e2a24;
+      --notes-border-light: #252118;
+      --notes-muted: #8a8278;
+      --notes-paper: #1e1c18;
+      --notes-preview-bg: #1a1816;
+      --notes-code-bg: #252118;
+      --notes-blockquote-border: var(--notes-accent);
+      --notes-selection: rgba(212, 168, 67, 0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    ::selection { background: var(--notes-selection); }
+
+    body {
+      font-family: var(--nv-font-sans);
+      background: var(--notes-bg);
+      color: var(--notes-ink);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ---- LAYOUT ---- */
+    .nv-notes-shell {
+      display: flex;
+      height: 100vh;
+      width: 100%;
+    }
+
+    /* ---- SIDEBAR ---- */
+    .nv-notes-sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: var(--notes-sidebar-bg);
+      border-right: 1px solid var(--notes-border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      transition: transform 0.3s var(--nv-ease), opacity 0.3s var(--nv-ease);
+    }
+
+    .nv-notes-sidebar-header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--notes-border);
+    }
+
+    .nv-notes-brand {
+      font-family: var(--nv-font-display);
+      font-weight: 800;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      color: var(--notes-ink);
+    }
+
+    .nv-notes-brand-mark {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, var(--notes-accent), #8b6914);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 900;
+      font-family: var(--nv-font-mono);
+    }
+
+    [data-theme="dark"] .nv-notes-brand-mark {
+      background: linear-gradient(135deg, var(--notes-accent), #a07d2c);
+    }
+
+    .nv-notes-search {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      border: 1px solid var(--notes-border);
+      border-radius: 8px;
+      background: var(--notes-bg);
+      color: var(--notes-ink);
+      font-family: var(--nv-font-sans);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .nv-notes-search:focus {
+      border-color: var(--notes-accent);
+      box-shadow: 0 0 0 3px var(--notes-accent-faint);
+    }
+
+    .nv-notes-search-wrap {
+      position: relative;
+    }
+
+    .nv-notes-search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--notes-muted);
+      font-size: 14px;
+      pointer-events: none;
+    }
+
+    .nv-notes-sidebar-actions {
+      padding: 12px 20px 8px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .nv-notes-new-btn {
+      flex: 1;
+      padding: 8px 14px;
+      background: var(--notes-accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--nv-font-sans);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .nv-notes-new-btn:hover { background: var(--notes-accent-light); }
+    .nv-notes-new-btn:active { transform: scale(0.97); }
+
+    .nv-notes-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 12px 12px;
+    }
+
+    .nv-notes-list::-webkit-scrollbar { width: 4px; }
+    .nv-notes-list::-webkit-scrollbar-track { background: transparent; }
+    .nv-notes-list::-webkit-scrollbar-thumb { background: var(--notes-border); border-radius: 4px; }
+
+    .nv-notes-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-bottom: 2px;
+      position: relative;
+    }
+
+    .nv-notes-item:hover { background: var(--notes-sidebar-hover); }
+
+    .nv-notes-item.nv-active {
+      background: var(--notes-accent-faint);
+      border: 1px solid var(--notes-accent-border);
+    }
+
+    .nv-notes-item:not(.nv-active) {
+      border: 1px solid transparent;
+    }
+
+    .nv-notes-item-title {
+      font-weight: 600;
+      font-size: 0.88rem;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--notes-ink);
+    }
+
+    .nv-notes-item-preview {
+      font-size: 0.78rem;
+      color: var(--notes-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+
+    .nv-notes-item-date {
+      font-size: 0.72rem;
+      color: var(--notes-muted);
+      margin-top: 4px;
+      opacity: 0.7;
+    }
+
+    .nv-notes-item-delete {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: transparent;
+      color: var(--notes-muted);
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s, color 0.15s;
+    }
+
+    .nv-notes-item:hover .nv-notes-item-delete { opacity: 1; }
+    .nv-notes-item-delete:hover { background: rgba(200, 50, 50, 0.12); color: #c83232; }
+
+    .nv-notes-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--notes-muted);
+      font-size: 0.85rem;
+      line-height: 1.6;
+    }
+
+    .nv-notes-empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    /* ---- MAIN AREA ---- */
+    .nv-notes-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* ---- TOOLBAR ---- */
+    .nv-notes-toolbar {
+      height: 50px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--notes-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--notes-bg);
+      flex-shrink: 0;
+    }
+
+    .nv-notes-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nv-notes-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nv-notes-title-input {
+      border: none;
+      background: transparent;
+      font-family: var(--nv-font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      color: var(--notes-ink);
+      outline: none;
+      width: 280px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+
+    .nv-notes-title-input:focus {
+      background: var(--notes-accent-faint);
+    }
+
+    .nv-notes-toolbar-btn {
+      padding: 6px 10px;
+      border: 1px solid var(--notes-border);
+      background: var(--notes-bg);
+      color: var(--notes-ink);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 500;
+      font-family: var(--nv-font-sans);
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .nv-notes-toolbar-btn:hover {
+      border-color: var(--notes-accent);
+      color: var(--notes-accent);
+    }
+
+    .nv-notes-toolbar-btn.nv-active {
+      background: var(--notes-accent);
+      color: #fff;
+      border-color: var(--notes-accent);
+    }
+
+    .nv-notes-toolbar-icon-btn {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--notes-border);
+      background: var(--notes-bg);
+      color: var(--notes-ink);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      transition: all 0.15s;
+    }
+
+    .nv-notes-toolbar-icon-btn:hover {
+      border-color: var(--notes-accent);
+      color: var(--notes-accent);
+    }
+
+    .nv-notes-stats {
+      font-size: 0.72rem;
+      color: var(--notes-muted);
+      font-family: var(--nv-font-mono);
+      display: flex;
+      gap: 12px;
+    }
+
+    .nv-notes-stats span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nv-notes-autosave {
+      font-size: 0.72rem;
+      color: var(--notes-accent);
+      font-style: italic;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .nv-notes-autosave.nv-visible { opacity: 1; }
+
+    /* ---- EDITOR PANES ---- */
+    .nv-notes-panes {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+
+    .nv-notes-editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      border-right: 1px solid var(--notes-border);
+    }
+
+    .nv-notes-pane-label {
+      padding: 8px 20px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--notes-muted);
+      border-bottom: 1px solid var(--notes-border-light);
+      font-family: var(--nv-font-sans);
+      background: var(--notes-bg);
+    }
+
+    .nv-notes-editor {
+      flex: 1;
+      width: 100%;
+      padding: 24px 28px;
+      border: none;
+      resize: none;
+      background: var(--notes-paper);
+      color: var(--notes-ink);
+      font-family: var(--nv-font-mono);
+      font-size: 0.88rem;
+      line-height: 1.75;
+      outline: none;
+      tab-size: 2;
+      overflow-y: auto;
+    }
+
+    .nv-notes-editor::placeholder {
+      color: var(--notes-muted);
+      opacity: 0.5;
+    }
+
+    .nv-notes-editor::-webkit-scrollbar { width: 6px; }
+    .nv-notes-editor::-webkit-scrollbar-track { background: transparent; }
+    .nv-notes-editor::-webkit-scrollbar-thumb { background: var(--notes-border); border-radius: 3px; }
+
+    .nv-notes-preview-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--notes-preview-bg);
+    }
+
+    .nv-notes-preview {
+      flex: 1;
+      padding: 24px 32px;
+      overflow-y: auto;
+      font-family: var(--nv-font-sans);
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: var(--notes-ink);
+    }
+
+    .nv-notes-preview::-webkit-scrollbar { width: 6px; }
+    .nv-notes-preview::-webkit-scrollbar-track { background: transparent; }
+    .nv-notes-preview::-webkit-scrollbar-thumb { background: var(--notes-border); border-radius: 3px; }
+
+    /* ---- PREVIEW TYPOGRAPHY ---- */
+    .nv-notes-preview h1 {
+      font-family: var(--nv-font-display);
+      font-weight: 800;
+      font-size: 2rem;
+      line-height: 1.2;
+      margin: 0 0 0.8em 0;
+      color: var(--notes-ink);
+      letter-spacing: -0.02em;
+      border-bottom: 2px solid var(--notes-border-light);
+      padding-bottom: 0.4em;
+    }
+
+    .nv-notes-preview h2 {
+      font-family: var(--nv-font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      line-height: 1.25;
+      margin: 1.6em 0 0.6em 0;
+      color: var(--notes-ink);
+      letter-spacing: -0.015em;
+      border-bottom: 1px solid var(--notes-border-light);
+      padding-bottom: 0.3em;
+    }
+
+    .nv-notes-preview h3 {
+      font-family: var(--nv-font-display);
+      font-weight: 700;
+      font-size: 1.25rem;
+      line-height: 1.3;
+      margin: 1.4em 0 0.5em 0;
+      color: var(--notes-ink);
+    }
+
+    .nv-notes-preview h4 {
+      font-family: var(--nv-font-display);
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin: 1.2em 0 0.4em 0;
+      color: var(--notes-ink);
+    }
+
+    .nv-notes-preview h5, .nv-notes-preview h6 {
+      font-family: var(--nv-font-display);
+      font-weight: 600;
+      font-size: 1rem;
+      margin: 1em 0 0.3em 0;
+      color: var(--notes-muted);
+    }
+
+    .nv-notes-preview p {
+      margin: 0 0 1em 0;
+    }
+
+    .nv-notes-preview strong {
+      font-weight: 700;
+      color: var(--notes-ink);
+    }
+
+    .nv-notes-preview em {
+      font-style: italic;
+    }
+
+    .nv-notes-preview a {
+      color: var(--notes-accent);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .nv-notes-preview a:hover { color: var(--notes-accent-light); }
+
+    .nv-notes-preview code {
+      font-family: var(--nv-font-mono);
+      font-size: 0.85em;
+      background: var(--notes-code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--notes-accent);
+    }
+
+    .nv-notes-preview pre {
+      background: var(--notes-code-bg);
+      border: 1px solid var(--notes-border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 0 0 1em 0;
+      line-height: 1.6;
+    }
+
+    .nv-notes-preview pre code {
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      color: var(--notes-ink);
+      font-size: 0.84rem;
+    }
+
+    .nv-notes-preview blockquote {
+      border-left: 3px solid var(--notes-blockquote-border);
+      margin: 0 0 1em 0;
+      padding: 8px 0 8px 20px;
+      color: var(--notes-muted);
+      font-style: italic;
+      background: var(--notes-accent-faint);
+      border-radius: 0 6px 6px 0;
+    }
+
+    .nv-notes-preview blockquote p { margin: 0; }
+
+    .nv-notes-preview ul, .nv-notes-preview ol {
+      margin: 0 0 1em 0;
+      padding-left: 1.5em;
+    }
+
+    .nv-notes-preview li {
+      margin-bottom: 0.3em;
+      line-height: 1.6;
+    }
+
+    .nv-notes-preview ul li { list-style-type: disc; }
+    .nv-notes-preview ol li { list-style-type: decimal; }
+
+    .nv-notes-preview hr {
+      border: none;
+      border-top: 2px solid var(--notes-border);
+      margin: 1.5em 0;
+    }
+
+    .nv-notes-preview img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 0.5em 0 1em 0;
+    }
+
+    .nv-notes-preview .nv-task-item {
+      list-style: none;
+      margin-left: -1.5em;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .nv-notes-preview .nv-task-checkbox {
+      margin-top: 3px;
+      accent-color: var(--notes-accent);
+    }
+
+    /* ---- EMPTY STATE ---- */
+    .nv-notes-no-note {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--notes-muted);
+      gap: 12px;
+    }
+
+    .nv-notes-no-note-icon {
+      font-size: 3rem;
+      opacity: 0.3;
+    }
+
+    .nv-notes-no-note p {
+      font-size: 0.9rem;
+    }
+
+    .nv-notes-no-note kbd {
+      font-family: var(--nv-font-mono);
+      font-size: 0.75rem;
+      background: var(--notes-code-bg);
+      border: 1px solid var(--notes-border);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ---- MOBILE TOGGLE ---- */
+    .nv-notes-mobile-toggle {
+      display: none;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--notes-border);
+      background: var(--notes-bg);
+      color: var(--notes-ink);
+      border-radius: 6px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .nv-notes-mobile-sidebar-toggle {
+      display: none;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--notes-border);
+      background: var(--notes-bg);
+      color: var(--notes-ink);
+      border-radius: 6px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    /* ---- KEYBOARD SHORTCUTS HINT ---- */
+    .nv-notes-shortcuts-bar {
+      padding: 8px 20px;
+      border-top: 1px solid var(--notes-border);
+      background: var(--notes-sidebar-bg);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.68rem;
+      color: var(--notes-muted);
+    }
+
+    .nv-notes-shortcuts-bar kbd {
+      font-family: var(--nv-font-mono);
+      font-size: 0.65rem;
+      background: var(--notes-bg);
+      border: 1px solid var(--notes-border);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    /* ---- DELETE CONFIRM MODAL ---- */
+    .nv-notes-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .nv-notes-modal-overlay.nv-active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .nv-notes-modal {
+      background: var(--notes-bg);
+      border: 1px solid var(--notes-border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 380px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+
+    .nv-notes-modal h3 {
+      font-family: var(--nv-font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+
+    .nv-notes-modal p {
+      font-size: 0.88rem;
+      color: var(--notes-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .nv-notes-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .nv-notes-modal-cancel {
+      padding: 8px 16px;
+      border: 1px solid var(--notes-border);
+      background: var(--notes-bg);
+      color: var(--notes-ink);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 500;
+      font-family: var(--nv-font-sans);
+    }
+
+    .nv-notes-modal-delete {
+      padding: 8px 16px;
+      border: none;
+      background: #c83232;
+      color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.84rem;
+      font-weight: 600;
+      font-family: var(--nv-font-sans);
+    }
+
+    .nv-notes-modal-delete:hover { background: #b02828; }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 768px) {
+      .nv-notes-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 100;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+      }
+
+      .nv-notes-sidebar.nv-open {
+        transform: translateX(0);
+      }
+
+      .nv-notes-mobile-sidebar-toggle {
+        display: flex;
+      }
+
+      .nv-notes-mobile-toggle {
+        display: flex;
+      }
+
+      .nv-notes-editor-pane.nv-mobile-hidden,
+      .nv-notes-preview-pane.nv-mobile-hidden {
+        display: none;
+      }
+
+      .nv-notes-stats {
+        display: none;
+      }
+
+      .nv-notes-title-input {
+        width: 140px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../js/novoid.min.js"></script>
+  <script>
+    const { signal, effect, computed, h, mount, batch } = Novoid;
+
+    // ---- MARKDOWN PARSER ----
+    function parseMarkdown(md) {
+      if (!md) return '<p style="color:var(--notes-muted);opacity:0.5;font-style:italic;">Start writing to see the preview...</p>';
+
+      let html = md;
+
+      // Escape HTML to prevent injection
+      html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      // Fenced code blocks (``` ... ```)
+      html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+        return '<pre><code>' + code.replace(/\n$/, '') + '</code></pre>';
+      });
+
+      // Split into lines for block-level processing
+      const lines = html.split('\n');
+      const blocks = [];
+      let i = 0;
+
+      while (i < lines.length) {
+        const line = lines[i];
+
+        // Check for pre blocks (already handled above, just pass through)
+        if (line.startsWith('&lt;pre&gt;')) {
+          blocks.push(line);
+          i++;
+          continue;
+        }
+
+        // Headings
+        const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          blocks.push('<h' + level + '>' + processInline(headingMatch[2]) + '</h' + level + '>');
+          i++;
+          continue;
+        }
+
+        // Horizontal rules
+        if (/^(\*{3,}|-{3,}|_{3,})\s*$/.test(line)) {
+          blocks.push('<hr>');
+          i++;
+          continue;
+        }
+
+        // Blockquotes
+        if (line.startsWith('&gt; ') || line === '&gt;') {
+          const quoteLines = [];
+          while (i < lines.length && (lines[i].startsWith('&gt; ') || lines[i] === '&gt;')) {
+            quoteLines.push(lines[i].replace(/^&gt;\s?/, ''));
+            i++;
+          }
+          blocks.push('<blockquote><p>' + processInline(quoteLines.join(' ')) + '</p></blockquote>');
+          continue;
+        }
+
+        // Unordered lists
+        if (/^\s*[-*+]\s/.test(line)) {
+          const listItems = [];
+          while (i < lines.length && /^\s*[-*+]\s/.test(lines[i])) {
+            const itemText = lines[i].replace(/^\s*[-*+]\s+/, '');
+            // Task list items
+            const taskMatch = itemText.match(/^\[([ xX])\]\s+(.+)$/);
+            if (taskMatch) {
+              const checked = taskMatch[1] !== ' ';
+              listItems.push('<li class="nv-task-item"><input type="checkbox" class="nv-task-checkbox" ' + (checked ? 'checked' : '') + ' disabled> ' + processInline(taskMatch[2]) + '</li>');
+            } else {
+              listItems.push('<li>' + processInline(itemText) + '</li>');
+            }
+            i++;
+          }
+          blocks.push('<ul>' + listItems.join('') + '</ul>');
+          continue;
+        }
+
+        // Ordered lists
+        if (/^\s*\d+\.\s/.test(line)) {
+          const listItems = [];
+          while (i < lines.length && /^\s*\d+\.\s/.test(lines[i])) {
+            listItems.push('<li>' + processInline(lines[i].replace(/^\s*\d+\.\s+/, '')) + '</li>');
+            i++;
+          }
+          blocks.push('<ol>' + listItems.join('') + '</ol>');
+          continue;
+        }
+
+        // Empty line
+        if (line.trim() === '') {
+          i++;
+          continue;
+        }
+
+        // Paragraphs (collect consecutive non-empty lines)
+        const paraLines = [];
+        while (i < lines.length && lines[i].trim() !== '' && !/^#{1,6}\s/.test(lines[i]) && !/^(\*{3,}|-{3,}|_{3,})\s*$/.test(lines[i]) && !/^&gt;\s/.test(lines[i]) && !/^\s*[-*+]\s/.test(lines[i]) && !/^\s*\d+\.\s/.test(lines[i])) {
+          paraLines.push(lines[i]);
+          i++;
+        }
+        if (paraLines.length > 0) {
+          blocks.push('<p>' + processInline(paraLines.join(' ')) + '</p>');
+        }
+      }
+
+      return blocks.join('\n');
+    }
+
+    function processInline(text) {
+      // Images: ![alt](url)
+      text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+      // Links: [text](url)
+      text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+      // Bold + italic: ***text*** or ___text___
+      text = text.replace(/\*{3}(.+?)\*{3}/g, '<strong><em>$1</em></strong>');
+      text = text.replace(/_{3}(.+?)_{3}/g, '<strong><em>$1</em></strong>');
+
+      // Bold: **text** or __text__
+      text = text.replace(/\*{2}(.+?)\*{2}/g, '<strong>$1</strong>');
+      text = text.replace(/_{2}(.+?)_{2}/g, '<strong>$1</strong>');
+
+      // Italic: *text* or _text_
+      text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+      text = text.replace(/_(.+?)_/g, '<em>$1</em>');
+
+      // Strikethrough: ~~text~~
+      text = text.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+      // Inline code: `code`
+      text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+      // Line break: two spaces at end or backslash
+      text = text.replace(/  $/, '<br>');
+
+      return text;
+    }
+
+    // ---- LOCAL STORAGE ----
+    const STORAGE_KEY = 'novoid-markdown-notes';
+
+    function loadNotes() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return [];
+    }
+
+    function saveNotes(notes) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+      } catch (e) { /* ignore */ }
+    }
+
+    // ---- HELPERS ----
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    function formatDate(ts) {
+      const d = new Date(ts);
+      const now = new Date();
+      const diffMs = now - d;
+      const diffMin = Math.floor(diffMs / 60000);
+      const diffHr = Math.floor(diffMs / 3600000);
+
+      if (diffMin < 1) return 'Just now';
+      if (diffMin < 60) return diffMin + 'm ago';
+      if (diffHr < 24) return diffHr + 'h ago';
+
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function getPreviewText(content) {
+      if (!content) return 'Empty note';
+      const clean = content.replace(/#{1,6}\s/g, '').replace(/[*_~`>\-\[\]()!]/g, '').replace(/\n+/g, ' ').trim();
+      return clean.slice(0, 80) || 'Empty note';
+    }
+
+    function countWords(text) {
+      if (!text || !text.trim()) return 0;
+      return text.trim().split(/\s+/).length;
+    }
+
+    function countChars(text) {
+      return text ? text.length : 0;
+    }
+
+    // ---- APP STATE ----
+    const stored = loadNotes();
+    const [notes, setNotes] = signal(stored.length > 0 ? stored : []);
+    const [activeId, setActiveId] = signal(stored.length > 0 ? stored[0].id : null);
+    const [searchQuery, setSearchQuery] = signal('');
+    const [isDark, setIsDark] = signal(false);
+    const [showSaveIndicator, setShowSaveIndicator] = signal(false);
+    const [mobileView, setMobileView] = signal('editor'); // 'editor' or 'preview'
+    const [sidebarOpen, setSidebarOpen] = signal(false);
+    const [deleteModalId, setDeleteModalId] = signal(null);
+
+    // Get active note
+    const activeNote = computed(() => {
+      const id = activeId();
+      if (!id) return null;
+      return notes().find(n => n.id === id) || null;
+    });
+
+    // Filtered notes
+    const filteredNotes = computed(() => {
+      const q = searchQuery().toLowerCase().trim();
+      const all = notes();
+      if (!q) return all;
+      return all.filter(n =>
+        n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q)
+      );
+    });
+
+    // Word/char counts
+    const wordCount = computed(() => {
+      const note = activeNote();
+      return note ? countWords(note.content) : 0;
+    });
+
+    const charCount = computed(() => {
+      const note = activeNote();
+      return note ? countChars(note.content) : 0;
+    });
+
+    // Preview HTML
+    const previewHtml = computed(() => {
+      const note = activeNote();
+      return note ? parseMarkdown(note.content) : '';
+    });
+
+    // ---- ACTIONS ----
+    function createNote() {
+      const id = generateId();
+      const now = Date.now();
+      const newNote = { id, title: 'Untitled', content: '', createdAt: now, updatedAt: now };
+      setNotes(prev => [newNote, ...prev]);
+      setActiveId(id);
+      setSidebarOpen(false);
+    }
+
+    function updateNoteContent(content) {
+      const id = activeId();
+      if (!id) return;
+      setNotes(prev => prev.map(n =>
+        n.id === id ? { ...n, content, updatedAt: Date.now() } : n
+      ));
+      flashSave();
+    }
+
+    function updateNoteTitle(title) {
+      const id = activeId();
+      if (!id) return;
+      setNotes(prev => prev.map(n =>
+        n.id === id ? { ...n, title: title || 'Untitled', updatedAt: Date.now() } : n
+      ));
+      flashSave();
+    }
+
+    function deleteNote(id) {
+      setNotes(prev => {
+        const filtered = prev.filter(n => n.id !== id);
+        if (activeId() === id) {
+          setActiveId(filtered.length > 0 ? filtered[0].id : null);
+        }
+        return filtered;
+      });
+      setDeleteModalId(null);
+    }
+
+    function selectNote(id) {
+      setActiveId(id);
+      setSidebarOpen(false);
+    }
+
+    function exportNote() {
+      const note = activeNote();
+      if (!note) return;
+      const blob = new Blob([note.content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (note.title || 'untitled').replace(/[^a-zA-Z0-9-_ ]/g, '') + '.md';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function toggleDark() {
+      const next = !isDark();
+      setIsDark(next);
+      document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+      try { localStorage.setItem('novoid-notes-dark', next ? '1' : '0'); } catch(e) {}
+    }
+
+    let saveTimer = null;
+    function flashSave() {
+      setShowSaveIndicator(true);
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => setShowSaveIndicator(false), 1500);
+    }
+
+    // Insert markdown formatting at cursor
+    function insertFormat(prefix, suffix) {
+      const ta = document.querySelector('.nv-notes-editor');
+      if (!ta) return;
+      const start = ta.selectionStart;
+      const end = ta.selectionEnd;
+      const text = ta.value;
+      const selected = text.slice(start, end);
+      const newText = text.slice(0, start) + prefix + selected + suffix + text.slice(end);
+      updateNoteContent(newText);
+      // Need to wait for DOM update
+      requestAnimationFrame(() => {
+        ta.value = newText;
+        ta.selectionStart = start + prefix.length;
+        ta.selectionEnd = end + prefix.length;
+        ta.focus();
+      });
+    }
+
+    // ---- PERSIST ----
+    effect(() => {
+      saveNotes(notes());
+    });
+
+    // ---- INIT DARK MODE ----
+    try {
+      const savedDark = localStorage.getItem('novoid-notes-dark');
+      if (savedDark === '1') {
+        setIsDark(true);
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch(e) {}
+
+    // ---- KEYBOARD SHORTCUTS ----
+    document.addEventListener('keydown', (e) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key === 'n') {
+        e.preventDefault();
+        createNote();
+      }
+      if (mod && e.key === 's') {
+        e.preventDefault();
+        exportNote();
+      }
+      if (mod && e.key === 'b') {
+        e.preventDefault();
+        insertFormat('**', '**');
+      }
+      if (mod && e.key === 'i') {
+        e.preventDefault();
+        insertFormat('*', '*');
+      }
+    });
+
+    // ---- RENDER ----
+    mount('#app', () => {
+
+      // ---- DELETE CONFIRMATION MODAL ----
+      const deleteModal = h('div', {
+        class: () => 'nv-notes-modal-overlay' + (deleteModalId() !== null ? ' nv-active' : ''),
+        onClick: (e) => { if (e.target === e.currentTarget) setDeleteModalId(null); }
+      },
+        h('div', { class: 'nv-notes-modal' },
+          h('h3', {}, 'Delete Note'),
+          h('p', {}, 'This note will be permanently deleted. This cannot be undone.'),
+          h('div', { class: 'nv-notes-modal-actions' },
+            h('button', {
+              class: 'nv-notes-modal-cancel',
+              onClick: () => setDeleteModalId(null)
+            }, 'Cancel'),
+            h('button', {
+              class: 'nv-notes-modal-delete',
+              onClick: () => deleteNote(deleteModalId())
+            }, 'Delete')
+          )
+        )
+      );
+
+      // ---- SIDEBAR ----
+      const sidebar = h('aside', {
+        class: () => 'nv-notes-sidebar' + (sidebarOpen() ? ' nv-open' : '')
+      },
+        h('div', { class: 'nv-notes-sidebar-header' },
+          h('div', { class: 'nv-notes-brand' },
+            h('div', { class: 'nv-notes-brand-mark' }, 'M'),
+            h('span', {}, 'Markdown Notes')
+          ),
+          h('div', { class: 'nv-notes-search-wrap' },
+            h('span', { class: 'nv-notes-search-icon' }, '\u2315'),
+            h('input', {
+              class: 'nv-notes-search',
+              type: 'text',
+              placeholder: 'Search notes...',
+              onInput: (e) => setSearchQuery(e.target.value)
+            })
+          )
+        ),
+        h('div', { class: 'nv-notes-sidebar-actions' },
+          h('button', { class: 'nv-notes-new-btn', onClick: createNote },
+            h('span', {}, '+'),
+            h('span', {}, 'New Note')
+          )
+        ),
+        (() => {
+          const listEl = h('div', { class: 'nv-notes-list' });
+
+          effect(() => {
+            const filtered = filteredNotes();
+            const currentActiveId = activeId();
+            listEl.innerHTML = '';
+
+            if (filtered.length === 0) {
+              const empty = h('div', { class: 'nv-notes-empty' },
+                h('div', { class: 'nv-notes-empty-icon' }, '\u270E'),
+                h('p', {}, searchQuery() ? 'No notes match your search.' : 'No notes yet. Create your first note.')
+              );
+              listEl.appendChild(empty);
+              return;
+            }
+
+            filtered.forEach(note => {
+              const item = h('div', {
+                class: 'nv-notes-item' + (note.id === currentActiveId ? ' nv-active' : ''),
+                onClick: (e) => {
+                  if (e.target.closest('.nv-notes-item-delete')) return;
+                  selectNote(note.id);
+                }
+              },
+                h('div', { class: 'nv-notes-item-title' }, note.title || 'Untitled'),
+                h('div', { class: 'nv-notes-item-preview' }, getPreviewText(note.content)),
+                h('div', { class: 'nv-notes-item-date' }, formatDate(note.updatedAt)),
+                h('button', {
+                  class: 'nv-notes-item-delete',
+                  onClick: (e) => {
+                    e.stopPropagation();
+                    setDeleteModalId(note.id);
+                  },
+                  title: 'Delete note'
+                }, '\u2715')
+              );
+              listEl.appendChild(item);
+            });
+          });
+
+          return listEl;
+        })(),
+        h('div', { class: 'nv-notes-shortcuts-bar nv-hide-sm' },
+          h('span', {}, h('kbd', {}, '\u2318N'), ' New'),
+          h('span', {}, h('kbd', {}, '\u2318S'), ' Export'),
+          h('span', {}, h('kbd', {}, '\u2318B'), ' Bold'),
+          h('span', {}, h('kbd', {}, '\u2318I'), ' Italic')
+        )
+      );
+
+      // ---- MAIN CONTENT WHEN NO NOTE ----
+      function renderEmptyState() {
+        return h('div', { class: 'nv-notes-no-note' },
+          h('div', { class: 'nv-notes-no-note-icon' }, '\u270E'),
+          h('p', {}, 'Select a note or create a new one'),
+          h('p', { style: { fontSize: '0.8rem' } },
+            'Press ', h('kbd', {
+              style: {
+                fontFamily: 'var(--nv-font-mono)',
+                fontSize: '0.75rem',
+                background: 'var(--notes-code-bg)',
+                border: '1px solid var(--notes-border)',
+                padding: '2px 6px',
+                borderRadius: '4px'
+              }
+            }, '\u2318 N'),
+            ' to create a new note'
+          )
+        );
+      }
+
+      // ---- MAIN CONTENT WHEN NOTE SELECTED ----
+      // Create input elements ONCE outside effects so they persist across re-renders
+      const titleInput = h('input', {
+        class: 'nv-notes-title-input',
+        type: 'text',
+        placeholder: 'Note title...',
+        onInput: (e) => updateNoteTitle(e.target.value)
+      });
+
+      const editorTextarea = h('textarea', {
+        class: 'nv-notes-editor',
+        placeholder: 'Start writing in Markdown...\n\n# Heading\n**bold** and *italic*\n- list items\n> blockquotes\n`inline code`',
+        spellcheck: 'true',
+        onInput: (e) => updateNoteContent(e.target.value)
+      });
+
+      const previewDiv = h('div', {
+        class: 'nv-notes-preview',
+        html: () => previewHtml()
+      });
+
+      // Sync title input value when active note changes, but not while user is typing
+      effect(() => {
+        const note = activeNote();
+        if (note && titleInput) {
+          if (document.activeElement !== titleInput) {
+            titleInput.value = note.title || '';
+          }
+        }
+      });
+
+      // Sync textarea value when active note changes, but not while user is typing
+      effect(() => {
+        const note = activeNote();
+        if (note && editorTextarea) {
+          if (document.activeElement !== editorTextarea) {
+            editorTextarea.value = note.content || '';
+          }
+        }
+      });
+
+      // Build editor DOM tree once, reusing the persistent input elements
+      const editorView = h('div', { class: 'nv-notes-main' },
+        // Toolbar
+        h('div', { class: 'nv-notes-toolbar' },
+          h('div', { class: 'nv-notes-toolbar-left' },
+            h('button', {
+              class: 'nv-notes-mobile-sidebar-toggle',
+              onClick: () => setSidebarOpen(v => !v),
+              title: 'Toggle sidebar'
+            }, '\u2630'),
+            titleInput,
+            h('span', {
+              class: () => 'nv-notes-autosave' + (showSaveIndicator() ? ' nv-visible' : '')
+            }, 'Saved')
+          ),
+          h('div', { class: 'nv-notes-toolbar-right' },
+            h('div', { class: 'nv-notes-stats' },
+              h('span', {}, () => wordCount() + ' words'),
+              h('span', {}, () => charCount() + ' chars')
+            ),
+            h('button', {
+              class: 'nv-notes-toolbar-btn',
+              onClick: () => insertFormat('**', '**'),
+              title: 'Bold (\u2318B)'
+            }, 'B'),
+            h('button', {
+              class: 'nv-notes-toolbar-btn',
+              onClick: () => insertFormat('*', '*'),
+              title: 'Italic (\u2318I)',
+              style: { fontStyle: 'italic' }
+            }, 'I'),
+            h('button', {
+              class: 'nv-notes-toolbar-btn',
+              onClick: () => insertFormat('`', '`'),
+              title: 'Code'
+            }, h('span', { style: { fontFamily: 'var(--nv-font-mono)', fontSize: '0.75rem' } }, '<>')),
+            h('button', {
+              class: 'nv-notes-toolbar-btn',
+              onClick: () => insertFormat('[', '](url)'),
+              title: 'Link'
+            }, '\u{1F517}'),
+            h('button', {
+              class: 'nv-notes-toolbar-btn',
+              onClick: exportNote,
+              title: 'Export as .md (\u2318S)'
+            }, '\u2193 .md'),
+            h('button', {
+              class: () => 'nv-notes-mobile-toggle' + (mobileView() === 'preview' ? ' nv-active' : ''),
+              onClick: () => setMobileView(v => v === 'editor' ? 'preview' : 'editor'),
+              title: 'Toggle preview'
+            }, () => mobileView() === 'editor' ? '\u25A8' : '\u270E'),
+            h('button', {
+              class: 'nv-notes-toolbar-icon-btn',
+              onClick: toggleDark,
+              title: 'Toggle dark mode'
+            }, () => isDark() ? '\u2600' : '\u263D')
+          )
+        ),
+        // Panes
+        h('div', { class: 'nv-notes-panes' },
+          h('div', {
+            class: () => 'nv-notes-editor-pane' + (mobileView() === 'preview' ? ' nv-mobile-hidden' : '')
+          },
+            h('div', { class: 'nv-notes-pane-label' }, 'Markdown'),
+            editorTextarea
+          ),
+          h('div', {
+            class: () => 'nv-notes-preview-pane' + (mobileView() === 'editor' ? ' nv-mobile-hidden' : '')
+          },
+            h('div', { class: 'nv-notes-pane-label' }, 'Preview'),
+            previewDiv
+          )
+        )
+      );
+
+      const emptyView = renderEmptyState();
+
+      // ---- MAIN ----
+      const mainContainer = h('div', {
+        style: { flex: '1', display: 'flex', flexDirection: 'column', minWidth: '0' }
+      });
+
+      // Track previous active ID to avoid unnecessary DOM rebuilds
+      let prevActiveId = null;
+
+      effect(() => {
+        const id = activeId();
+        // Only rebuild DOM when switching between notes or to/from empty state
+        if (id === prevActiveId) return;
+        prevActiveId = id;
+
+        mainContainer.innerHTML = '';
+        if (id) {
+          mainContainer.appendChild(editorView);
+          // Force-sync inputs when switching notes since activeElement guard may skip it
+          const note = notes().find(n => n.id === id);
+          if (note) {
+            titleInput.value = note.title || '';
+            editorTextarea.value = note.content || '';
+          }
+        } else {
+          mainContainer.appendChild(emptyView);
+        }
+      });
+
+      return h('div', {},
+        h('div', { class: 'nv-notes-shell' },
+          sidebar,
+          mainContainer
+        ),
+        deleteModal
+      );
+    });
+  </script>
+</body>
+</html>

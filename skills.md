@@ -1495,6 +1495,8 @@ Components auto-receive `_id` in props. The rendered element gets `data-nv-compo
 
 Creates DOM elements with reactive bindings. Core function — equivalent to JSX.
 
+**IMPORTANT:** Elements created with `h()` inside an `effect()` are destroyed and recreated on every signal change. This means text inputs lose focus mid-typing. Always create inputs ONCE outside effects and reuse them. See the `bind` warning below and Gotcha #15.
+
 ```js
 Novoid.h(tag, attrs?, ...children)
 ```
@@ -1590,6 +1592,33 @@ const [text, setText] = Novoid.signal('');
 h('input', { class: 'nv-input', bind: [text, setText], placeholder: 'Type here...' });
 // Input value syncs with signal automatically
 ```
+
+**WARNING — Input focus loss:** `bind` works correctly on its own, but if the input is inside an `effect()` that rebuilds its parent DOM, every keystroke triggers the signal setter → re-runs the effect → destroys and recreates the input → focus lost. **Create inputs once, outside effects, and reuse them:**
+
+```js
+// BAD — input inside effect, loses focus on every keystroke
+const [text, setText] = signal('');
+effect(() => {
+  container.innerHTML = '';
+  container.appendChild(h('input', { bind: [text, setText] }));  // recreated!
+});
+
+// GOOD — input created once, appended to a stable parent
+const [text, setText] = signal('');
+const inputEl = h('input', { class: 'nv-input', bind: [text, setText] });
+// Use inputEl directly in your layout — don't put it inside effect()
+
+// ALSO GOOD — input outside effect, list inside effect
+const inputEl = h('input', { class: 'nv-input', bind: [text, setText] });
+const listContainer = h('div', {});
+effect(() => {
+  listContainer.innerHTML = '';
+  items().forEach(item => listContainer.appendChild(renderItem(item)));
+});
+container.appendChild(h('div', {}, inputEl, listContainer));
+```
+
+This applies to ALL text inputs (input, textarea, contenteditable). If users can type in it, create it once and reuse it.
 
 **Any other attribute** — Set as HTML attribute (reactive if function):
 
@@ -3634,7 +3663,7 @@ mount('#app', () => {
     // CSS: class="nv-card nv-card-hoverable"
     ```
 
-15. **Keep text inputs outside signals.** When using `effect(render)` with full DOM rebuild, input signals trigger re-renders that destroy the input element mid-typing — losing focus and cursor position. Instead, create the input element once and read its `.value` directly:
+15. **CRITICAL: Text inputs lose focus if created inside effects.** When using `effect(render)` with full DOM rebuild, input signals trigger re-renders that destroy the input element mid-typing — losing focus and cursor position. This is the #1 most common bug in no∅ apps. Instead, create the input element once OUTSIDE the effect and reuse it:
     ```js
     // BAD — input re-created every keystroke, loses focus
     const [input, setInput] = signal("");

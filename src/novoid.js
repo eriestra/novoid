@@ -219,7 +219,7 @@ const Novoid = (() => {
         // Two-way binding
         const [getter, setter] = value;
         el.value = getter();
-        effect(() => { el.value = getter(); });
+        effect(() => { const v = getter(); if (el.value !== v) el.value = v; });
         el.addEventListener('input', (e) => setter(e.target.value));
       } else {
         if (typeof value === 'function' && key !== 'onclick') {

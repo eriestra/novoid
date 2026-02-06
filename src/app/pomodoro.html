@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pomodoro — no∅</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/novoid.min.css">
+  <style>
+    :root {
+      --pm-terracotta: #c2703e;
+      --pm-terracotta-light: #d4885a;
+      --pm-terracotta-dark: #a85d32;
+      --pm-sand: #e8d5b7;
+      --pm-sand-light: #f2e6d4;
+      --pm-sand-pale: #f8f1e6;
+      --pm-charcoal: #2d2926;
+      --pm-charcoal-light: #4a4541;
+      --pm-charcoal-muted: #6b6560;
+      --pm-warm-white: #faf6f0;
+      --pm-cream: #f5ede0;
+      --pm-break-green: #6b8f71;
+      --pm-break-green-light: #8aab8f;
+      --pm-ring-size: 280px;
+      --pm-ring-stroke: 8;
+    }
+
+    [data-theme="dark"] {
+      --pm-warm-white: #1e1b18;
+      --pm-cream: #2a2622;
+      --pm-sand-pale: #332e29;
+      --pm-sand-light: #3d3730;
+      --pm-sand: #a89578;
+      --pm-charcoal: #e8d5b7;
+      --pm-charcoal-light: #c4b49d;
+      --pm-charcoal-muted: #9a8d7d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--pm-warm-white);
+      color: var(--pm-charcoal);
+      font-family: var(--nv-font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    .pm-header {
+      width: 100%;
+      padding: var(--nv-space-4) var(--nv-space-6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 600px;
+    }
+
+    .pm-brand {
+      font-family: var(--nv-font-display);
+      font-weight: 300;
+      font-size: var(--nv-text-lg);
+      letter-spacing: 0.08em;
+      color: var(--pm-charcoal-muted);
+    }
+
+    .pm-theme-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--nv-radius-full);
+      border: 1px solid var(--pm-sand);
+      background: var(--pm-cream);
+      color: var(--pm-charcoal-muted);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .pm-theme-btn:hover {
+      background: var(--pm-sand);
+      color: var(--pm-charcoal);
+    }
+
+    .pm-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--nv-space-4);
+      gap: var(--nv-space-8);
+      max-width: 600px;
+      width: 100%;
+    }
+
+    .pm-mode-label {
+      font-family: var(--nv-font-display);
+      font-size: var(--nv-text-sm);
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--pm-terracotta);
+      transition: color 0.4s ease;
+    }
+
+    .pm-mode-label.is-break {
+      color: var(--pm-break-green);
+    }
+
+    .pm-ring-container {
+      position: relative;
+      width: var(--pm-ring-size);
+      height: var(--pm-ring-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .pm-ring-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .pm-ring-track {
+      fill: none;
+      stroke: var(--pm-sand-light);
+      stroke-width: var(--pm-ring-stroke);
+      transition: stroke 0.4s ease;
+    }
+
+    .pm-ring-progress {
+      fill: none;
+      stroke: var(--pm-terracotta);
+      stroke-width: var(--pm-ring-stroke);
+      stroke-linecap: round;
+      transition: stroke 0.4s ease, stroke-dashoffset 0.3s ease;
+    }
+
+    .pm-ring-progress.is-break {
+      stroke: var(--pm-break-green);
+    }
+
+    .pm-time-display {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+
+    .pm-time {
+      font-family: var(--nv-font-display);
+      font-size: 4rem;
+      font-weight: 300;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      color: var(--pm-charcoal);
+    }
+
+    .pm-time-sub {
+      font-size: var(--nv-text-xs);
+      color: var(--pm-charcoal-muted);
+      margin-top: var(--nv-space-1);
+      letter-spacing: 0.08em;
+    }
+
+    .pm-controls {
+      display: flex;
+      align-items: center;
+      gap: var(--nv-space-4);
+    }
+
+    .pm-btn {
+      border: none;
+      cursor: pointer;
+      border-radius: var(--nv-radius-full);
+      transition: all 0.25s ease;
+      font-family: var(--nv-font-sans);
+      font-weight: 500;
+    }
+
+    .pm-btn-main {
+      width: 64px;
+      height: 64px;
+      background: var(--pm-terracotta);
+      color: var(--pm-warm-white);
+      font-size: 22px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 20px rgba(194, 112, 62, 0.3);
+    }
+
+    .pm-btn-main:hover {
+      background: var(--pm-terracotta-light);
+      transform: scale(1.05);
+      box-shadow: 0 6px 24px rgba(194, 112, 62, 0.4);
+    }
+
+    .pm-btn-main:active {
+      transform: scale(0.97);
+    }
+
+    .pm-btn-main.is-break {
+      background: var(--pm-break-green);
+      box-shadow: 0 4px 20px rgba(107, 143, 113, 0.3);
+    }
+
+    .pm-btn-main.is-break:hover {
+      background: var(--pm-break-green-light);
+      box-shadow: 0 6px 24px rgba(107, 143, 113, 0.4);
+    }
+
+    .pm-btn-secondary {
+      width: 44px;
+      height: 44px;
+      background: var(--pm-cream);
+      color: var(--pm-charcoal-muted);
+      font-size: 16px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--pm-sand);
+    }
+
+    .pm-btn-secondary:hover {
+      background: var(--pm-sand-light);
+      color: var(--pm-charcoal);
+    }
+
+    .pm-sessions {
+      display: flex;
+      align-items: center;
+      gap: var(--nv-space-3);
+    }
+
+    .pm-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: var(--nv-radius-full);
+      background: var(--pm-sand);
+      transition: all 0.3s ease;
+    }
+
+    .pm-dot.filled {
+      background: var(--pm-terracotta);
+      box-shadow: 0 0 8px rgba(194, 112, 62, 0.4);
+    }
+
+    .pm-dot.active {
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--pm-terracotta);
+      background: transparent;
+    }
+
+    .pm-dot.active.is-break {
+      border-color: var(--pm-break-green);
+    }
+
+    .pm-stats {
+      width: 100%;
+      max-width: 360px;
+      background: var(--pm-cream);
+      border-radius: var(--nv-radius-xl);
+      padding: var(--nv-space-5) var(--nv-space-6);
+      display: flex;
+      justify-content: space-around;
+      border: 1px solid var(--pm-sand-light);
+    }
+
+    .pm-stat {
+      text-align: center;
+    }
+
+    .pm-stat-value {
+      font-family: var(--nv-font-display);
+      font-size: var(--nv-text-2xl);
+      font-weight: 600;
+      color: var(--pm-charcoal);
+    }
+
+    .pm-stat-label {
+      font-size: var(--nv-text-xs);
+      color: var(--pm-charcoal-muted);
+      letter-spacing: 0.06em;
+      margin-top: 2px;
+    }
+
+    .pm-settings-toggle {
+      font-size: var(--nv-text-sm);
+      color: var(--pm-charcoal-muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: var(--nv-font-sans);
+      letter-spacing: 0.04em;
+      padding: var(--nv-space-2) var(--nv-space-4);
+      border-radius: var(--nv-radius-full);
+      transition: all 0.2s ease;
+    }
+
+    .pm-settings-toggle:hover {
+      background: var(--pm-cream);
+      color: var(--pm-charcoal);
+    }
+
+    .pm-settings-panel {
+      width: 100%;
+      max-width: 360px;
+      background: var(--pm-cream);
+      border-radius: var(--nv-radius-xl);
+      padding: var(--nv-space-5) var(--nv-space-6);
+      border: 1px solid var(--pm-sand-light);
+      display: flex;
+      flex-direction: column;
+      gap: var(--nv-space-4);
+      animation: pm-fade-in 0.25s ease;
+    }
+
+    @keyframes pm-fade-in {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .pm-setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pm-setting-label {
+      font-size: var(--nv-text-sm);
+      color: var(--pm-charcoal-muted);
+    }
+
+    .pm-setting-control {
+      display: flex;
+      align-items: center;
+      gap: var(--nv-space-2);
+    }
+
+    .pm-stepper-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: var(--nv-radius-full);
+      border: 1px solid var(--pm-sand);
+      background: var(--pm-sand-pale);
+      color: var(--pm-charcoal-muted);
+      cursor: pointer;
+      font-size: 14px;
+      display: grid;
+      place-items: center;
+      transition: all 0.2s ease;
+    }
+
+    .pm-stepper-btn:hover {
+      background: var(--pm-sand);
+      color: var(--pm-charcoal);
+    }
+
+    .pm-stepper-value {
+      font-family: var(--nv-font-mono);
+      font-size: var(--nv-text-sm);
+      min-width: 40px;
+      text-align: center;
+      color: var(--pm-charcoal);
+    }
+
+    .pm-footer {
+      padding: var(--nv-space-6);
+      text-align: center;
+    }
+
+    .pm-footer-text {
+      font-size: var(--nv-text-xs);
+      color: var(--pm-charcoal-muted);
+      letter-spacing: 0.06em;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 480px) {
+      :root {
+        --pm-ring-size: 220px;
+      }
+      .pm-time {
+        font-size: 3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../js/novoid.min.js"></script>
+  <script>
+    const { signal, computed, effect, batch, h, mount } = Novoid;
+
+    // ── Constants ──
+    const STORAGE_KEY = 'pm_stats';
+    const CIRCLE_RADIUS = 126;
+    const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+
+    // ── Persistence ──
+    function loadStats() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return { date: todayKey(), sessions: 0, focusSeconds: 0 };
+        const data = JSON.parse(raw);
+        if (data.date !== todayKey()) return { date: todayKey(), sessions: 0, focusSeconds: 0 };
+        return data;
+      } catch (e) {
+        return { date: todayKey(), sessions: 0, focusSeconds: 0 };
+      }
+    }
+
+    function saveStats(stats) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
+    }
+
+    function todayKey() {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    // ── Audio ──
+    function playChime() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.2);
+          gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.2 + 0.05);
+          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.2 + 0.6);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + i * 0.2);
+          osc.stop(ctx.currentTime + i * 0.2 + 0.7);
+        });
+      } catch (e) { /* audio not available */ }
+    }
+
+    // ── State ──
+    const initialStats = loadStats();
+    const [workMinutes, setWorkMinutes] = signal(25);
+    const [breakMinutes, setBreakMinutes] = signal(5);
+    const [longBreakMinutes, setLongBreakMinutes] = signal(15);
+    const [isRunning, setIsRunning] = signal(false);
+    const [isBreak, setIsBreak] = signal(false);
+    const [secondsLeft, setSecondsLeft] = signal(25 * 60);
+    const [sessionsCompleted, setSessionsCompleted] = signal(initialStats.sessions);
+    const [totalFocusSeconds, setTotalFocusSeconds] = signal(initialStats.focusSeconds);
+    const [showSettings, setShowSettings] = signal(false);
+    const [isDark, setIsDark] = signal(false);
+    const [cyclePosition, setCyclePosition] = signal(0); // 0-3, resets after 4
+
+    // ── Derived ──
+    const totalDuration = computed(() => {
+      if (isBreak()) {
+        return cyclePosition() === 0 ? longBreakMinutes() * 60 : breakMinutes() * 60;
+      }
+      return workMinutes() * 60;
+    });
+
+    const progress = computed(() => {
+      const total = totalDuration();
+      if (total === 0) return 0;
+      return 1 - (secondsLeft() / total);
+    });
+
+    const dashOffset = computed(() => {
+      return CIRCUMFERENCE * (1 - progress());
+    });
+
+    const timeFormatted = computed(() => {
+      const s = secondsLeft();
+      const mins = Math.floor(s / 60);
+      const secs = s % 60;
+      return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    });
+
+    const focusTimeFormatted = computed(() => {
+      const total = totalFocusSeconds();
+      const hrs = Math.floor(total / 3600);
+      const mins = Math.floor((total % 3600) / 60);
+      if (hrs > 0) return hrs + 'h ' + mins + 'm';
+      return mins + 'm';
+    });
+
+    const currentModeLabel = computed(() => {
+      if (isBreak()) {
+        return cyclePosition() === 0 ? 'LONG BREAK' : 'SHORT BREAK';
+      }
+      return 'FOCUS';
+    });
+
+    // ── Timer logic ──
+    let timerInterval = null;
+
+    function startTimer() {
+      if (timerInterval) clearInterval(timerInterval);
+      setIsRunning(true);
+      timerInterval = setInterval(() => {
+        setSecondsLeft(s => {
+          if (s <= 1) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            handleTimerEnd();
+            return 0;
+          }
+          // Track focus time while working
+          if (!isBreak.peek()) {
+            setTotalFocusSeconds(t => t + 1);
+          }
+          return s - 1;
+        });
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      setIsRunning(false);
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      batch(() => {
+        setIsBreak(false);
+        setCyclePosition(0);
+        setSecondsLeft(workMinutes() * 60);
+      });
+    }
+
+    function handleTimerEnd() {
+      playChime();
+
+      batch(() => {
+        setIsRunning(false);
+        if (!isBreak.peek()) {
+          // Work session ended
+          const newSessions = sessionsCompleted.peek() + 1;
+          setSessionsCompleted(newSessions);
+          const newCycle = cyclePosition.peek() + 1;
+          const isLongBreak = newCycle % 4 === 0;
+          setCyclePosition(newCycle % 4);
+          setIsBreak(true);
+          setSecondsLeft(isLongBreak ? longBreakMinutes.peek() * 60 : breakMinutes.peek() * 60);
+        } else {
+          // Break ended
+          setIsBreak(false);
+          setSecondsLeft(workMinutes.peek() * 60);
+        }
+      });
+
+      // Auto-start next session
+      setTimeout(() => startTimer(), 1500);
+    }
+
+    function togglePlayPause() {
+      if (isRunning()) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    }
+
+    function skipSession() {
+      pauseTimer();
+      batch(() => {
+        if (!isBreak.peek()) {
+          // Skip work -> go to break
+          const newCycle = (cyclePosition.peek() + 1) % 4;
+          const isLongBreak = newCycle === 0 && cyclePosition.peek() === 3;
+          setCyclePosition(newCycle);
+          setIsBreak(true);
+          setSecondsLeft(isLongBreak ? longBreakMinutes.peek() * 60 : breakMinutes.peek() * 60);
+        } else {
+          // Skip break -> go to work
+          setIsBreak(false);
+          setSecondsLeft(workMinutes.peek() * 60);
+        }
+      });
+    }
+
+    // ── Persist stats ──
+    effect(() => {
+      const stats = {
+        date: todayKey(),
+        sessions: sessionsCompleted(),
+        focusSeconds: totalFocusSeconds()
+      };
+      saveStats(stats);
+    });
+
+    // ── Update document title ──
+    effect(() => {
+      const mode = isBreak() ? 'Break' : 'Focus';
+      document.title = timeFormatted() + ' — ' + mode + ' | Pomodoro';
+    });
+
+    // ── Dark mode ──
+    function toggleTheme() {
+      const next = !isDark();
+      setIsDark(next);
+      document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+    }
+
+    // ── Settings helpers ──
+    function adjustWork(delta) {
+      setWorkMinutes(m => Math.max(1, Math.min(90, m + delta)));
+      if (!isRunning() && !isBreak()) {
+        setSecondsLeft(workMinutes() * 60);
+      }
+    }
+
+    function adjustBreak(delta) {
+      setBreakMinutes(m => Math.max(1, Math.min(30, m + delta)));
+      if (!isRunning() && isBreak() && cyclePosition() !== 0) {
+        setSecondsLeft(breakMinutes() * 60);
+      }
+    }
+
+    function adjustLongBreak(delta) {
+      setLongBreakMinutes(m => Math.max(1, Math.min(45, m + delta)));
+      if (!isRunning() && isBreak() && cyclePosition() === 0) {
+        setSecondsLeft(longBreakMinutes() * 60);
+      }
+    }
+
+    // ── Render ──
+    mount('#app', () => {
+      return h('div', { style: { minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' } },
+
+        // Header
+        h('header', { class: 'pm-header' },
+          h('span', { class: 'pm-brand' }, 'pomodoro'),
+          h('button', {
+            class: 'pm-theme-btn',
+            onClick: toggleTheme,
+            'aria-label': 'Toggle theme'
+          }, () => isDark() ? '\u2600' : '\u263E')
+        ),
+
+        // Main
+        h('main', { class: 'pm-main' },
+
+          // Mode label
+          h('div', {
+            class: () => 'pm-mode-label' + (isBreak() ? ' is-break' : '')
+          }, () => currentModeLabel()),
+
+          // Ring
+          h('div', { class: 'pm-ring-container' },
+            (() => {
+              const svgNS = 'http://www.w3.org/2000/svg';
+              const svg = document.createElementNS(svgNS, 'svg');
+              svg.setAttribute('viewBox', '0 0 264 264');
+              svg.setAttribute('class', 'pm-ring-svg');
+
+              const track = document.createElementNS(svgNS, 'circle');
+              track.setAttribute('cx', '132');
+              track.setAttribute('cy', '132');
+              track.setAttribute('r', String(CIRCLE_RADIUS));
+              track.setAttribute('class', 'pm-ring-track');
+
+              const prog = document.createElementNS(svgNS, 'circle');
+              prog.setAttribute('cx', '132');
+              prog.setAttribute('cy', '132');
+              prog.setAttribute('r', String(CIRCLE_RADIUS));
+              prog.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
+
+              effect(() => {
+                prog.setAttribute('stroke-dashoffset', String(dashOffset()));
+                prog.setAttribute('class', 'pm-ring-progress' + (isBreak() ? ' is-break' : ''));
+              });
+
+              svg.appendChild(track);
+              svg.appendChild(prog);
+              return svg;
+            })(),
+
+            // Time display
+            h('div', { class: 'pm-time-display' },
+              h('div', { class: 'pm-time' }, () => timeFormatted()),
+              h('div', { class: 'pm-time-sub' }, () => isBreak() ? 'rest your eyes' : 'stay present')
+            )
+          ),
+
+          // Controls
+          h('div', { class: 'pm-controls' },
+            h('button', {
+              class: 'pm-btn pm-btn-secondary',
+              onClick: resetTimer,
+              'aria-label': 'Reset'
+            }, '\u21BA'),
+
+            h('button', {
+              class: () => 'pm-btn pm-btn-main' + (isBreak() ? ' is-break' : ''),
+              onClick: togglePlayPause,
+              'aria-label': () => isRunning() ? 'Pause' : 'Start'
+            }, () => isRunning() ? '\u275A\u275A' : '\u25B6'),
+
+            h('button', {
+              class: 'pm-btn pm-btn-secondary',
+              onClick: skipSession,
+              'aria-label': 'Skip'
+            }, '\u23ED')
+          ),
+
+          // Session dots
+          h('div', { class: 'pm-sessions' },
+            ...[0, 1, 2, 3].map(i =>
+              h('div', {
+                class: () => {
+                  const completed = sessionsCompleted();
+                  const inCycle = completed % 4;
+                  if (i < inCycle) return 'pm-dot filled';
+                  if (i === inCycle && !isBreak()) return 'pm-dot active' + (isBreak() ? ' is-break' : '');
+                  if (i === inCycle && isBreak()) return 'pm-dot filled';
+                  return 'pm-dot';
+                }
+              })
+            )
+          ),
+
+          // Stats
+          h('div', { class: 'pm-stats' },
+            h('div', { class: 'pm-stat' },
+              h('div', { class: 'pm-stat-value' }, () => String(sessionsCompleted())),
+              h('div', { class: 'pm-stat-label' }, 'sessions')
+            ),
+            h('div', { class: 'pm-stat' },
+              h('div', { class: 'pm-stat-value' }, () => focusTimeFormatted()),
+              h('div', { class: 'pm-stat-label' }, 'focus time')
+            )
+          ),
+
+          // Settings toggle
+          h('button', {
+            class: 'pm-settings-toggle',
+            onClick: () => setShowSettings(v => !v)
+          }, () => showSettings() ? '\u2715  close settings' : '\u2699  settings'),
+
+          // Settings panel
+          (() => {
+            const panel = h('div', {
+              class: 'pm-settings-panel',
+              show: showSettings
+            },
+              h('div', { class: 'pm-setting-row' },
+                h('span', { class: 'pm-setting-label' }, 'Focus'),
+                h('div', { class: 'pm-setting-control' },
+                  h('button', { class: 'pm-stepper-btn', onClick: () => adjustWork(-5) }, '\u2212'),
+                  h('span', { class: 'pm-stepper-value' }, () => workMinutes() + 'm'),
+                  h('button', { class: 'pm-stepper-btn', onClick: () => adjustWork(5) }, '+')
+                )
+              ),
+              h('div', { class: 'pm-setting-row' },
+                h('span', { class: 'pm-setting-label' }, 'Short break'),
+                h('div', { class: 'pm-setting-control' },
+                  h('button', { class: 'pm-stepper-btn', onClick: () => adjustBreak(-1) }, '\u2212'),
+                  h('span', { class: 'pm-stepper-value' }, () => breakMinutes() + 'm'),
+                  h('button', { class: 'pm-stepper-btn', onClick: () => adjustBreak(1) }, '+')
+                )
+              ),
+              h('div', { class: 'pm-setting-row' },
+                h('span', { class: 'pm-setting-label' }, 'Long break'),
+                h('div', { class: 'pm-setting-control' },
+                  h('button', { class: 'pm-stepper-btn', onClick: () => adjustLongBreak(-5) }, '\u2212'),
+                  h('span', { class: 'pm-stepper-value' }, () => longBreakMinutes() + 'm'),
+                  h('button', { class: 'pm-stepper-btn', onClick: () => adjustLongBreak(5) }, '+')
+                )
+              )
+            );
+            return panel;
+          })()
+        ),
+
+        // Footer
+        h('footer', { class: 'pm-footer' },
+          h('span', { class: 'pm-footer-text' }, 'built with no\u2205')
+        )
+      );
+    });
+  </script>
+</body>
+</html>

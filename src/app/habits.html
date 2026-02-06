@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Habit Garden | no∅</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/novoid.min.css">
+  <style>
+    :root {
+      --hg-green-50: #f0fdf4;
+      --hg-green-100: #dcfce7;
+      --hg-green-200: #bbf7d0;
+      --hg-green-300: #86efac;
+      --hg-green-400: #4ade80;
+      --hg-green-500: #22c55e;
+      --hg-green-600: #16a34a;
+      --hg-green-700: #166534;
+      --hg-green-800: #14532d;
+      --hg-cream: #fefce8;
+      --hg-cream-dark: #fef9c3;
+      --hg-earth: #78716c;
+      --hg-earth-light: #a8a29e;
+      --hg-earth-dark: #57534e;
+      --hg-bark: #44403c;
+      --hg-warmwhite: #faf7f2;
+    }
+
+    body {
+      background: var(--hg-cream);
+      color: var(--hg-bark);
+      font-family: var(--nv-font-sans);
+      margin: 0;
+      min-height: 100vh;
+      transition: background 0.4s ease, color 0.4s ease;
+    }
+
+    [data-theme="dark"] body,
+    [data-theme="dark"] {
+      --hg-cream: #1a1d14;
+      --hg-cream-dark: #252820;
+      --hg-warmwhite: #22251c;
+      --hg-bark: #e4e5d9;
+      --hg-earth: #a8a29e;
+      --hg-earth-light: #78716c;
+      --hg-earth-dark: #d6d3d1;
+      --hg-green-50: #1a2e1a;
+      --hg-green-100: #1f3a1f;
+      --hg-green-200: #2a4a2a;
+    }
+
+    .habit-app {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    /* Header */
+    .habit-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 0 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .habit-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .habit-logo-icon {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .habit-logo-text {
+      font-family: var(--nv-font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--hg-green-700);
+    }
+
+    .habit-logo-sub {
+      font-size: 0.8rem;
+      color: var(--hg-earth);
+      font-weight: 400;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Theme toggle */
+    .theme-toggle {
+      background: var(--hg-green-50);
+      border: 1px solid var(--hg-green-200);
+      border-radius: 9999px;
+      width: 2.5rem;
+      height: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+    }
+
+    .theme-toggle:hover {
+      background: var(--hg-green-100);
+      transform: rotate(20deg);
+    }
+
+    /* Stats bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: var(--hg-warmwhite);
+      border: 1px solid var(--hg-green-100);
+      border-radius: 1rem;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--hg-earth);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-family: var(--nv-font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--hg-green-600);
+      line-height: 1.2;
+    }
+
+    .stat-detail {
+      font-size: 0.75rem;
+      color: var(--hg-earth-light);
+    }
+
+    /* Calendar nav */
+    .calendar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .calendar-nav-btn {
+      background: var(--hg-green-50);
+      border: 1px solid var(--hg-green-200);
+      border-radius: 0.75rem;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      color: var(--hg-green-700);
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .calendar-nav-btn:hover {
+      background: var(--hg-green-100);
+    }
+
+    .calendar-date {
+      font-family: var(--nv-font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--hg-bark);
+      min-width: 200px;
+      text-align: center;
+    }
+
+    .calendar-today-btn {
+      background: var(--hg-green-500);
+      color: white;
+      border: none;
+      border-radius: 0.75rem;
+      padding: 0.4rem 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+    }
+
+    .calendar-today-btn:hover {
+      background: var(--hg-green-600);
+    }
+
+    /* Category pills */
+    .category-filters {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .category-pill {
+      border: 1.5px solid var(--hg-green-200);
+      background: var(--hg-warmwhite);
+      border-radius: 9999px;
+      padding: 0.35rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      color: var(--hg-earth-dark);
+      transition: all 0.2s ease;
+    }
+
+    .category-pill:hover {
+      border-color: var(--hg-green-400);
+      background: var(--hg-green-50);
+    }
+
+    .category-pill.active {
+      background: var(--hg-green-500);
+      color: white;
+      border-color: var(--hg-green-500);
+    }
+
+    /* Motivational message */
+    .motivation-banner {
+      background: linear-gradient(135deg, var(--hg-green-50), var(--hg-cream-dark));
+      border: 1px solid var(--hg-green-200);
+      border-radius: 1rem;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.95rem;
+      color: var(--hg-green-700);
+      font-weight: 500;
+    }
+
+    .motivation-emoji {
+      font-size: 1.5rem;
+    }
+
+    /* Habit list */
+    .habit-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+
+    .habit-item {
+      background: var(--hg-warmwhite);
+      border: 1.5px solid var(--hg-green-100);
+      border-radius: 1rem;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .habit-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--hg-green-300);
+      border-radius: 4px 0 0 4px;
+      transition: all 0.3s ease;
+    }
+
+    .habit-item.completed::before {
+      background: var(--hg-green-500);
+      width: 5px;
+    }
+
+    .habit-item.completed {
+      border-color: var(--hg-green-300);
+      background: var(--hg-green-50);
+    }
+
+    .habit-item:hover {
+      box-shadow: 0 2px 12px rgba(34, 197, 94, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .habit-check-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      border: 2.5px solid var(--hg-green-300);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .habit-check-btn:hover {
+      border-color: var(--hg-green-500);
+      background: var(--hg-green-50);
+    }
+
+    .habit-check-btn.checked {
+      background: var(--hg-green-500);
+      border-color: var(--hg-green-500);
+      animation: checkBounce 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .habit-check-btn.checked::after {
+      content: '\2713';
+      color: white;
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    @keyframes checkBounce {
+      0% { transform: scale(1); }
+      30% { transform: scale(1.25); }
+      50% { transform: scale(0.9); }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .habit-emoji {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    .habit-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .habit-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--hg-bark);
+      margin-bottom: 0.15rem;
+    }
+
+    .habit-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .habit-category-tag {
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: var(--hg-green-100);
+      color: var(--hg-green-700);
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+    }
+
+    .habit-frequency {
+      font-size: 0.75rem;
+      color: var(--hg-earth);
+    }
+
+    /* Streak vine */
+    .habit-streak {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1rem;
+      flex-shrink: 0;
+    }
+
+    .streak-count {
+      font-family: var(--nv-font-display);
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--hg-green-600);
+      line-height: 1;
+    }
+
+    .streak-vine {
+      display: flex;
+      align-items: center;
+      gap: 1px;
+    }
+
+    .vine-leaf {
+      display: inline-block;
+      font-size: 0.65rem;
+      opacity: 0.5;
+      transition: all 0.3s ease;
+    }
+
+    .vine-leaf.grown {
+      opacity: 1;
+      font-size: 0.8rem;
+    }
+
+    .streak-label {
+      font-size: 0.6rem;
+      color: var(--hg-earth-light);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    /* Habit actions */
+    .habit-actions {
+      display: flex;
+      gap: 0.25rem;
+      flex-shrink: 0;
+    }
+
+    .habit-action-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.35rem;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      color: var(--hg-earth-light);
+    }
+
+    .habit-action-btn:hover {
+      background: var(--hg-green-50);
+      color: var(--hg-green-600);
+    }
+
+    .habit-action-btn.danger:hover {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    /* Heatmap */
+    .heatmap-section {
+      background: var(--hg-warmwhite);
+      border: 1px solid var(--hg-green-100);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .heatmap-title {
+      font-family: var(--nv-font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--hg-bark);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: auto repeat(7, 1fr);
+      gap: 3px;
+      font-size: 0.7rem;
+    }
+
+    .heatmap-day-label {
+      color: var(--hg-earth-light);
+      font-size: 0.65rem;
+      font-weight: 500;
+      text-align: center;
+      padding-bottom: 0.25rem;
+    }
+
+    .heatmap-week-label {
+      color: var(--hg-earth-light);
+      font-size: 0.6rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      padding-right: 0.5rem;
+    }
+
+    .heatmap-cell {
+      aspect-ratio: 1;
+      border-radius: 0.3rem;
+      background: var(--hg-green-50);
+      border: 1px solid var(--hg-green-100);
+      min-width: 0;
+      transition: all 0.2s ease;
+      position: relative;
+      cursor: default;
+    }
+
+    .heatmap-cell.future {
+      opacity: 0.3;
+    }
+
+    .heatmap-cell.level-1 { background: var(--hg-green-200); border-color: var(--hg-green-200); }
+    .heatmap-cell.level-2 { background: var(--hg-green-300); border-color: var(--hg-green-300); }
+    .heatmap-cell.level-3 { background: var(--hg-green-400); border-color: var(--hg-green-400); }
+    .heatmap-cell.level-4 { background: var(--hg-green-500); border-color: var(--hg-green-500); }
+
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 0.75rem;
+      justify-content: flex-end;
+      font-size: 0.65rem;
+      color: var(--hg-earth-light);
+    }
+
+    .legend-cell {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+
+    /* Add button */
+    .add-habit-btn {
+      background: var(--hg-green-500);
+      color: white;
+      border: none;
+      border-radius: 1rem;
+      padding: 0.65rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: all 0.25s ease;
+      font-family: var(--nv-font-sans);
+    }
+
+    .add-habit-btn:hover {
+      background: var(--hg-green-600);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+
+    /* Modal */
+    .habit-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 400;
+      padding: 1rem;
+    }
+
+    .habit-modal-overlay.active {
+      display: flex;
+    }
+
+    .habit-modal {
+      background: var(--hg-warmwhite);
+      border-radius: 1.25rem;
+      width: 100%;
+      max-width: 440px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+      animation: modalIn 0.3s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .habit-modal-header {
+      padding: 1.25rem 1.5rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .habit-modal-title {
+      font-family: var(--nv-font-display);
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--hg-bark);
+    }
+
+    .habit-modal-close {
+      background: transparent;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--hg-earth);
+      padding: 0.25rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .habit-modal-close:hover {
+      background: var(--hg-green-50);
+      color: var(--hg-green-600);
+    }
+
+    .habit-modal-body {
+      padding: 0.75rem 1.5rem 1.5rem;
+    }
+
+    .form-field {
+      margin-bottom: 1rem;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--hg-bark);
+      margin-bottom: 0.35rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border: 1.5px solid var(--hg-green-200);
+      border-radius: 0.75rem;
+      background: var(--hg-cream);
+      font-size: 0.9rem;
+      font-family: var(--nv-font-sans);
+      color: var(--hg-bark);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--hg-green-500);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+    }
+
+    .form-input::placeholder {
+      color: var(--hg-earth-light);
+    }
+
+    .emoji-picker {
+      display: flex;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+
+    .emoji-option {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 0.5rem;
+      border: 1.5px solid var(--hg-green-100);
+      background: var(--hg-cream);
+      cursor: pointer;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .emoji-option:hover {
+      border-color: var(--hg-green-400);
+      background: var(--hg-green-50);
+      transform: scale(1.1);
+    }
+
+    .emoji-option.selected {
+      border-color: var(--hg-green-500);
+      background: var(--hg-green-100);
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+
+    .freq-options, .cat-options {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .freq-btn, .cat-btn {
+      border: 1.5px solid var(--hg-green-200);
+      background: var(--hg-cream);
+      border-radius: 0.75rem;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: var(--hg-earth-dark);
+      font-weight: 500;
+      font-family: var(--nv-font-sans);
+      transition: all 0.2s ease;
+    }
+
+    .freq-btn:hover, .cat-btn:hover {
+      border-color: var(--hg-green-400);
+      background: var(--hg-green-50);
+    }
+
+    .freq-btn.active, .cat-btn.active {
+      background: var(--hg-green-500);
+      color: white;
+      border-color: var(--hg-green-500);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 0.65rem;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-family: var(--nv-font-sans);
+      transition: all 0.2s ease;
+    }
+
+    .modal-btn-cancel {
+      background: var(--hg-cream);
+      border: 1.5px solid var(--hg-green-200);
+      color: var(--hg-earth-dark);
+    }
+
+    .modal-btn-cancel:hover {
+      background: var(--hg-green-50);
+    }
+
+    .modal-btn-save {
+      background: var(--hg-green-500);
+      border: none;
+      color: white;
+    }
+
+    .modal-btn-save:hover {
+      background: var(--hg-green-600);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--hg-earth);
+    }
+
+    .empty-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .empty-title {
+      font-family: var(--nv-font-display);
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--hg-bark);
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-desc {
+      font-size: 0.9rem;
+      max-width: 300px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.5;
+    }
+
+    /* Confirm dialog */
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+      padding: 1rem;
+    }
+
+    .confirm-overlay.active {
+      display: flex;
+    }
+
+    .confirm-dialog {
+      background: var(--hg-warmwhite);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+      animation: modalIn 0.25s ease;
+    }
+
+    .confirm-text {
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--hg-bark);
+      margin-bottom: 1.25rem;
+      line-height: 1.4;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    /* Footer */
+    .app-footer {
+      text-align: center;
+      padding: 2rem 0 1.5rem;
+      font-size: 0.75rem;
+      color: var(--hg-earth-light);
+    }
+
+    /* Best streak badge */
+    .best-streak-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      font-size: 0.65rem;
+      color: var(--hg-earth);
+      background: var(--hg-cream-dark);
+      padding: 0.1rem 0.4rem;
+      border-radius: 9999px;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .habit-header { flex-direction: column; align-items: flex-start; }
+      .header-actions { width: 100%; justify-content: flex-end; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+      .habit-item { flex-wrap: wrap; }
+      .habit-actions { margin-left: auto; }
+      .heatmap-grid { font-size: 0.6rem; }
+      .habit-streak { flex-direction: row; gap: 0.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../js/novoid.min.js"></script>
+  <script>
+    const { signal, computed, effect, batch, h, mount, list } = Novoid;
+
+    // ===================== DATA LAYER =====================
+
+    const STORAGE_KEY = 'habit-garden-data';
+    const CATEGORIES = ['All', 'Health', 'Productivity', 'Learning', 'Wellness'];
+    const EMOJIS = [
+      '\uD83C\uDFC3', '\uD83D\uDCDA', '\uD83E\uDDD8', '\uD83D\uDCA7', '\uD83C\uDF4E',
+      '\u270D\uFE0F', '\uD83D\uDCAA', '\uD83D\uDE34', '\uD83C\uDFB5', '\uD83C\uDF31',
+      '\uD83E\uDDE0', '\uD83D\uDCDD', '\uD83C\uDFAF', '\u2615', '\uD83E\uDD57',
+      '\uD83D\uDEB4', '\uD83D\uDEBF', '\uD83D\uDE4F', '\uD83D\uDE0A', '\uD83C\uDF1E'
+    ];
+
+    const MOTIVATIONAL_MESSAGES = {
+      0: { emoji: '\uD83C\uDF31', msg: 'Every garden starts with a single seed. Begin today!' },
+      1: { emoji: '\uD83C\uDF3F', msg: 'A sprout appears! Keep nurturing your habits.' },
+      3: { emoji: '\uD83C\uDF3B', msg: 'Your garden is blooming! 3 days strong.' },
+      7: { emoji: '\uD83C\uDF33', msg: 'A whole week! Your roots are growing deep.' },
+      14: { emoji: '\uD83C\uDF3A', msg: 'Two weeks of growth! Your garden is flourishing.' },
+      21: { emoji: '\uD83C\uDF38', msg: 'Three weeks! You are cultivating real change.' },
+      30: { emoji: '\uD83C\uDF3E', msg: 'A full month! Your garden is a masterpiece.' },
+      60: { emoji: '\uD83C\uDF05', msg: '60 days! You have built an extraordinary garden.' },
+      90: { emoji: '\uD83C\uDFC6', msg: '90 days! You are a master gardener.' },
+      100: { emoji: '\u2B50', msg: '100+ days! Legendary commitment. Truly inspiring.' },
+    };
+
+    function getMotivation(streak) {
+      const thresholds = [100, 90, 60, 30, 21, 14, 7, 3, 1, 0];
+      for (const t of thresholds) {
+        if (streak >= t) return MOTIVATIONAL_MESSAGES[t];
+      }
+      return MOTIVATIONAL_MESSAGES[0];
+    }
+
+    function dateKey(date) {
+      const d = new Date(date);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function today() {
+      return dateKey(new Date());
+    }
+
+    function addDays(dateStr, days) {
+      const d = new Date(dateStr + 'T12:00:00');
+      d.setDate(d.getDate() + days);
+      return dateKey(d);
+    }
+
+    function daysBetween(dateStr1, dateStr2) {
+      const d1 = new Date(dateStr1 + 'T12:00:00');
+      const d2 = new Date(dateStr2 + 'T12:00:00');
+      return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+    }
+
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
+      return d.toLocaleDateString('en-US', opts);
+    }
+
+    function formatDateShort(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function dayOfWeekShort(dateStr) {
+      const d = new Date(dateStr + 'T12:00:00');
+      return d.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+
+    // Load/Save
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return { habits: [], completions: {} };
+    }
+
+    function saveData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // Streak calculation
+    function calcStreak(habitId, completions) {
+      let streak = 0;
+      let d = today();
+      // Check if completed today
+      const todayKey = habitId + ':' + d;
+      if (!completions[todayKey]) {
+        // Check yesterday
+        d = addDays(d, -1);
+        if (!completions[habitId + ':' + d]) return 0;
+      }
+      while (completions[habitId + ':' + d]) {
+        streak++;
+        d = addDays(d, -1);
+      }
+      return streak;
+    }
+
+    function calcBestStreak(habitId, completions) {
+      // Collect all completion dates for this habit
+      const dates = [];
+      for (const key in completions) {
+        if (completions[key] && key.startsWith(habitId + ':')) {
+          dates.push(key.substring(habitId.length + 1));
+        }
+      }
+      if (dates.length === 0) return 0;
+      dates.sort();
+      let best = 1, current = 1;
+      for (let i = 1; i < dates.length; i++) {
+        if (daysBetween(dates[i - 1], dates[i]) === 1) {
+          current++;
+          if (current > best) best = current;
+        } else {
+          current = 1;
+        }
+      }
+      return best;
+    }
+
+    // ===================== STATE =====================
+
+    const stored = loadData();
+    const [habits, setHabits] = signal(stored.habits || []);
+    const [completions, setCompletions] = signal(stored.completions || {});
+    const [selectedDate, setSelectedDate] = signal(today());
+    const [selectedCategory, setSelectedCategory] = signal('All');
+    const [modalOpen, setModalOpen] = signal(false);
+    const [editingHabit, setEditingHabit] = signal(null);
+    const [confirmDeleteId, setConfirmDeleteId] = signal(null);
+    const [isDark, setIsDark] = signal(
+      localStorage.getItem('habit-garden-theme') === 'dark'
+    );
+
+    // Form state
+    const [formName, setFormName] = signal('');
+    const [formEmoji, setFormEmoji] = signal(EMOJIS[0]);
+    const [formFrequency, setFormFrequency] = signal('daily');
+    const [formCategory, setFormCategory] = signal('Health');
+
+    // Persist data
+    effect(() => {
+      saveData({ habits: habits(), completions: completions() });
+    });
+
+    // Dark mode
+    effect(() => {
+      const dark = isDark();
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      localStorage.setItem('habit-garden-theme', dark ? 'dark' : 'light');
+    });
+
+    // Computed values
+    const filteredHabits = computed(() => {
+      const cat = selectedCategory();
+      const h = habits();
+      if (cat === 'All') return h;
+      return h.filter(hb => hb.category === cat);
+    });
+
+    const todayCompletedCount = computed(() => {
+      const d = selectedDate();
+      const h = habits();
+      const c = completions();
+      return h.filter(hb => c[hb.id + ':' + d]).length;
+    });
+
+    const completionRate = computed(() => {
+      const h = habits();
+      if (h.length === 0) return 0;
+      const d = selectedDate();
+      const c = completions();
+      const done = h.filter(hb => c[hb.id + ':' + d]).length;
+      return Math.round((done / h.length) * 100);
+    });
+
+    const bestOverallStreak = computed(() => {
+      const c = completions();
+      const h = habits();
+      let best = 0;
+      for (const hb of h) {
+        const s = calcBestStreak(hb.id, c);
+        if (s > best) best = s;
+      }
+      return best;
+    });
+
+    const longestCurrentStreak = computed(() => {
+      const c = completions();
+      const h = habits();
+      let best = 0;
+      for (const hb of h) {
+        const s = calcStreak(hb.id, c);
+        if (s > best) best = s;
+      }
+      return best;
+    });
+
+    // ===================== ACTIONS =====================
+
+    function toggleCompletion(habitId) {
+      const d = selectedDate();
+      const key = habitId + ':' + d;
+      setCompletions(prev => {
+        const next = { ...prev };
+        next[key] = !next[key];
+        if (!next[key]) delete next[key];
+        return next;
+      });
+    }
+
+    function openAddModal() {
+      setEditingHabit(null);
+      setFormName('');
+      setFormEmoji(EMOJIS[0]);
+      setFormFrequency('daily');
+      setFormCategory('Health');
+      setModalOpen(true);
+    }
+
+    function openEditModal(habit) {
+      setEditingHabit(habit);
+      setFormName(habit.name);
+      setFormEmoji(habit.emoji);
+      setFormFrequency(habit.frequency);
+      setFormCategory(habit.category);
+      setModalOpen(true);
+    }
+
+    function saveHabit() {
+      const name = formName().trim();
+      if (!name) return;
+
+      const editing = editingHabit();
+      if (editing) {
+        setHabits(prev => prev.map(hb =>
+          hb.id === editing.id
+            ? { ...hb, name, emoji: formEmoji(), frequency: formFrequency(), category: formCategory() }
+            : hb
+        ));
+      } else {
+        const newHabit = {
+          id: 'h_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          name,
+          emoji: formEmoji(),
+          frequency: formFrequency(),
+          category: formCategory(),
+          createdAt: today()
+        };
+        setHabits(prev => [...prev, newHabit]);
+      }
+      setModalOpen(false);
+    }
+
+    function deleteHabit(id) {
+      setHabits(prev => prev.filter(hb => hb.id !== id));
+      // Clean up completions
+      setCompletions(prev => {
+        const next = {};
+        for (const key in prev) {
+          if (!key.startsWith(id + ':')) next[key] = prev[key];
+        }
+        return next;
+      });
+      setConfirmDeleteId(null);
+    }
+
+    function navigateDate(offset) {
+      setSelectedDate(prev => addDays(prev, offset));
+    }
+
+    function goToToday() {
+      setSelectedDate(today());
+    }
+
+    // ===================== COMPONENTS =====================
+
+    function renderHeader() {
+      return h('div', { class: 'habit-header' },
+        h('div', { class: 'habit-logo' },
+          h('span', { class: 'habit-logo-icon' }, '\uD83C\uDF3F'),
+          h('div', {},
+            h('div', { class: 'habit-logo-text' }, 'Habit Garden'),
+            h('div', { class: 'habit-logo-sub' }, 'Grow your daily rituals')
+          )
+        ),
+        h('div', { class: 'header-actions' },
+          h('button', {
+            class: 'add-habit-btn',
+            onClick: openAddModal
+          }, '\u002B', ' New Habit'),
+          h('button', {
+            class: 'theme-toggle',
+            onClick: () => setIsDark(d => !d),
+            title: 'Toggle theme'
+          }, () => isDark() ? '\uD83C\uDF1E' : '\uD83C\uDF19')
+        )
+      );
+    }
+
+    function renderStats() {
+      return h('div', { class: 'stats-bar' },
+        h('div', { class: 'stat-card' },
+          h('span', { class: 'stat-label' }, 'Completed Today'),
+          h('span', { class: 'stat-value' }, () => todayCompletedCount() + '/' + habits().length),
+          h('span', { class: 'stat-detail' }, 'habits done')
+        ),
+        h('div', { class: 'stat-card' },
+          h('span', { class: 'stat-label' }, 'Completion Rate'),
+          h('span', { class: 'stat-value' }, () => completionRate() + '%'),
+          h('div', { style: { marginTop: '0.35rem' } },
+            h('div', {
+              style: {
+                height: '4px',
+                borderRadius: '4px',
+                background: 'var(--hg-green-100)',
+                overflow: 'hidden'
+              }
+            },
+              h('div', {
+                style: () => ({
+                  height: '100%',
+                  borderRadius: '4px',
+                  background: 'var(--hg-green-500)',
+                  width: completionRate() + '%',
+                  transition: 'width 0.5s ease'
+                })
+              })
+            )
+          )
+        ),
+        h('div', { class: 'stat-card' },
+          h('span', { class: 'stat-label' }, 'Current Best'),
+          h('span', { class: 'stat-value' }, () => longestCurrentStreak() + ''),
+          h('span', { class: 'stat-detail' }, 'day streak')
+        ),
+        h('div', { class: 'stat-card' },
+          h('span', { class: 'stat-label' }, 'All-Time Best'),
+          h('span', { class: 'stat-value' }, () => bestOverallStreak() + ''),
+          h('span', { class: 'stat-detail' }, 'day streak record')
+        )
+      );
+    }
+
+    function renderCalendarNav() {
+      return h('div', { class: 'calendar-nav' },
+        h('button', {
+          class: 'calendar-nav-btn',
+          onClick: () => navigateDate(-1)
+        }, '\u2190'),
+        h('span', { class: 'calendar-date' }, () => {
+          const d = selectedDate();
+          if (d === today()) return '\uD83C\uDF1F Today \u2014 ' + formatDate(d);
+          return formatDate(d);
+        }),
+        h('button', {
+          class: 'calendar-nav-btn',
+          onClick: () => navigateDate(1)
+        }, '\u2192'),
+        h('button', {
+          class: 'calendar-today-btn',
+          onClick: goToToday,
+          show: () => selectedDate() !== today()
+        }, 'Today')
+      );
+    }
+
+    function renderCategoryFilters() {
+      const container = h('div', { class: 'category-filters' });
+      CATEGORIES.forEach(cat => {
+        container.appendChild(
+          h('button', {
+            class: () => 'category-pill' + (selectedCategory() === cat ? ' active' : ''),
+            onClick: () => setSelectedCategory(cat)
+          }, cat)
+        );
+      });
+      return container;
+    }
+
+    function renderMotivation() {
+      return h('div', {
+        class: 'motivation-banner',
+        show: () => habits().length > 0
+      },
+        h('span', { class: 'motivation-emoji' }, () => getMotivation(longestCurrentStreak()).emoji),
+        h('span', {}, () => getMotivation(longestCurrentStreak()).msg)
+      );
+    }
+
+    function renderStreakVine(habitId) {
+      const c = completions();
+      const streak = calcStreak(habitId, c);
+      const leaves = [];
+      const leafCount = Math.min(streak, 7);
+      for (let i = 0; i < 7; i++) {
+        leaves.push(
+          h('span', {
+            class: 'vine-leaf' + (i < leafCount ? ' grown' : '')
+          }, i < leafCount ? '\uD83C\uDF3F' : '\u00B7')
+        );
+      }
+      return h('div', { class: 'habit-streak' },
+        h('span', { class: 'streak-count' }, streak + ''),
+        h('div', { class: 'streak-vine' }, ...leaves),
+        h('span', { class: 'streak-label' }, 'streak')
+      );
+    }
+
+    function renderHabitItem(habit) {
+      const d = selectedDate;
+      const c = completions;
+
+      const isCompleted = () => !!c()[habit.id + ':' + d()];
+      const streak = () => calcStreak(habit.id, c());
+      const bestStr = () => calcBestStreak(habit.id, c());
+
+      return h('div', {
+        class: () => 'habit-item' + (isCompleted() ? ' completed' : '')
+      },
+        h('button', {
+          class: () => 'habit-check-btn' + (isCompleted() ? ' checked' : ''),
+          onClick: () => toggleCompletion(habit.id),
+          title: 'Toggle completion'
+        }),
+        h('span', { class: 'habit-emoji' }, habit.emoji),
+        h('div', { class: 'habit-info' },
+          h('div', { class: 'habit-name' }, habit.name),
+          h('div', { class: 'habit-meta' },
+            h('span', { class: 'habit-category-tag' }, habit.category),
+            h('span', { class: 'habit-frequency' }, habit.frequency),
+            h('span', { class: 'best-streak-badge', show: () => bestStr() > 0 },
+              '\uD83C\uDFC6 Best: ', () => bestStr() + 'd'
+            )
+          )
+        ),
+        h('div', { class: 'habit-streak' },
+          h('span', { class: 'streak-count' }, () => streak() + ''),
+          h('div', { class: 'streak-vine' },
+            ...Array.from({ length: 7 }, (_, i) =>
+              h('span', {
+                class: () => 'vine-leaf' + (i < Math.min(streak(), 7) ? ' grown' : '')
+              }, () => i < Math.min(streak(), 7) ? '\uD83C\uDF3F' : '\u00B7')
+            )
+          ),
+          h('span', { class: 'streak-label' }, 'streak')
+        ),
+        h('div', { class: 'habit-actions' },
+          h('button', {
+            class: 'habit-action-btn',
+            onClick: () => openEditModal(habit),
+            title: 'Edit'
+          }, '\u270E'),
+          h('button', {
+            class: 'habit-action-btn danger',
+            onClick: () => setConfirmDeleteId(habit.id),
+            title: 'Delete'
+          }, '\uD83D\uDDD1')
+        )
+      );
+    }
+
+    function renderHabitList() {
+      const container = h('div', { class: 'habit-list' });
+
+      // Empty states created once, toggled via show
+      const emptyAll = h('div', {
+        class: 'empty-state',
+        show: () => habits().length === 0
+      },
+        h('div', { class: 'empty-icon' }, '\uD83C\uDF31'),
+        h('div', { class: 'empty-title' }, 'Plant your first habit'),
+        h('div', { class: 'empty-desc' }, 'Start growing your garden by adding a habit. Each day you complete it, your streak vine grows stronger.'),
+        h('button', {
+          class: 'add-habit-btn',
+          onClick: openAddModal,
+          style: { margin: '0 auto' }
+        }, '\u002B', ' Add First Habit')
+      );
+
+      const emptyCategory = h('div', {
+        class: 'empty-state',
+        show: () => habits().length > 0 && filteredHabits().length === 0
+      },
+        h('div', { class: 'empty-icon' }, '\uD83D\uDD0D'),
+        h('div', { class: 'empty-title' }, 'No habits in this category'),
+        h('div', { class: 'empty-desc' }, 'Try selecting a different category or add a new habit.')
+      );
+
+      container.appendChild(emptyAll);
+      container.appendChild(emptyCategory);
+
+      // Keyed list — reuses DOM nodes, never destroys inputs
+      const listContainer = h('div', {});
+      listContainer.style.display = 'flex';
+      listContainer.style.flexDirection = 'column';
+      listContainer.style.gap = '0.75rem';
+      effect(() => {
+        listContainer.style.display = filteredHabits().length > 0 ? 'flex' : 'none';
+      });
+      container.appendChild(listContainer);
+
+      list(listContainer, filteredHabits, hb => hb.id, (habit) => renderHabitItem(habit));
+
+      return container;
+    }
+
+    function renderHeatmap() {
+      const section = h('div', {
+        class: 'heatmap-section',
+        show: () => habits().length > 0
+      });
+
+      const titleEl = h('div', { class: 'heatmap-title' },
+        '\uD83C\uDF3E',
+        ' Growth Map \u2014 Last 4 Weeks'
+      );
+      section.appendChild(titleEl);
+
+      const gridContainer = h('div', {});
+      section.appendChild(gridContainer);
+
+      // Legend is static — create once outside the effect
+      const legend = h('div', { class: 'heatmap-legend' },
+        h('span', {}, 'Less'),
+        h('div', { class: 'legend-cell', style: { background: 'var(--hg-green-50)', border: '1px solid var(--hg-green-100)' } }),
+        h('div', { class: 'legend-cell', style: { background: 'var(--hg-green-200)' } }),
+        h('div', { class: 'legend-cell', style: { background: 'var(--hg-green-300)' } }),
+        h('div', { class: 'legend-cell', style: { background: 'var(--hg-green-400)' } }),
+        h('div', { class: 'legend-cell', style: { background: 'var(--hg-green-500)' } }),
+        h('span', {}, 'More')
+      );
+
+      effect(() => {
+        const h_list = habits();
+        const c = completions();
+
+        if (h_list.length === 0) {
+          gridContainer.replaceChildren();
+          return;
+        }
+
+        const grid = h('div', { class: 'heatmap-grid' });
+        const todayStr = today();
+
+        // Calculate 28-day range ending today
+        const endDate = todayStr;
+        const startDate = addDays(endDate, -27);
+
+        // Day labels row
+        grid.appendChild(h('div', {})); // empty corner
+        const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        dayNames.forEach(d => {
+          grid.appendChild(h('div', { class: 'heatmap-day-label' }, d));
+        });
+
+        // Find the Monday on or before startDate
+        const startD = new Date(startDate + 'T12:00:00');
+        const dayOfWeek = startD.getDay();
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const gridStart = addDays(startDate, mondayOffset);
+
+        // Generate 4 weeks of rows
+        for (let week = 0; week < 4; week++) {
+          const weekStart = addDays(gridStart, week * 7);
+          grid.appendChild(
+            h('div', { class: 'heatmap-week-label' }, formatDateShort(weekStart))
+          );
+
+          for (let day = 0; day < 7; day++) {
+            const cellDate = addDays(gridStart, week * 7 + day);
+            const isFuture = daysBetween(todayStr, cellDate) > 0;
+
+            // Count completions for this date
+            let completedCount = 0;
+            for (const hb of h_list) {
+              if (c[hb.id + ':' + cellDate]) completedCount++;
+            }
+
+            const ratio = h_list.length > 0 ? completedCount / h_list.length : 0;
+            let level = '';
+            if (ratio > 0 && ratio <= 0.25) level = ' level-1';
+            else if (ratio > 0.25 && ratio <= 0.5) level = ' level-2';
+            else if (ratio > 0.5 && ratio <= 0.75) level = ' level-3';
+            else if (ratio > 0.75) level = ' level-4';
+
+            grid.appendChild(
+              h('div', {
+                class: 'heatmap-cell' + level + (isFuture ? ' future' : ''),
+                title: formatDateShort(cellDate) + ': ' + completedCount + '/' + h_list.length + ' habits'
+              })
+            );
+          }
+        }
+
+        // Build complete content, then swap in one operation
+        gridContainer.replaceChildren(grid, legend);
+      });
+
+      return section;
+    }
+
+    function renderModal() {
+      const overlay = h('div', {
+        class: () => 'habit-modal-overlay' + (modalOpen() ? ' active' : ''),
+        onClick: (e) => { if (e.target === overlay) setModalOpen(false); }
+      });
+
+      const modal = h('div', { class: 'habit-modal' },
+        h('div', { class: 'habit-modal-header' },
+          h('span', { class: 'habit-modal-title' }, () => editingHabit() ? 'Edit Habit' : 'Plant a New Habit'),
+          h('button', { class: 'habit-modal-close', onClick: () => setModalOpen(false) }, '\u2715')
+        ),
+        h('div', { class: 'habit-modal-body' },
+          // Name
+          h('div', { class: 'form-field' },
+            h('label', { class: 'form-label' }, 'Habit Name'),
+            h('input', {
+              class: 'form-input',
+              placeholder: 'e.g., Drink 8 glasses of water',
+              bind: [formName, setFormName],
+              onKeydown: (e) => { if (e.key === 'Enter') saveHabit(); }
+            })
+          ),
+          // Emoji
+          h('div', { class: 'form-field' },
+            h('label', { class: 'form-label' }, 'Icon'),
+            (() => {
+              const picker = h('div', { class: 'emoji-picker' });
+              EMOJIS.forEach(em => {
+                picker.appendChild(
+                  h('button', {
+                    class: () => 'emoji-option' + (formEmoji() === em ? ' selected' : ''),
+                    type: 'button',
+                    onClick: () => setFormEmoji(em)
+                  }, em)
+                );
+              });
+              return picker;
+            })()
+          ),
+          // Frequency
+          h('div', { class: 'form-field' },
+            h('label', { class: 'form-label' }, 'Frequency'),
+            h('div', { class: 'freq-options' },
+              h('button', {
+                class: () => 'freq-btn' + (formFrequency() === 'daily' ? ' active' : ''),
+                type: 'button',
+                onClick: () => setFormFrequency('daily')
+              }, 'Daily'),
+              h('button', {
+                class: () => 'freq-btn' + (formFrequency() === 'weekly' ? ' active' : ''),
+                type: 'button',
+                onClick: () => setFormFrequency('weekly')
+              }, 'Weekly')
+            )
+          ),
+          // Category
+          h('div', { class: 'form-field' },
+            h('label', { class: 'form-label' }, 'Category'),
+            h('div', { class: 'cat-options' },
+              ...CATEGORIES.filter(c => c !== 'All').map(cat =>
+                h('button', {
+                  class: () => 'cat-btn' + (formCategory() === cat ? ' active' : ''),
+                  type: 'button',
+                  onClick: () => setFormCategory(cat)
+                }, cat)
+              )
+            )
+          ),
+          // Actions
+          h('div', { class: 'modal-actions' },
+            h('button', {
+              class: 'modal-btn modal-btn-cancel',
+              onClick: () => setModalOpen(false)
+            }, 'Cancel'),
+            h('button', {
+              class: 'modal-btn modal-btn-save',
+              onClick: saveHabit
+            }, () => editingHabit() ? 'Save Changes' : 'Plant Habit')
+          )
+        )
+      );
+
+      overlay.appendChild(modal);
+      return overlay;
+    }
+
+    function renderConfirmDialog() {
+      const overlay = h('div', {
+        class: () => 'confirm-overlay' + (confirmDeleteId() ? ' active' : ''),
+        onClick: (e) => { if (e.target === overlay) setConfirmDeleteId(null); }
+      });
+
+      const dialog = h('div', { class: 'confirm-dialog' },
+        h('div', { style: { fontSize: '2.5rem', marginBottom: '0.75rem' } }, '\uD83C\uDF42'),
+        h('div', { class: 'confirm-text' }, 'Remove this habit from your garden? This will also remove all its history.'),
+        h('div', { class: 'confirm-actions' },
+          h('button', {
+            class: 'modal-btn modal-btn-cancel',
+            onClick: () => setConfirmDeleteId(null)
+          }, 'Keep It'),
+          h('button', {
+            class: 'modal-btn modal-btn-save',
+            style: { background: '#dc2626' },
+            onClick: () => deleteHabit(confirmDeleteId())
+          }, 'Remove')
+        )
+      );
+
+      overlay.appendChild(dialog);
+      return overlay;
+    }
+
+    function renderFooter() {
+      return h('div', { class: 'app-footer' },
+        'Built with ', h('span', { style: { color: 'var(--hg-green-500)' } }, 'no\u2205'),
+        ' \u2014 Grow a little each day'
+      );
+    }
+
+    // ===================== MOUNT =====================
+
+    mount('#app', () => {
+      return h('div', { class: 'habit-app' },
+        renderHeader(),
+        renderStats(),
+        renderCalendarNav(),
+        renderMotivation(),
+        renderCategoryFilters(),
+        renderHabitList(),
+        renderHeatmap(),
+        renderFooter(),
+        renderModal(),
+        renderConfirmDialog()
+      );
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>no∅ — Bookmarks</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/novoid.min.css">
+  <style>
+    :root {
+      --bm-bg: #111113;
+      --bm-surface: #18181b;
+      --bm-surface2: #1c1c1f;
+      --bm-border: #222226;
+      --bm-border-hover: #333338;
+      --bm-border-focus: #8b5cf6;
+      --bm-text: #ececef;
+      --bm-text-dim: #8e8e96;
+      --bm-text-faint: #52525a;
+      --bm-accent: #8b5cf6;
+      --bm-accent-hover: #a78bfa;
+      --bm-accent-subtle: rgba(139, 92, 246, 0.12);
+      --bm-accent-muted: rgba(139, 92, 246, 0.08);
+      --bm-danger: #ef4444;
+      --bm-danger-subtle: rgba(239, 68, 68, 0.12);
+      --bm-success: #22c55e;
+      --bm-success-subtle: rgba(34, 197, 94, 0.12);
+      --bm-warning: #eab308;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bm-bg);
+      color: var(--bm-text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--bm-border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--bm-border-hover); }
+
+    /* ── Header ── */
+    .bm-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 52px;
+      background: var(--bm-surface);
+      border-bottom: 1px solid var(--bm-border);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    .bm-brand {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .bm-brand-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--bm-accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #fff;
+    }
+    .bm-brand span { color: var(--bm-accent); }
+    .bm-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ── Layout ── */
+    .bm-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: calc(100vh - 52px);
+    }
+    @media (max-width: 768px) {
+      .bm-layout { grid-template-columns: 1fr; }
+      .bm-sidebar { display: none; }
+      .bm-sidebar.mobile-open {
+        display: flex;
+        position: fixed;
+        top: 52px;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        z-index: 300;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+      }
+    }
+
+    /* ── Sidebar ── */
+    .bm-sidebar {
+      background: var(--bm-surface);
+      border-right: 1px solid var(--bm-border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 0.75rem 0;
+    }
+    .bm-sidebar-section {
+      padding: 0 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+    .bm-sidebar-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--bm-text-faint);
+      padding: 0.5rem 0.75rem 0.35rem;
+    }
+    .bm-sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.825rem;
+      color: var(--bm-text-dim);
+      cursor: pointer;
+      transition: all 150ms;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+    }
+    .bm-sidebar-item:hover {
+      background: var(--bm-accent-muted);
+      color: var(--bm-text);
+    }
+    .bm-sidebar-item.active {
+      background: var(--bm-accent-subtle);
+      color: var(--bm-accent);
+    }
+    .bm-sidebar-item .count {
+      margin-left: auto;
+      font-size: 0.7rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--bm-text-faint);
+      background: rgba(255,255,255,0.04);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .bm-sidebar-item .icon {
+      font-size: 0.9rem;
+      width: 20px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .bm-sidebar-divider {
+      height: 1px;
+      background: var(--bm-border);
+      margin: 0.5rem 0.75rem;
+    }
+    .bm-add-collection {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.75rem;
+      color: var(--bm-text-faint);
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: inherit;
+      transition: color 150ms;
+    }
+    .bm-add-collection:hover { color: var(--bm-accent); }
+
+    /* ── Main Content ── */
+    .bm-main {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      max-height: calc(100vh - 52px);
+    }
+
+    /* ── Toolbar ── */
+    .bm-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      border-bottom: 1px solid var(--bm-border);
+      background: var(--bm-surface);
+      flex-wrap: wrap;
+    }
+    .bm-search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 200px;
+      max-width: 480px;
+    }
+    .bm-search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.85rem;
+      color: var(--bm-text-faint);
+      pointer-events: none;
+    }
+    .bm-search {
+      width: 100%;
+      padding: 0.45rem 0.75rem 0.45rem 2rem;
+      background: var(--bm-bg);
+      border: 1px solid var(--bm-border);
+      border-radius: 8px;
+      color: var(--bm-text);
+      font-family: inherit;
+      font-size: 0.825rem;
+      outline: none;
+      transition: border-color 150ms;
+    }
+    .bm-search::placeholder { color: var(--bm-text-faint); }
+    .bm-search:focus { border-color: var(--bm-accent); }
+    .bm-search-kbd {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--bm-text-faint);
+      background: var(--bm-surface);
+      border: 1px solid var(--bm-border);
+      padding: 1px 5px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+    .bm-toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* ── Small buttons ── */
+    .bm-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.65rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--bm-text-dim);
+      background: transparent;
+      border: 1px solid var(--bm-border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 150ms;
+      white-space: nowrap;
+    }
+    .bm-btn:hover {
+      background: var(--bm-surface2);
+      border-color: var(--bm-border-hover);
+      color: var(--bm-text);
+    }
+    .bm-btn.active {
+      background: var(--bm-accent-subtle);
+      border-color: var(--bm-accent);
+      color: var(--bm-accent);
+    }
+    .bm-btn-primary {
+      background: var(--bm-accent);
+      border-color: var(--bm-accent);
+      color: #fff;
+    }
+    .bm-btn-primary:hover {
+      background: var(--bm-accent-hover);
+      border-color: var(--bm-accent-hover);
+      color: #fff;
+    }
+    .bm-btn-danger {
+      color: var(--bm-danger);
+      border-color: var(--bm-danger);
+    }
+    .bm-btn-danger:hover {
+      background: var(--bm-danger-subtle);
+      color: var(--bm-danger);
+    }
+    .bm-btn-ghost {
+      border: none;
+      padding: 0.35rem;
+    }
+    .bm-btn-ghost:hover {
+      background: var(--bm-accent-muted);
+      border: none;
+    }
+    .bm-btn-icon {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+    }
+
+    /* ── Content Area ── */
+    .bm-content {
+      padding: 1rem 1.5rem;
+      flex: 1;
+    }
+    .bm-content-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .bm-content-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .bm-content-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--bm-text-faint);
+      background: rgba(255,255,255,0.04);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* ── Grid View ── */
+    .bm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.75rem;
+    }
+
+    /* ── Bookmark Card ── */
+    .bm-card {
+      background: var(--bm-surface);
+      border: 1px solid var(--bm-border);
+      border-radius: 10px;
+      padding: 0.875rem;
+      transition: all 200ms;
+      cursor: default;
+      position: relative;
+    }
+    .bm-card:hover {
+      border-color: var(--bm-border-hover);
+      background: var(--bm-surface2);
+    }
+    .bm-card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .bm-card-favicon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--bm-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid var(--bm-border);
+    }
+    .bm-card-favicon img {
+      width: 18px;
+      height: 18px;
+    }
+    .bm-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .bm-card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--bm-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .bm-card-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--bm-text-faint);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px;
+    }
+    .bm-card-desc {
+      font-size: 0.78rem;
+      color: var(--bm-text-dim);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+    .bm-card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      margin-bottom: 0.5rem;
+    }
+    .bm-card-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      opacity: 0;
+      transition: opacity 150ms;
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+    }
+    .bm-card:hover .bm-card-actions { opacity: 1; }
+    .bm-card-date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--bm-text-faint);
+    }
+    .bm-card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .bm-card-collection {
+      font-size: 0.65rem;
+      color: var(--bm-text-faint);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* ── List View ── */
+    .bm-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: var(--bm-border);
+      border: 1px solid var(--bm-border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .bm-list-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.875rem;
+      background: var(--bm-surface);
+      transition: background 150ms;
+    }
+    .bm-list-item:hover {
+      background: var(--bm-surface2);
+    }
+    .bm-list-favicon {
+      width: 24px;
+      height: 24px;
+      border-radius: 5px;
+      background: var(--bm-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid var(--bm-border);
+    }
+    .bm-list-favicon img { width: 16px; height: 16px; }
+    .bm-list-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .bm-list-title {
+      font-size: 0.825rem;
+      font-weight: 500;
+      color: var(--bm-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 150px;
+      max-width: 250px;
+    }
+    .bm-list-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--bm-text-faint);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .bm-list-tags {
+      display: flex;
+      gap: 0.25rem;
+      flex-shrink: 0;
+    }
+    .bm-list-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      opacity: 0;
+      transition: opacity 150ms;
+      flex-shrink: 0;
+    }
+    .bm-list-item:hover .bm-list-actions { opacity: 1; }
+    .bm-list-date {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--bm-text-faint);
+      flex-shrink: 0;
+      min-width: 60px;
+      text-align: right;
+    }
+
+    /* ── Tag Pills ── */
+    .bm-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 8px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 150ms;
+      border: none;
+      font-family: inherit;
+      line-height: 1.6;
+    }
+    .bm-tag:hover { filter: brightness(1.2); }
+    .bm-tag-remove {
+      margin-left: 4px;
+      font-size: 0.6rem;
+      opacity: 0.6;
+      cursor: pointer;
+    }
+    .bm-tag-remove:hover { opacity: 1; }
+
+    /* ── Modal ── */
+    .bm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 400;
+      animation: bm-fade-in 150ms ease;
+    }
+    .bm-modal {
+      background: var(--bm-surface);
+      border: 1px solid var(--bm-border);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 520px;
+      max-height: 85vh;
+      overflow-y: auto;
+      animation: bm-scale-in 200ms ease;
+    }
+    .bm-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--bm-border);
+    }
+    .bm-modal-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .bm-modal-close {
+      background: none;
+      border: none;
+      color: var(--bm-text-faint);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.2rem;
+      border-radius: 4px;
+      transition: all 150ms;
+    }
+    .bm-modal-close:hover { color: var(--bm-text); background: var(--bm-accent-muted); }
+    .bm-modal-body { padding: 1.25rem; }
+    .bm-modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-top: 1px solid var(--bm-border);
+    }
+
+    /* ── Form Fields ── */
+    .bm-field { margin-bottom: 0.875rem; }
+    .bm-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--bm-text-dim);
+      margin-bottom: 0.35rem;
+    }
+    .bm-input {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      background: var(--bm-bg);
+      border: 1px solid var(--bm-border);
+      border-radius: 8px;
+      color: var(--bm-text);
+      font-family: inherit;
+      font-size: 0.825rem;
+      outline: none;
+      transition: border-color 150ms;
+    }
+    .bm-input:focus { border-color: var(--bm-accent); }
+    .bm-input::placeholder { color: var(--bm-text-faint); }
+    .bm-textarea {
+      min-height: 4rem;
+      resize: vertical;
+    }
+    .bm-select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2352525a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 2rem;
+    }
+
+    /* ── Empty State ── */
+    .bm-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+      color: var(--bm-text-faint);
+      text-align: center;
+    }
+    .bm-empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.3;
+    }
+    .bm-empty-text {
+      font-size: 0.85rem;
+      margin-bottom: 0.25rem;
+    }
+    .bm-empty-sub {
+      font-size: 0.75rem;
+      color: var(--bm-text-faint);
+    }
+
+    /* ── Tag Cloud (sidebar) ── */
+    .bm-tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+      padding: 0.35rem 0.75rem;
+    }
+
+    /* ── Toast ── */
+    .bm-toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 600;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .bm-toast {
+      background: var(--bm-surface);
+      border: 1px solid var(--bm-border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      color: var(--bm-text);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      animation: bm-slide-up 200ms ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .bm-toast-success { border-left: 3px solid var(--bm-success); }
+    .bm-toast-danger { border-left: 3px solid var(--bm-danger); }
+    .bm-toast-info { border-left: 3px solid var(--bm-accent); }
+
+    /* ── Inline collection input ── */
+    .bm-inline-input {
+      background: var(--bm-bg);
+      border: 1px solid var(--bm-accent);
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.78rem;
+      color: var(--bm-text);
+      font-family: inherit;
+      outline: none;
+      width: calc(100% - 1.5rem);
+      margin: 0.15rem 0.75rem;
+    }
+
+    /* ── Animations ── */
+    @keyframes bm-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes bm-scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    @keyframes bm-slide-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── File import hidden ── */
+    .bm-file-hidden { display: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .bm-toolbar { padding: 0.5rem 1rem; }
+      .bm-content { padding: 0.75rem 1rem; }
+      .bm-grid { grid-template-columns: 1fr; }
+      .bm-list-url { display: none; }
+      .bm-list-tags { display: none; }
+      .bm-list-date { display: none; }
+      .bm-search-kbd { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../js/novoid.min.js"></script>
+  <script>
+    const { signal, computed, effect, batch, h, mount, ref } = Novoid;
+
+    /* ═══════════════════════════════════════════
+       Data Layer — localStorage persistence
+       ═══════════════════════════════════════════ */
+
+    const STORAGE_KEY = 'novoid_bookmarks';
+    const COLLECTIONS_KEY = 'novoid_bm_collections';
+
+    function loadBookmarks() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch { return []; }
+    }
+
+    function saveBookmarks(bmarks) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(bmarks));
+    }
+
+    function loadCollections() {
+      try {
+        const raw = localStorage.getItem(COLLECTIONS_KEY);
+        return raw ? JSON.parse(raw) : ['Reading List', 'Work', 'Inspiration'];
+      } catch { return ['Reading List', 'Work', 'Inspiration']; }
+    }
+
+    function saveCollections(cols) {
+      localStorage.setItem(COLLECTIONS_KEY, JSON.stringify(cols));
+    }
+
+    /* ═══════════════════════════════════════════
+       Tag Colors — deterministic from tag name
+       ═══════════════════════════════════════════ */
+
+    const TAG_PALETTES = [
+      { bg: 'rgba(139,92,246,0.15)', color: '#a78bfa' },
+      { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa' },
+      { bg: 'rgba(34,197,94,0.15)',  color: '#4ade80' },
+      { bg: 'rgba(234,179,8,0.15)',  color: '#facc15' },
+      { bg: 'rgba(239,68,68,0.15)',  color: '#f87171' },
+      { bg: 'rgba(236,72,153,0.15)', color: '#f472b6' },
+      { bg: 'rgba(20,184,166,0.15)', color: '#2dd4bf' },
+      { bg: 'rgba(249,115,22,0.15)', color: '#fb923c' },
+      { bg: 'rgba(168,85,247,0.15)', color: '#c084fc' },
+      { bg: 'rgba(6,182,212,0.15)',  color: '#22d3ee' },
+    ];
+
+    function tagColor(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = ((hash << 5) - hash) + name.charCodeAt(i);
+        hash |= 0;
+      }
+      return TAG_PALETTES[Math.abs(hash) % TAG_PALETTES.length];
+    }
+
+    function extractDomain(url) {
+      try {
+        return new URL(url).hostname;
+      } catch {
+        return url;
+      }
+    }
+
+    function faviconUrl(url) {
+      const domain = extractDomain(url);
+      return 'https://www.google.com/s2/favicons?domain=' + encodeURIComponent(domain) + '&sz=32';
+    }
+
+    function formatDate(ts) {
+      const d = new Date(ts);
+      const now = new Date();
+      const diff = now - d;
+      if (diff < 60000) return 'just now';
+      if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+      if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+      if (diff < 604800000) return Math.floor(diff / 86400000) + 'd ago';
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    /* ═══════════════════════════════════════════
+       Signals (app state)
+       ═══════════════════════════════════════════ */
+
+    const [bookmarks, setBookmarks] = signal(loadBookmarks());
+    const [collections, setCollections] = signal(loadCollections());
+    const [searchQuery, setSearchQuery] = signal('');
+    const [activeCollection, setActiveCollection] = signal('all');
+    const [activeTag, setActiveTag] = signal('');
+    const [sortMode, setSortMode] = signal('newest');
+    const [viewMode, setViewMode] = signal('grid');
+    const [modalOpen, setModalOpen] = signal(false);
+    const [editingId, setEditingId] = signal(null);
+    const [deleteConfirmId, setDeleteConfirmId] = signal(null);
+    const [addingCollection, setAddingCollection] = signal(false);
+    const [importModalOpen, setImportModalOpen] = signal(false);
+    const [collectionModalOpen, setCollectionModalOpen] = signal(false);
+    const [renamingCollection, setRenamingCollection] = signal(null);
+
+    // Form signals
+    const [formUrl, setFormUrl] = signal('');
+    const [formTitle, setFormTitle] = signal('');
+    const [formDesc, setFormDesc] = signal('');
+    const [formTags, setFormTags] = signal('');
+    const [formCollection, setFormCollection] = signal('');
+
+    // Persist
+    effect(() => { saveBookmarks(bookmarks()); });
+    effect(() => { saveCollections(collections()); });
+
+    /* ═══════════════════════════════════════════
+       Derived State
+       ═══════════════════════════════════════════ */
+
+    const allTags = computed(() => {
+      const tagSet = {};
+      bookmarks().forEach(b => {
+        (b.tags || []).forEach(t => {
+          tagSet[t] = (tagSet[t] || 0) + 1;
+        });
+      });
+      return Object.entries(tagSet).sort((a, b) => b[1] - a[1]);
+    });
+
+    const filteredBookmarks = computed(() => {
+      let list = bookmarks();
+      const q = searchQuery().toLowerCase().trim();
+      const col = activeCollection();
+      const tag = activeTag();
+
+      // Filter by collection
+      if (col !== 'all' && col !== 'unorganized') {
+        list = list.filter(b => b.collection === col);
+      } else if (col === 'unorganized') {
+        list = list.filter(b => !b.collection);
+      }
+
+      // Filter by tag
+      if (tag) {
+        list = list.filter(b => (b.tags || []).includes(tag));
+      }
+
+      // Filter by search
+      if (q) {
+        list = list.filter(b => {
+          return (b.title || '').toLowerCase().includes(q)
+            || (b.url || '').toLowerCase().includes(q)
+            || (b.description || '').toLowerCase().includes(q)
+            || (b.tags || []).some(t => t.toLowerCase().includes(q));
+        });
+      }
+
+      // Sort
+      const sort = sortMode();
+      if (sort === 'newest') list = [...list].sort((a, b) => b.createdAt - a.createdAt);
+      else if (sort === 'oldest') list = [...list].sort((a, b) => a.createdAt - b.createdAt);
+      else if (sort === 'alpha') list = [...list].sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+
+      return list;
+    });
+
+    const collectionCounts = computed(() => {
+      const counts = { all: bookmarks().length, unorganized: 0 };
+      collections().forEach(c => { counts[c] = 0; });
+      bookmarks().forEach(b => {
+        if (b.collection && counts[b.collection] !== undefined) {
+          counts[b.collection]++;
+        } else if (!b.collection) {
+          counts.unorganized++;
+        }
+      });
+      return counts;
+    });
+
+    /* ═══════════════════════════════════════════
+       Toast System
+       ═══════════════════════════════════════════ */
+
+    const [toasts, setToasts] = signal([]);
+    let toastIdCounter = 0;
+
+    function showToast(message, type) {
+      type = type || 'info';
+      const id = ++toastIdCounter;
+      setToasts(prev => [...prev, { id, message, type }]);
+      setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+      }, 2500);
+    }
+
+    /* ═══════════════════════════════════════════
+       Actions
+       ═══════════════════════════════════════════ */
+
+    function openAddModal() {
+      batch(() => {
+        setEditingId(null);
+        setFormUrl('');
+        setFormTitle('');
+        setFormDesc('');
+        setFormTags('');
+        setFormCollection('');
+        setModalOpen(true);
+      });
+    }
+
+    function openEditModal(bookmark) {
+      batch(() => {
+        setEditingId(bookmark.id);
+        setFormUrl(bookmark.url || '');
+        setFormTitle(bookmark.title || '');
+        setFormDesc(bookmark.description || '');
+        setFormTags((bookmark.tags || []).join(', '));
+        setFormCollection(bookmark.collection || '');
+        setModalOpen(true);
+      });
+    }
+
+    function closeModal() {
+      setModalOpen(false);
+    }
+
+    function saveBookmark() {
+      const url = formUrl().trim();
+      if (!url) { showToast('URL is required', 'danger'); return; }
+
+      const tags = formTags()
+        .split(',')
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+
+      const title = formTitle().trim() || extractDomain(url);
+
+      if (editingId()) {
+        setBookmarks(prev => prev.map(b => {
+          if (b.id === editingId()) {
+            return { ...b, url, title, description: formDesc().trim(), tags, collection: formCollection() || null, updatedAt: Date.now() };
+          }
+          return b;
+        }));
+        showToast('Bookmark updated', 'success');
+      } else {
+        const bookmark = {
+          id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2),
+          url,
+          title,
+          description: formDesc().trim(),
+          tags,
+          collection: formCollection() || null,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        };
+        setBookmarks(prev => [bookmark, ...prev]);
+        showToast('Bookmark added', 'success');
+      }
+      closeModal();
+    }
+
+    function deleteBookmark(id) {
+      setBookmarks(prev => prev.filter(b => b.id !== id));
+      setDeleteConfirmId(null);
+      showToast('Bookmark deleted', 'danger');
+    }
+
+    function copyUrl(url) {
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('URL copied to clipboard', 'success');
+      }).catch(() => {
+        showToast('Failed to copy', 'danger');
+      });
+    }
+
+    function openInNewTab(url) {
+      window.open(url, '_blank', 'noopener');
+    }
+
+    function addCollection(name) {
+      const n = name.trim();
+      if (!n) return;
+      if (collections().includes(n)) { showToast('Collection already exists', 'danger'); return; }
+      setCollections(prev => [...prev, n]);
+      setAddingCollection(false);
+      showToast('Collection created', 'success');
+    }
+
+    function removeCollection(name) {
+      batch(() => {
+        setCollections(prev => prev.filter(c => c !== name));
+        setBookmarks(prev => prev.map(b => b.collection === name ? { ...b, collection: null } : b));
+        if (activeCollection() === name) setActiveCollection('all');
+      });
+      showToast('Collection removed', 'danger');
+    }
+
+    function renameCollection(oldName, newName) {
+      const n = newName.trim();
+      if (!n || n === oldName) { setRenamingCollection(null); return; }
+      if (collections().includes(n)) { showToast('Collection already exists', 'danger'); return; }
+      batch(() => {
+        setCollections(prev => prev.map(c => c === oldName ? n : c));
+        setBookmarks(prev => prev.map(b => b.collection === oldName ? { ...b, collection: n } : b));
+        if (activeCollection() === oldName) setActiveCollection(n);
+        setRenamingCollection(null);
+      });
+      showToast('Collection renamed', 'success');
+    }
+
+    function exportBookmarks() {
+      const data = JSON.stringify({ bookmarks: bookmarks(), collections: collections() }, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bookmarks_' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Bookmarks exported', 'success');
+    }
+
+    function importBookmarks(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          let imported = 0;
+          if (Array.isArray(data.bookmarks)) {
+            const existingUrls = new Set(bookmarks().map(b => b.url));
+            const newBookmarks = data.bookmarks.filter(b => b.url && !existingUrls.has(b.url));
+            newBookmarks.forEach(b => {
+              if (!b.id) b.id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+              if (!b.createdAt) b.createdAt = Date.now();
+              if (!b.updatedAt) b.updatedAt = Date.now();
+            });
+            if (newBookmarks.length) {
+              setBookmarks(prev => [...newBookmarks, ...prev]);
+              imported = newBookmarks.length;
+            }
+          }
+          if (Array.isArray(data.collections)) {
+            const existing = new Set(collections());
+            const newCols = data.collections.filter(c => !existing.has(c));
+            if (newCols.length) {
+              setCollections(prev => [...prev, ...newCols]);
+            }
+          }
+          showToast(imported + ' bookmark' + (imported !== 1 ? 's' : '') + ' imported', 'success');
+        } catch (err) {
+          showToast('Invalid JSON file', 'danger');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* ═══════════════════════════════════════════
+       Components
+       ═══════════════════════════════════════════ */
+
+    function TagPill(name, opts) {
+      opts = opts || {};
+      const c = tagColor(name);
+      const el = h('span', {
+        class: 'bm-tag',
+        style: { background: c.bg, color: c.color },
+        onClick: (e) => {
+          e.stopPropagation();
+          if (opts.onClick) opts.onClick(name);
+          else setActiveTag(activeTag() === name ? '' : name);
+        },
+      },
+        name,
+        opts.removable ? h('span', {
+          class: 'bm-tag-remove',
+          onClick: (e) => { e.stopPropagation(); if (opts.onRemove) opts.onRemove(name); },
+        }, '\u00d7') : null
+      );
+      return el;
+    }
+
+    function ActionBtn(icon, title, onClick) {
+      return h('button', {
+        class: 'bm-btn bm-btn-ghost bm-btn-icon',
+        title: title,
+        onClick: (e) => { e.stopPropagation(); onClick(); },
+      }, icon);
+    }
+
+    /* ── Bookmark Card (Grid) ── */
+    function BookmarkCard(bm) {
+      return h('div', { class: 'bm-card' },
+        h('div', { class: 'bm-card-actions' },
+          ActionBtn('\u270e', 'Edit', () => openEditModal(bm)),
+          ActionBtn('\ud83d\udccb', 'Copy URL', () => copyUrl(bm.url)),
+          ActionBtn('\ud83d\uddd1', 'Delete', () => deleteBookmark(bm.id)),
+        ),
+        h('div', { class: 'bm-card-top' },
+          h('div', { class: 'bm-card-favicon' },
+            h('img', { src: faviconUrl(bm.url), alt: '', loading: 'lazy', onerror: function() { this.style.display='none'; } })
+          ),
+          h('div', { class: 'bm-card-info' },
+            h('div', { class: 'bm-card-title', title: bm.title }, bm.title || extractDomain(bm.url)),
+            h('div', { class: 'bm-card-url', title: bm.url }, extractDomain(bm.url)),
+          ),
+        ),
+        bm.description ? h('div', { class: 'bm-card-desc' }, bm.description) : null,
+        (bm.tags && bm.tags.length) ? h('div', { class: 'bm-card-tags' },
+          ...bm.tags.map(t => TagPill(t))
+        ) : null,
+        h('div', { class: 'bm-card-bottom' },
+          bm.collection ? h('span', { class: 'bm-card-collection' }, '\ud83d\udcc1 ', bm.collection) : h('span'),
+          h('span', { class: 'bm-card-date' }, formatDate(bm.createdAt)),
+        ),
+        h('a', {
+          href: bm.url,
+          target: '_blank',
+          rel: 'noopener',
+          style: { position: 'absolute', inset: '0', zIndex: '1', cursor: 'pointer' },
+          onClick: (e) => {
+            // Don't navigate if clicking action buttons
+            if (e.target.closest('.bm-card-actions') || e.target.closest('.bm-tag')) {
+              e.preventDefault();
+            }
+          },
+        }),
+      );
+    }
+
+    /* ── Bookmark Row (List) ── */
+    function BookmarkRow(bm) {
+      return h('div', { class: 'bm-list-item' },
+        h('div', { class: 'bm-list-favicon' },
+          h('img', { src: faviconUrl(bm.url), alt: '', loading: 'lazy', onerror: function() { this.style.display='none'; } })
+        ),
+        h('div', { class: 'bm-list-info' },
+          h('span', { class: 'bm-list-title', title: bm.title },
+            h('a', { href: bm.url, target: '_blank', rel: 'noopener', style: { color: 'inherit', textDecoration: 'none' } }, bm.title || extractDomain(bm.url))
+          ),
+          h('span', { class: 'bm-list-url' }, extractDomain(bm.url)),
+          h('div', { class: 'bm-list-tags' },
+            ...(bm.tags || []).slice(0, 3).map(t => TagPill(t))
+          ),
+        ),
+        h('span', { class: 'bm-list-date' }, formatDate(bm.createdAt)),
+        h('div', { class: 'bm-list-actions' },
+          ActionBtn('\u270e', 'Edit', () => openEditModal(bm)),
+          ActionBtn('\ud83d\udccb', 'Copy', () => copyUrl(bm.url)),
+          ActionBtn('\ud83d\uddd1', 'Delete', () => deleteBookmark(bm.id)),
+        ),
+      );
+    }
+
+    /* ── Sidebar ── */
+    function Sidebar() {
+      const collInput = ref();
+
+      return h('aside', { class: 'bm-sidebar' },
+        // Main nav
+        h('div', { class: 'bm-sidebar-section' },
+          h('button', {
+            class: () => 'bm-sidebar-item' + (activeCollection() === 'all' && !activeTag() ? ' active' : ''),
+            onClick: () => { batch(() => { setActiveCollection('all'); setActiveTag(''); }); },
+          },
+            h('span', { class: 'icon' }, '\ud83d\udcda'),
+            'All Bookmarks',
+            h('span', { class: 'count' }, () => collectionCounts().all),
+          ),
+          h('button', {
+            class: () => 'bm-sidebar-item' + (activeCollection() === 'unorganized' ? ' active' : ''),
+            onClick: () => { batch(() => { setActiveCollection('unorganized'); setActiveTag(''); }); },
+          },
+            h('span', { class: 'icon' }, '\ud83d\udce5'),
+            'Uncategorized',
+            h('span', { class: 'count' }, () => collectionCounts().unorganized),
+          ),
+        ),
+
+        h('div', { class: 'bm-sidebar-divider' }),
+
+        // Collections
+        h('div', { class: 'bm-sidebar-section' },
+          h('div', { class: 'bm-sidebar-label' }, 'Collections'),
+        ),
+        h('div', { class: 'bm-sidebar-section' },
+          ...(() => {
+            const items = [];
+            // We rebuild this on mount; for reactive updates we use effect-based list
+            return items;
+          })(),
+        ),
+        // Reactive collection list
+        (() => {
+          const container = h('div', { class: 'bm-sidebar-section' });
+
+          effect(() => {
+            container.innerHTML = '';
+            const cols = collections();
+            const counts = collectionCounts();
+            const renaming = renamingCollection();
+
+            cols.forEach(col => {
+              if (renaming === col) {
+                const inp = document.createElement('input');
+                inp.className = 'bm-inline-input';
+                inp.value = col;
+                inp.addEventListener('keydown', (e) => {
+                  if (e.key === 'Enter') renameCollection(col, inp.value);
+                  if (e.key === 'Escape') setRenamingCollection(null);
+                });
+                inp.addEventListener('blur', () => renameCollection(col, inp.value));
+                container.appendChild(inp);
+                requestAnimationFrame(() => { inp.focus(); inp.select(); });
+              } else {
+                const item = h('button', {
+                  class: () => 'bm-sidebar-item' + (activeCollection() === col ? ' active' : ''),
+                  onClick: () => { batch(() => { setActiveCollection(col); setActiveTag(''); }); },
+                  onDblclick: () => setRenamingCollection(col),
+                  onContextmenu: (e) => {
+                    e.preventDefault();
+                    if (confirm('Remove collection "' + col + '"? Bookmarks will be uncategorized.')) {
+                      removeCollection(col);
+                    }
+                  },
+                },
+                  h('span', { class: 'icon' }, '\ud83d\udcc1'),
+                  col,
+                  h('span', { class: 'count' }, String(counts[col] || 0)),
+                );
+                container.appendChild(item);
+              }
+            });
+          });
+
+          return container;
+        })(),
+
+        // Add collection
+        (() => {
+          const wrap = h('div', { class: 'bm-sidebar-section' });
+          effect(() => {
+            wrap.innerHTML = '';
+            if (addingCollection()) {
+              const inp = document.createElement('input');
+              inp.className = 'bm-inline-input';
+              inp.placeholder = 'Collection name...';
+              inp.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { addCollection(inp.value); }
+                if (e.key === 'Escape') { setAddingCollection(false); }
+              });
+              inp.addEventListener('blur', () => {
+                if (inp.value.trim()) addCollection(inp.value);
+                else setAddingCollection(false);
+              });
+              wrap.appendChild(inp);
+              requestAnimationFrame(() => inp.focus());
+            } else {
+              wrap.appendChild(
+                h('button', {
+                  class: 'bm-add-collection',
+                  onClick: () => setAddingCollection(true),
+                }, '+ New Collection')
+              );
+            }
+          });
+          return wrap;
+        })(),
+
+        h('div', { class: 'bm-sidebar-divider' }),
+
+        // Tags
+        h('div', { class: 'bm-sidebar-section' },
+          h('div', { class: 'bm-sidebar-label' }, 'Tags'),
+        ),
+        (() => {
+          const cloud = h('div', { class: 'bm-tag-cloud' });
+          effect(() => {
+            cloud.innerHTML = '';
+            const tags = allTags();
+            if (tags.length === 0) {
+              cloud.appendChild(h('span', { style: { fontSize: '0.7rem', color: 'var(--bm-text-faint)' } }, 'No tags yet'));
+            } else {
+              tags.slice(0, 20).forEach(([name, count]) => {
+                const c = tagColor(name);
+                const pill = h('span', {
+                  class: 'bm-tag',
+                  style: () => ({
+                    background: activeTag() === name ? c.color : c.bg,
+                    color: activeTag() === name ? '#111113' : c.color,
+                    fontWeight: activeTag() === name ? '600' : '500',
+                  }),
+                  onClick: () => setActiveTag(activeTag() === name ? '' : name),
+                }, name);
+                cloud.appendChild(pill);
+              });
+            }
+          });
+          return cloud;
+        })(),
+      );
+    }
+
+    /* ── Add/Edit Modal ── */
+    function BookmarkModal() {
+      const container = h('div');
+
+      // Create form inputs ONCE — they persist across modal open/close cycles
+      const urlInput = h('input', {
+        class: 'bm-input',
+        type: 'url',
+        placeholder: 'https://example.com',
+        onInput: (e) => setFormUrl(e.target.value),
+        onBlur: () => {
+          if (formUrl().trim() && !formTitle().trim()) {
+            setFormTitle(extractDomain(formUrl()));
+            titleInput.value = extractDomain(formUrl());
+          }
+        },
+      });
+      const titleInput = h('input', {
+        class: 'bm-input',
+        placeholder: 'Page title',
+        onInput: (e) => setFormTitle(e.target.value),
+      });
+      const descInput = h('textarea', {
+        class: 'bm-input bm-textarea',
+        placeholder: 'Brief description (optional)',
+        onInput: (e) => setFormDesc(e.target.value),
+      });
+      const tagsInput = h('input', {
+        class: 'bm-input',
+        placeholder: 'react, typescript, tutorial',
+        onInput: (e) => setFormTags(e.target.value),
+      });
+      const collectionSelect = h('select', {
+        class: 'bm-input bm-select',
+        onChange: (e) => setFormCollection(e.target.value),
+      });
+      const modalTitle = h('span', { class: 'bm-modal-title' });
+      const saveBtn = h('button', { class: 'bm-btn bm-btn-primary', onClick: saveBookmark });
+
+      // Build the overlay structure ONCE (reused every time modal opens)
+      const overlay = h('div', { class: 'bm-overlay', onClick: (e) => { if (e.target === e.currentTarget) closeModal(); } },
+        h('div', { class: 'bm-modal' },
+          h('div', { class: 'bm-modal-header' },
+            modalTitle,
+            h('button', { class: 'bm-modal-close', onClick: closeModal }, '\u00d7'),
+          ),
+          h('div', { class: 'bm-modal-body' },
+            h('div', { class: 'bm-field' },
+              h('label', { class: 'bm-label' }, 'URL'),
+              urlInput,
+            ),
+            h('div', { class: 'bm-field' },
+              h('label', { class: 'bm-label' }, 'Title'),
+              titleInput,
+            ),
+            h('div', { class: 'bm-field' },
+              h('label', { class: 'bm-label' }, 'Description'),
+              descInput,
+            ),
+            h('div', { class: 'bm-field' },
+              h('label', { class: 'bm-label' }, 'Tags'),
+              tagsInput,
+              h('span', { style: { fontSize: '0.65rem', color: 'var(--bm-text-faint)', marginTop: '0.25rem', display: 'block' } }, 'Separate with commas'),
+            ),
+            h('div', { class: 'bm-field' },
+              h('label', { class: 'bm-label' }, 'Collection'),
+              collectionSelect,
+            ),
+          ),
+          h('div', { class: 'bm-modal-footer' },
+            h('button', { class: 'bm-btn', onClick: closeModal }, 'Cancel'),
+            saveBtn,
+          ),
+        ),
+      );
+
+      // This effect only tracks modalOpen() — NOT form value signals
+      effect(() => {
+        const isOpen = modalOpen();
+        container.innerHTML = '';
+        if (!isOpen) return;
+
+        // Read form values and editingId outside of dependency tracking
+        // by deferring to a microtask (the effect only subscribes to modalOpen)
+        container.appendChild(overlay);
+
+        queueMicrotask(() => {
+          const isEditing = !!editingId();
+          urlInput.value = formUrl();
+          titleInput.value = formTitle();
+          descInput.value = formDesc();
+          tagsInput.value = formTags();
+          modalTitle.textContent = isEditing ? 'Edit Bookmark' : 'Add Bookmark';
+          saveBtn.textContent = isEditing ? 'Update' : 'Add Bookmark';
+
+          // Rebuild collection select options
+          collectionSelect.innerHTML = '';
+          collectionSelect.appendChild(h('option', { value: '' }, 'None'));
+          collections().forEach(c => {
+            collectionSelect.appendChild(h('option', { value: c, selected: formCollection() === c }, c));
+          });
+          collectionSelect.value = formCollection();
+
+          urlInput.focus();
+        });
+      });
+
+      return container;
+    }
+
+    /* ── Toast Container ── */
+    function ToastContainer() {
+      const container = h('div', { class: 'bm-toast-container' });
+
+      effect(() => {
+        container.innerHTML = '';
+        toasts().forEach(t => {
+          container.appendChild(
+            h('div', { class: 'bm-toast bm-toast-' + t.type }, t.message)
+          );
+        });
+      });
+
+      return container;
+    }
+
+    /* ═══════════════════════════════════════════
+       Main App
+       ═══════════════════════════════════════════ */
+
+    mount('#app', () => {
+      const searchRef = ref();
+      const fileInputRef = ref();
+
+      // Keyboard shortcut: Ctrl+K or / to focus search
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey && e.key === 'k') || (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName))) {
+          e.preventDefault();
+          if (searchRef.current) searchRef.current.focus();
+        }
+        if (e.key === 'Escape') {
+          if (modalOpen()) closeModal();
+        }
+      });
+
+      return h('div', {},
+        // Header
+        h('header', { class: 'bm-header' },
+          h('div', { class: 'bm-brand' },
+            h('span', { class: 'bm-brand-icon' }, '\ud83d\udd16'),
+            'Book', h('span', {}, 'marks'),
+          ),
+          h('div', { class: 'bm-header-actions' },
+            h('button', { class: 'bm-btn', onClick: () => { fileInputRef.current && fileInputRef.current.click(); } }, '\u2191 Import'),
+            h('button', { class: 'bm-btn', onClick: exportBookmarks }, '\u2193 Export'),
+            h('button', { class: 'bm-btn bm-btn-primary', onClick: openAddModal }, '+ Add'),
+            h('input', {
+              ref: fileInputRef,
+              type: 'file',
+              accept: '.json',
+              class: 'bm-file-hidden',
+              onChange: (e) => {
+                if (e.target.files[0]) importBookmarks(e.target.files[0]);
+                e.target.value = '';
+              },
+            }),
+          ),
+        ),
+
+        // Layout
+        h('div', { class: 'bm-layout' },
+          // Sidebar
+          Sidebar(),
+
+          // Main
+          h('main', { class: 'bm-main' },
+            // Toolbar
+            h('div', { class: 'bm-toolbar' },
+              h('div', { class: 'bm-search-wrap' },
+                h('span', { class: 'bm-search-icon' }, '\ud83d\udd0d'),
+                h('input', {
+                  ref: searchRef,
+                  class: 'bm-search',
+                  type: 'text',
+                  placeholder: 'Search bookmarks...',
+                  value: searchQuery(),
+                  onInput: (e) => setSearchQuery(e.target.value),
+                }),
+                h('span', { class: 'bm-search-kbd' }, '\u2318K'),
+              ),
+
+              // Active tag filter indicator
+              (() => {
+                const wrap = h('span');
+                effect(() => {
+                  wrap.innerHTML = '';
+                  const tag = activeTag();
+                  if (tag) {
+                    const c = tagColor(tag);
+                    wrap.appendChild(
+                      h('span', {
+                        class: 'bm-tag',
+                        style: { background: c.bg, color: c.color, cursor: 'pointer' },
+                        onClick: () => setActiveTag(''),
+                      }, 'tag: ' + tag + ' \u00d7')
+                    );
+                  }
+                });
+                return wrap;
+              })(),
+
+              h('div', { style: { flex: '1' } }),
+
+              // Sort
+              h('div', { class: 'bm-toolbar-group' },
+                h('select', {
+                  class: 'bm-input bm-select',
+                  style: { width: 'auto', padding: '0.3rem 2rem 0.3rem 0.5rem', fontSize: '0.72rem', minWidth: '100px' },
+                  value: sortMode(),
+                  onChange: (e) => setSortMode(e.target.value),
+                },
+                  h('option', { value: 'newest' }, 'Newest'),
+                  h('option', { value: 'oldest' }, 'Oldest'),
+                  h('option', { value: 'alpha' }, 'A \u2192 Z'),
+                ),
+              ),
+
+              // View toggle
+              h('div', { class: 'bm-toolbar-group' },
+                h('button', {
+                  class: () => 'bm-btn bm-btn-icon' + (viewMode() === 'grid' ? ' active' : ''),
+                  title: 'Grid view',
+                  onClick: () => setViewMode('grid'),
+                }, '\u25a6'),
+                h('button', {
+                  class: () => 'bm-btn bm-btn-icon' + (viewMode() === 'list' ? ' active' : ''),
+                  title: 'List view',
+                  onClick: () => setViewMode('list'),
+                }, '\u2261'),
+              ),
+            ),
+
+            // Content
+            h('div', { class: 'bm-content' },
+              // Header row
+              h('div', { class: 'bm-content-header' },
+                h('div', { class: 'bm-content-title' },
+                  () => {
+                    const col = activeCollection();
+                    if (col === 'all') return 'All Bookmarks';
+                    if (col === 'unorganized') return 'Uncategorized';
+                    return col;
+                  },
+                  h('span', { class: 'bm-content-count' }, () => filteredBookmarks().length),
+                ),
+              ),
+
+              // Bookmarks
+              (() => {
+                const wrap = h('div');
+
+                effect(() => {
+                  wrap.innerHTML = '';
+                  const list = filteredBookmarks();
+                  const view = viewMode();
+
+                  if (list.length === 0) {
+                    const q = searchQuery().trim();
+                    wrap.appendChild(
+                      h('div', { class: 'bm-empty' },
+                        h('div', { class: 'bm-empty-icon' }, q ? '\ud83d\udd0d' : '\ud83d\udd16'),
+                        h('div', { class: 'bm-empty-text' }, q ? 'No bookmarks match your search' : 'No bookmarks yet'),
+                        h('div', { class: 'bm-empty-sub' }, q ? 'Try a different query' : 'Click "+ Add" to save your first bookmark'),
+                      )
+                    );
+                    return;
+                  }
+
+                  if (view === 'grid') {
+                    const grid = h('div', { class: 'bm-grid' });
+                    list.forEach(bm => grid.appendChild(BookmarkCard(bm)));
+                    wrap.appendChild(grid);
+                  } else {
+                    const listEl = h('div', { class: 'bm-list' });
+                    list.forEach(bm => listEl.appendChild(BookmarkRow(bm)));
+                    wrap.appendChild(listEl);
+                  }
+                });
+
+                return wrap;
+              })(),
+            ),
+          ),
+        ),
+
+        // Modal
+        BookmarkModal(),
+
+        // Toasts
+        ToastContainer(),
+      );
+    });
+  </script>
+</body>
+</html>
