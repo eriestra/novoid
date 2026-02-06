@@ -831,8 +831,8 @@
           continue;
         }
 
-        // Headings
-        const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+        // Headings (use .* not .+ to match "# " with no content yet — prevents infinite loop)
+        const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
         if (headingMatch) {
           const level = headingMatch[1].length;
           blocks.push('<h' + level + '>' + processInline(headingMatch[2]) + '</h' + level + '>');
@@ -902,6 +902,9 @@
         }
         if (paraLines.length > 0) {
           blocks.push('<p>' + processInline(paraLines.join(' ')) + '</p>');
+        } else {
+          // Safety: always advance to prevent infinite loops on unmatched lines
+          i++;
         }
       }
 
