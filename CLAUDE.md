@@ -109,35 +109,43 @@ All write mutations (`pages:publish`, `pages:remove`, `assets:set`) require a `s
 
 ## Agentic Publishing
 
-Agents can publish pages directly to the live platform. Read credentials from `.env.local`:
+When the user asks you to build something:
 
-- `CONVEX_URL` — the `.convex.cloud` URL (for Convex client mutations)
-- `CONVEX_SITE_URL` — the `.convex.site` URL (for HTTP routes / live pages)
-- `PUBLISH_SECRET` — the auth token for write mutations
+1. Read `skills.md` for the full no∅ API
+2. Generate the HTML as `src/app/<slug>.html`
+3. Publish it to Convex — instantly live, no server needed
 
-**Workflow:** When the user asks you to build something, generate the HTML using no∅, then publish it directly:
-
+**Setup** (once per session, if `node_modules/` is missing):
 ```sh
-# Read the credentials
-source .env.local
-
-# Publish via Convex CLI
-npx convex run pages:publish "$(cat <<ARGS
-{"slug":"my-app","html":$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/my-app.html),"secret":"$PUBLISH_SECRET"}
-ARGS
-)"
+npm install
 ```
 
-Or write the HTML to `src/app/<slug>.html`, then seed it:
+**Publish a page:**
 ```sh
 source .env.local
-HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/my-app.html)
-npx convex run seed:seedPage "{\"slug\":\"my-app\",\"html\":$HTML_JSON}"
+HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/<slug>.html)
+npx convex run seed:seedPage "{\"slug\":\"<slug>\",\"html\":$HTML_JSON}"
 ```
 
-The page is instantly live at `$CONVEX_SITE_URL/app/<slug>`. No git push needed.
+**Give the user the live URL:** `https://secret-aardvark-418.convex.site/app/<slug>`
 
-**Important:** `.env.local` is gitignored — never commit it or echo secrets to the user.
+**Credentials** are in `.env.local` (gitignored, never commit or echo):
+- `CONVEX_URL` — `.convex.cloud` URL
+- `CONVEX_SITE_URL` — `.convex.site` URL (where pages are served)
+- `PUBLISH_SECRET` — auth token for write mutations
+
+**For auth-gated mutations** (`pages:publish`, `pages:remove`, `assets:set`), pass the secret:
+```sh
+source .env.local
+HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/<slug>.html)
+npx convex run pages:publish "{\"slug\":\"<slug>\",\"html\":$HTML_JSON,\"secret\":\"$PUBLISH_SECRET\"}"
+```
+
+**CSS/JS for published pages** — reference from Convex:
+```html
+<link rel="stylesheet" href="../css/novoid.min.css">
+<script src="../js/novoid.min.js"><\/script>
+```
 
 ## Key Rules
 
