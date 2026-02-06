@@ -23,7 +23,7 @@
   <script>
     // no∅ self-hosting bootstrapper
     // The actual platform lives in Convex — this fetches and renders it.
-    var CONVEX_SITE = "__CONVEX_SITE_URL__";
+    var CONVEX_SITE = "https://secret-aardvark-418.convex.site";
     fetch(CONVEX_SITE + "/platform")
       .then(function(r) {
         if (!r.ok) throw new Error("Platform returned " + r.status);

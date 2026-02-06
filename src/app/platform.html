@@ -383,7 +383,8 @@
       }
 
       // --- Render ---
-      const { h, text, mount, effect } = Novoid;
+      const { h, mount, effect } = Novoid;
+      const text = (s) => document.createTextNode(String(s));
 
       function render() {
         const app = document.getElementById("app");
