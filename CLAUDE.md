@@ -107,6 +107,38 @@ open https://YOUR-DEPLOYMENT.convex.site/platform
 
 All write mutations (`pages:publish`, `pages:remove`, `assets:set`) require a `secret` argument checked against `PUBLISH_SECRET` in the `keys` table. The secret is set via `npx convex run` (CLI only — never exposed to clients). Read operations are public.
 
+## Agentic Publishing
+
+Agents can publish pages directly to the live platform. Read credentials from `.env.local`:
+
+- `CONVEX_URL` — the `.convex.cloud` URL (for Convex client mutations)
+- `CONVEX_SITE_URL` — the `.convex.site` URL (for HTTP routes / live pages)
+- `PUBLISH_SECRET` — the auth token for write mutations
+
+**Workflow:** When the user asks you to build something, generate the HTML using no∅, then publish it directly:
+
+```sh
+# Read the credentials
+source .env.local
+
+# Publish via Convex CLI
+npx convex run pages:publish "$(cat <<ARGS
+{"slug":"my-app","html":$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/my-app.html),"secret":"$PUBLISH_SECRET"}
+ARGS
+)"
+```
+
+Or write the HTML to `src/app/<slug>.html`, then seed it:
+```sh
+source .env.local
+HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/my-app.html)
+npx convex run seed:seedPage "{\"slug\":\"my-app\",\"html\":$HTML_JSON}"
+```
+
+The page is instantly live at `$CONVEX_SITE_URL/app/<slug>`. No git push needed.
+
+**Important:** `.env.local` is gitignored — never commit it or echo secrets to the user.
+
 ## Key Rules
 
 - Always read `skills.md` for the full API before generating code
