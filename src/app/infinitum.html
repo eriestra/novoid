@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INFINITUM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; height: 100vh; cursor: crosshair; }
+    canvas { display: block; width: 100vw; height: 100vh; }
+
+    .overlay {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
+      background: #000;
+      transition: opacity 1.5s ease, visibility 1.5s;
+      cursor: pointer;
+    }
+    .overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    .overlay h1 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 200;
+      font-size: clamp(2.5rem, 8vw, 6rem);
+      color: #fff;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      animation: breathe 3s ease-in-out infinite;
+    }
+
+    .overlay p {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 300;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 0.6; letter-spacing: 0.35em; }
+      50% { opacity: 1; letter-spacing: 0.45em; }
+    }
+
+    .hud {
+      position: fixed; top: 0; left: 0; right: 0;
+      padding: 20px 28px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      pointer-events: none; z-index: 5;
+      opacity: 0; transition: opacity 2s ease 1s;
+    }
+    .hud.show { opacity: 1; }
+
+    .hud-left h2 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 200;
+      font-size: 1.1rem;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+
+    .hud-right {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+      pointer-events: auto;
+    }
+
+    .hud-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.4);
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.6rem; font-weight: 400;
+      padding: 6px 14px; border-radius: 6px;
+      cursor: pointer; transition: all 0.3s;
+      letter-spacing: 0.1em; text-transform: uppercase;
+    }
+    .hud-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+
+    .stats {
+      position: fixed; bottom: 16px; left: 24px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.55rem; font-weight: 300;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 0.08em;
+      z-index: 5; pointer-events: none;
+      opacity: 0; transition: opacity 2s ease 2s;
+    }
+    .stats.show { opacity: 1; }
+    .stats span { color: rgba(255,255,255,0.35); }
+  </style>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+
+<div class="overlay" id="intro">
+  <h1>Infinitum</h1>
+  <p>Click to enter the fractal</p>
+</div>
+
+<div class="hud" id="hud">
+  <div class="hud-left"><h2>Infinitum</h2></div>
+  <div class="hud-right">
+    <button class="hud-btn" id="btn-palette">Shift Palette</button>
+    <button class="hud-btn" id="btn-morph">Morph Structure</button>
+    <button class="hud-btn" id="btn-audio">Audio: On</button>
+  </div>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// INFINITUM — Raymarched Fractal Universe
+// Pure WebGL2 · Web Audio · Zero dependencies
+// ═══════════════════════════════════════════════════════
+
+const canvas = document.getElementById('c');
+const gl = canvas.getContext('webgl2', { antialias: false, powerPreference: 'high-performance' });
+
+if (!gl) { document.body.innerHTML = '<p style="color:#fff;padding:2rem;font-family:sans-serif">WebGL2 not supported</p>'; throw 'No WebGL2'; }
+
+// ─── Resolution ───
+const DPR = Math.min(devicePixelRatio, 1.5);
+function resize() {
+  canvas.width = Math.floor(innerWidth * DPR);
+  canvas.height = Math.floor(innerHeight * DPR);
+  gl.viewport(0, 0, canvas.width, canvas.height);
+}
+resize();
+addEventListener('resize', resize);
+
+// ─── Shaders ───
+function compile(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.error(gl.getShaderInfoLog(s)); return null; }
+  return s;
+}
+
+function link(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, vs);
+  gl.attachShader(p, fs);
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) { console.error(gl.getProgramInfoLog(p)); return null; }
+  return p;
+}
+
+const VS = `#version 300 es
+in vec2 pos;
+void main() { gl_Position = vec4(pos, 0, 1); }`;
+
+const FS = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform vec2 uMouse;
+uniform float uPalette;
+uniform float uMorph;
+out vec4 O;
+
+// ─── cosine palette ───
+vec3 palette(float t, float shift) {
+  vec3 a = vec3(0.5);
+  vec3 b = vec3(0.5);
+  vec3 c = vec3(1.0, 1.0, 1.0);
+  vec3 d = vec3(0.0 + shift * 0.15, 0.1 + shift * 0.1, 0.2 + shift * 0.05);
+  return a + b * cos(6.28318 * (c * t + d));
+}
+
+// ─── rotation ───
+mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+
+// ─── fractal SDF with orbit trap ───
+vec2 map(vec3 p) {
+  vec3 z = p;
+  float Scale = 2.0 + 0.35 * sin(uTime * 0.07 + uMorph);
+  vec3 Offset = vec3(
+    0.86 + 0.14 * sin(uTime * 0.053 + uMorph * 0.7),
+    1.0,
+    0.86 + 0.14 * cos(uTime * 0.061 + uMorph * 1.1)
+  );
+  float r = uTime * 0.03 + uMorph * 0.5;
+  float trap = 1e10;
+
+  for (int i = 0; i < 12; i++) {
+    // Tetrahedral symmetry folds
+    if (z.x + z.y < 0.0) z.xy = -z.yx;
+    if (z.x + z.z < 0.0) z.xz = -z.zx;
+    if (z.y + z.z < 0.0) z.yz = -z.zy;
+
+    // Scale + translate
+    z = z * Scale - Offset * (Scale - 1.0);
+
+    // Morphing rotation
+    z.xz *= rot(r * 0.15);
+    z.yz *= rot(r * 0.1);
+
+    // Orbit trap
+    trap = min(trap, length(z.xz));
+    trap = min(trap, abs(z.y));
+  }
+
+  float d = (length(z) - 1.0) * pow(Scale, -12.0);
+  return vec2(d, trap);
+}
+
+// ─── normal via central differences ───
+vec3 calcNormal(vec3 p) {
+  vec2 e = vec2(0.0005, 0);
+  return normalize(vec3(
+    map(p + e.xyy).x - map(p - e.xyy).x,
+    map(p + e.yxy).x - map(p - e.yxy).x,
+    map(p + e.yyx).x - map(p - e.yyx).x
+  ));
+}
+
+// ─── soft AO ───
+float calcAO(vec3 p, vec3 n) {
+  float ao = 0.0;
+  float scale = 1.0;
+  for (int i = 1; i <= 5; i++) {
+    float h = 0.01 + 0.05 * float(i);
+    float d = map(p + n * h).x;
+    ao += (h - d) * scale;
+    scale *= 0.6;
+  }
+  return clamp(1.0 - ao * 4.0, 0.0, 1.0);
+}
+
+void main() {
+  vec2 uv = (gl_FragCoord.xy - 0.5 * uRes) / min(uRes.x, uRes.y);
+
+  // ─── camera autopilot ───
+  float t = uTime * 0.12;
+  vec3 ro = vec3(
+    3.2 * sin(t * 0.7),
+    1.8 * cos(t * 0.5) + 0.5,
+    3.2 * cos(t * 0.4)
+  );
+  vec3 ta = vec3(
+    0.3 * sin(t * 0.3),
+    0.2 * cos(t * 0.4),
+    0.3 * cos(t * 0.2)
+  );
+
+  // Mouse look offset
+  vec2 mo = (uMouse - 0.5) * 1.6;
+
+  // Camera matrix
+  vec3 fwd = normalize(ta - ro);
+  vec3 right = normalize(cross(vec3(0, 1, 0), fwd));
+  vec3 up = cross(fwd, right);
+  vec3 rd = normalize(uv.x * right + uv.y * up + 1.8 * fwd);
+  rd = normalize(rd + mo.x * right * 0.25 + mo.y * up * 0.25);
+
+  // ─── raymarch ───
+  float totalDist = 0.0;
+  float trap = 0.0;
+  int steps = 0;
+  bool hit = false;
+
+  for (int i = 0; i < 80; i++) {
+    vec3 p = ro + rd * totalDist;
+    vec2 res = map(p);
+    float d = res.x;
+    trap = res.y;
+
+    if (d < 0.0003) { hit = true; steps = i; break; }
+    if (totalDist > 50.0) break;
+
+    totalDist += d * 0.7; // slight understep for safety
+    steps = i;
+  }
+
+  // ─── shading ───
+  vec3 col = vec3(0.005, 0.005, 0.015); // deep space bg
+
+  if (hit) {
+    vec3 p = ro + rd * totalDist;
+    vec3 n = calcNormal(p);
+
+    // Base color from orbit trap
+    vec3 baseCol = palette(trap * 0.12 + uTime * 0.008, uPalette);
+    baseCol = mix(baseCol, vec3(1.0), 0.05); // slight white wash
+
+    // Lighting
+    vec3 l1 = normalize(vec3(0.6, 0.8, -0.4));
+    vec3 l2 = normalize(vec3(-0.4, -0.3, 0.6));
+    float diff1 = max(dot(n, l1), 0.0);
+    float diff2 = max(dot(n, l2), 0.0) * 0.25;
+    float ao = calcAO(p, n);
+
+    // Specular
+    vec3 ref = reflect(rd, n);
+    float spec = pow(max(dot(ref, l1), 0.0), 48.0);
+
+    // Fresnel rim
+    float fresnel = pow(1.0 - abs(dot(n, -rd)), 3.0);
+
+    col = baseCol * (0.08 + diff1 * 0.65 + diff2) * ao;
+    col += vec3(1.0, 0.95, 0.9) * spec * 0.4 * ao;
+    col += baseCol * fresnel * 0.35;
+
+    // Step-based AO (cheap extra occlusion)
+    col *= 1.0 - float(steps) / 80.0 * 0.4;
+  }
+
+  // ─── fog ───
+  float fogAmount = 1.0 - exp(-totalDist * 0.04);
+  vec3 fogCol = vec3(0.005, 0.005, 0.02);
+  col = mix(col, fogCol, fogAmount);
+
+  // ─── subtle glow in fog ───
+  if (!hit) {
+    float glow = float(steps) / 80.0;
+    vec3 glowCol = palette(glow * 2.0 + uTime * 0.02, uPalette) * 0.03;
+    col += glowCol * glow * glow;
+  }
+
+  // ─── tone mapping + gamma ───
+  col = col / (col + 0.8); // Reinhard
+  col = pow(col, vec3(0.85)); // slight lift
+
+  // ─── vignette ───
+  vec2 q = gl_FragCoord.xy / uRes;
+  col *= 0.5 + 0.5 * pow(16.0 * q.x * q.y * (1.0 - q.x) * (1.0 - q.y), 0.15);
+
+  O = vec4(col, 1.0);
+}`;
+
+const vs = compile(gl.VERTEX_SHADER, VS);
+const fs = compile(gl.FRAGMENT_SHADER, FS);
+const program = link(vs, fs);
+
+// Fullscreen triangle
+const buf = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+const posLoc = gl.getAttribLocation(program, 'pos');
+gl.enableVertexAttribArray(posLoc);
+gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+gl.useProgram(program);
+
+const uRes = gl.getUniformLocation(program, 'uRes');
+const uTime = gl.getUniformLocation(program, 'uTime');
+const uMouse = gl.getUniformLocation(program, 'uMouse');
+const uPalette = gl.getUniformLocation(program, 'uPalette');
+const uMorph = gl.getUniformLocation(program, 'uMorph');
+
+// ─── State ───
+let mx = 0.5, my = 0.5;
+let started = false;
+let paletteShift = 0;
+let morphShift = 0;
+let audioEnabled = true;
+
+addEventListener('mousemove', e => {
+  mx = e.clientX / innerWidth;
+  my = 1.0 - e.clientY / innerHeight;
+});
+addEventListener('touchmove', e => {
+  mx = e.touches[0].clientX / innerWidth;
+  my = 1.0 - e.touches[0].clientY / innerHeight;
+}, { passive: true });
+
+// ─── Audio ───
+let audioCtx, masterGain;
+
+function initAudio() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0;
+  masterGain.gain.linearRampToValueAtTime(0.35, audioCtx.currentTime + 4);
+  masterGain.connect(audioCtx.destination);
+
+  // Delay for spaciousness
+  const delay = audioCtx.createDelay(1.5);
+  delay.delayTime.value = 0.8;
+  const fb = audioCtx.createGain();
+  fb.gain.value = 0.35;
+  const delayFilter = audioCtx.createBiquadFilter();
+  delayFilter.type = 'lowpass';
+  delayFilter.frequency.value = 1200;
+  masterGain.connect(delay);
+  delay.connect(delayFilter);
+  delayFilter.connect(fb);
+  fb.connect(delay);
+  delay.connect(audioCtx.destination);
+
+  // Drone layers
+  function makeDrone(freq, type, vol, detune) {
+    const osc = audioCtx.createOscillator();
+    osc.type = type;
+    osc.frequency.value = freq;
+    osc.detune.value = detune || 0;
+    const g = audioCtx.createGain();
+    g.gain.value = vol;
+    const f = audioCtx.createBiquadFilter();
+    f.type = 'lowpass';
+    f.frequency.value = 600 + Math.random() * 400;
+    f.Q.value = 0.7;
+    osc.connect(f);
+    f.connect(g);
+    g.connect(masterGain);
+    osc.start();
+
+    // Slow LFO on filter
+    const lfo = audioCtx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.03 + Math.random() * 0.05;
+    const lfoG = audioCtx.createGain();
+    lfoG.gain.value = 300 + Math.random() * 200;
+    lfo.connect(lfoG);
+    lfoG.connect(f.frequency);
+    lfo.start();
+
+    return { osc, gain: g, filter: f };
+  }
+
+  makeDrone(55, 'sine', 0.18, 0);
+  makeDrone(55.5, 'sine', 0.12, 5);
+  makeDrone(110, 'triangle', 0.06, -3);
+  makeDrone(165, 'sine', 0.03, 7);
+  makeDrone(220, 'triangle', 0.02, -5);
+  makeDrone(330, 'sine', 0.01, 8);
+  makeDrone(82.5, 'sine', 0.08, 3);
+
+  // Sub-bass
+  const sub = audioCtx.createOscillator();
+  sub.type = 'sine';
+  sub.frequency.value = 36.7;
+  const subG = audioCtx.createGain();
+  subG.gain.value = 0.12;
+  sub.connect(subG);
+  subG.connect(masterGain);
+  sub.start();
+
+  // Shimmer (filtered noise)
+  const noiseSize = audioCtx.sampleRate * 2;
+  const noiseBuf = audioCtx.createBuffer(1, noiseSize, audioCtx.sampleRate);
+  const noiseData = noiseBuf.getChannelData(0);
+  for (let i = 0; i < noiseSize; i++) noiseData[i] = Math.random() * 2 - 1;
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = noiseBuf;
+  noise.loop = true;
+  const nFilter = audioCtx.createBiquadFilter();
+  nFilter.type = 'bandpass';
+  nFilter.frequency.value = 3000;
+  nFilter.Q.value = 5;
+  const nGain = audioCtx.createGain();
+  nGain.gain.value = 0.008;
+  noise.connect(nFilter);
+  nFilter.connect(nGain);
+  nGain.connect(masterGain);
+  noise.start();
+
+  // LFO on noise freq
+  const nLfo = audioCtx.createOscillator();
+  nLfo.type = 'sine';
+  nLfo.frequency.value = 0.02;
+  const nLfoG = audioCtx.createGain();
+  nLfoG.gain.value = 1500;
+  nLfo.connect(nLfoG);
+  nLfoG.connect(nFilter.frequency);
+  nLfo.start();
+}
+
+function toggleAudio() {
+  if (!audioCtx) return;
+  audioEnabled = !audioEnabled;
+  masterGain.gain.linearRampToValueAtTime(audioEnabled ? 0.35 : 0, audioCtx.currentTime + 0.5);
+  document.getElementById('btn-audio').textContent = 'Audio: ' + (audioEnabled ? 'On' : 'Off');
+}
+
+// ─── Controls ───
+document.getElementById('btn-palette').onclick = () => { paletteShift += 1.0; };
+document.getElementById('btn-morph').onclick = () => { morphShift += 2.0; };
+document.getElementById('btn-audio').onclick = toggleAudio;
+
+// ─── Start ───
+document.getElementById('intro').onclick = () => {
+  started = true;
+  document.getElementById('intro').classList.add('hidden');
+  document.getElementById('hud').classList.add('show');
+  document.getElementById('stats').classList.add('show');
+  initAudio();
+};
+
+// ─── Render loop ───
+const statsEl = document.getElementById('stats');
+let frameCount = 0, fpsTime = 0, fps = 0;
+let startTime = 0;
+
+function render(ts) {
+  requestAnimationFrame(render);
+  if (!started && ts > 100) return; // don't render until started (save GPU)
+  if (startTime === 0) startTime = ts;
+
+  const t = (ts - startTime) * 0.001;
+  const dt = 1 / 60;
+
+  gl.uniform2f(uRes, canvas.width, canvas.height);
+  gl.uniform1f(uTime, t);
+  gl.uniform2f(uMouse, mx, my);
+  gl.uniform1f(uPalette, paletteShift);
+  gl.uniform1f(uMorph, morphShift);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+  // FPS
+  frameCount++;
+  fpsTime += dt;
+  if (fpsTime >= 1.0) {
+    fps = frameCount;
+    frameCount = 0;
+    fpsTime = 0;
+    statsEl.innerHTML =
+      `<span>${fps}</span> fps &middot; ` +
+      `<span>80</span> march steps &middot; ` +
+      `<span>12</span> fractal iterations &middot; ` +
+      `<span>${(canvas.width * canvas.height / 1e6).toFixed(1)}M</span> pixels`;
+  }
+}
+
+requestAnimationFrame(render);
+</script>
+</body>
+</html>

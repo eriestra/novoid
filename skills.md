@@ -1,6 +1,6 @@
 # no∅ — Agent Skills
 
-> **Machine mnemonic.** Agents see `no∅` and know: CSS prefix `nv-`, CSS vars `--nv-`, JS global `Nv`. Humans never touch the code — agents generate it.
+> **Machine mnemonic.** Agents see `no∅` and know: CSS prefix `nv-`, CSS vars `--nv-`, JS global `Novoid`. Humans never touch the code — agents generate it.
 
 ---
 
@@ -11,7 +11,7 @@
 | Name | no∅ |
 | CSS class prefix | `nv-` |
 | CSS variable prefix | `--nv-` |
-| JS global | `Nv` |
+| JS global | `Novoid` |
 | Build tools | None — zero compilation |
 | Fonts | DM Sans (body), Outfit (display/headings), JetBrains Mono (code) via Google Fonts |
 | Breakpoints | 640px (sm), 768px (md), 1024px (lg), 1280px (xl) |
@@ -36,7 +36,7 @@
   <div id="app"></div>
   <script src="nv.js"></script>
   <script>
-    const { signal, effect, h, mount } = Nv;
+    const { signal, effect, h, mount } = Novoid;
 
     mount('#app', () => {
       const [count, setCount] = signal(0);
@@ -1151,7 +1151,7 @@ Base class: `nv-avatar`
 
 #### Toast (CSS)
 
-CSS classes for toast notifications. Usually driven by the JS `Nv.toast` API, but the CSS classes are:
+CSS classes for toast notifications. Usually driven by the JS `Novoid.toast` API, but the CSS classes are:
 
 | Class | Description |
 |---|---|
@@ -1213,10 +1213,10 @@ Toggle: add/remove `active` class on `nv-accordion-item`.
 | `nv-pre` | Code block (dark bg, light text, scrollable) |
 
 ```html
-<p>Use <code class="nv-code">Nv.signal()</code> for reactive state.</p>
+<p>Use <code class="nv-code">Novoid.signal()</code> for reactive state.</p>
 
-<pre class="nv-pre"><code>const [count, setCount] = Nv.signal(0);
-Nv.effect(() => console.log(count()));</code></pre>
+<pre class="nv-pre"><code>const [count, setCount] = Novoid.signal(0);
+Novoid.effect(() => console.log(count()));</code></pre>
 ```
 
 ---
@@ -1265,10 +1265,10 @@ Print stylesheet also resets body colors and card shadows.
 
 ## JavaScript Framework
 
-All APIs are on the `Nv` global. Destructure for convenience:
+All APIs are on the `Novoid` global. Destructure for convenience:
 
 ```js
-const { signal, computed, effect, batch, h, mount } = Nv;
+const { signal, computed, effect, batch, h, mount } = Novoid;
 ```
 
 ---
@@ -1280,7 +1280,7 @@ const { signal, computed, effect, batch, h, mount } = Nv;
 Creates reactive state. Returns `[getter, setter]`. Getter is called as a function.
 
 ```js
-const [count, setCount] = Nv.signal(0);
+const [count, setCount] = Novoid.signal(0);
 
 // Read
 count();       // 0
@@ -1306,10 +1306,10 @@ unsub(); // unsubscribe
 Derived reactive value. Auto-tracks signal dependencies. Returns a getter function.
 
 ```js
-const [first, setFirst] = Nv.signal('Jane');
-const [last, setLast] = Nv.signal('Doe');
+const [first, setFirst] = Novoid.signal('Jane');
+const [last, setLast] = Novoid.signal('Doe');
 
-const fullName = Nv.computed(() => `${first()} ${last()}`);
+const fullName = Novoid.computed(() => `${first()} ${last()}`);
 
 fullName(); // "Jane Doe"
 setFirst('John');
@@ -1323,20 +1323,20 @@ fullName(); // "John Doe"
 Runs a side-effect whenever tracked signals change. Auto-tracks dependencies. Returns a dispose function.
 
 ```js
-const [count, setCount] = Nv.signal(0);
+const [count, setCount] = Novoid.signal(0);
 
 // Auto-tracking
-const dispose = Nv.effect(() => {
+const dispose = Novoid.effect(() => {
   console.log('Count is', count());
 });
 
 // With explicit deps
-Nv.effect(() => {
+Novoid.effect(() => {
   document.title = `Count: ${count()}`;
 }, () => [count()]);
 
 // Cleanup function (returned from effect body)
-Nv.effect(() => {
+Novoid.effect(() => {
   const id = setInterval(() => setCount(n => n + 1), 1000);
   return () => clearInterval(id); // cleanup
 });
@@ -1352,10 +1352,10 @@ dispose();
 Groups multiple signal updates into a single flush. Prevents intermediate re-renders.
 
 ```js
-const [a, setA] = Nv.signal(1);
-const [b, setB] = Nv.signal(2);
+const [a, setA] = Novoid.signal(1);
+const [b, setB] = Novoid.signal(2);
 
-Nv.batch(() => {
+Novoid.batch(() => {
   setA(10);
   setB(20);
   // effects run once after batch, not twice
@@ -1369,9 +1369,9 @@ Nv.batch(() => {
 Prevents unnecessary recalculation with explicit dependency tracking.
 
 ```js
-const [count, setCount] = Nv.signal(0);
+const [count, setCount] = Novoid.signal(0);
 
-const expensive = Nv.memo(
+const expensive = Novoid.memo(
   () => heavyComputation(count()),
   () => [count()]
 );
@@ -1386,11 +1386,11 @@ expensive(); // recalculates only when count changes
 Creates a mutable reference object (like `useRef`). Not reactive.
 
 ```js
-const myRef = Nv.ref(null);
+const myRef = Novoid.ref(null);
 myRef.current; // null
 
 // Commonly used with h() to get a DOM reference
-const inputRef = Nv.ref();
+const inputRef = Novoid.ref();
 h('input', { ref: inputRef, class: 'nv-input' });
 // After mount: inputRef.current is the <input> element
 inputRef.current.focus();
@@ -1405,7 +1405,7 @@ inputRef.current.focus();
 Shared state through Provider/use pattern.
 
 ```js
-const ThemeCtx = Nv.createContext('light');
+const ThemeCtx = Novoid.createContext('light');
 
 // Provide a value
 ThemeCtx.Provider('dark', () => {
@@ -1433,7 +1433,7 @@ ThemeCtx.use(); // "light"
 Global state with named action reducers. Built on `signal()`.
 
 ```js
-const store = Nv.createStore(
+const store = Novoid.createStore(
   // Initial state
   { todos: [], filter: 'all' },
   // Actions — each receives (currentState, ...args) → newState
@@ -1474,7 +1474,7 @@ unsub();
 Named reusable component. Registers in the component registry. Returns a factory function.
 
 ```js
-const Card = Nv.component('Card', (props) => {
+const Card = Novoid.component('Card', (props) => {
   return h('div', { class: 'nv-card' },
     h('div', { class: 'nv-card-body' },
       h('h3', { class: 'nv-h5' }, props.title),
@@ -1496,7 +1496,7 @@ Components auto-receive `_id` in props. The rendered element gets `data-nv-compo
 Creates DOM elements with reactive bindings. Core function — equivalent to JSX.
 
 ```js
-Nv.h(tag, attrs?, ...children)
+Novoid.h(tag, attrs?, ...children)
 ```
 
 **Parameters:**
@@ -1510,7 +1510,7 @@ Nv.h(tag, attrs?, ...children)
 **Basic usage:**
 
 ```js
-const { h } = Nv;
+const { h } = Novoid;
 
 // Simple element
 h('div', { class: 'nv-p-4' }, 'Hello');
@@ -1524,7 +1524,7 @@ h('div', { class: 'nv-card' },
 );
 
 // Reactive text child
-const [name, setName] = Nv.signal('World');
+const [name, setName] = Novoid.signal('World');
 h('p', {}, () => `Hello, ${name()}!`);
 ```
 
@@ -1533,7 +1533,7 @@ h('p', {}, () => `Hello, ${name()}!`);
 **`ref`** — Assign a ref to capture the DOM element:
 
 ```js
-const myRef = Nv.ref();
+const myRef = Novoid.ref();
 h('input', { ref: myRef, class: 'nv-input' });
 // myRef.current → the <input> element
 ```
@@ -1545,7 +1545,7 @@ h('input', { ref: myRef, class: 'nv-input' });
 h('div', { class: 'nv-btn nv-btn-primary' });
 
 // Reactive
-const [active, setActive] = Nv.signal(false);
+const [active, setActive] = Novoid.signal(false);
 h('div', { class: () => `nv-tab ${active() ? 'active' : ''}` });
 ```
 
@@ -1556,7 +1556,7 @@ h('div', { class: () => `nv-tab ${active() ? 'active' : ''}` });
 h('div', { style: { color: 'red', fontSize: '1.5rem' } });
 
 // Reactive (function returning object)
-const [size, setSize] = Nv.signal(16);
+const [size, setSize] = Novoid.signal(16);
 h('div', { style: () => ({ fontSize: `${size()}px` }) });
 ```
 
@@ -1578,7 +1578,7 @@ h('div', { html: () => renderMarkdown(content()) });
 **`show`** — Toggle `display: none` (reactive):
 
 ```js
-const [visible, setVisible] = Nv.signal(true);
+const [visible, setVisible] = Novoid.signal(true);
 h('div', { show: visible }, 'I can be hidden');
 h('div', { show: () => count() > 0 }, 'Count is positive');
 ```
@@ -1586,7 +1586,7 @@ h('div', { show: () => count() > 0 }, 'Count is positive');
 **`bind`** — Two-way binding with `[getter, setter]`:
 
 ```js
-const [text, setText] = Nv.signal('');
+const [text, setText] = Novoid.signal('');
 h('input', { class: 'nv-input', bind: [text, setText], placeholder: 'Type here...' });
 // Input value syncs with signal automatically
 ```
@@ -1605,7 +1605,7 @@ h('input', { disabled: () => isSubmitting(), class: 'nv-input' });
 Keyed list rendering with efficient DOM reconciliation.
 
 ```js
-Nv.list(container, items, keyFn, renderFn)
+Novoid.list(container, items, keyFn, renderFn)
 ```
 
 | Param | Type | Description |
@@ -1616,7 +1616,7 @@ Nv.list(container, items, keyFn, renderFn)
 | `renderFn` | `(item, index) => HTMLElement` | Render each item |
 
 ```js
-const { signal, h, list } = Nv;
+const { signal, h, list } = Novoid;
 const [todos, setTodos] = signal([
   { id: 1, text: 'Buy milk' },
   { id: 2, text: 'Walk dog' },
@@ -1642,10 +1642,10 @@ list(ul, todos, t => t.id, (todo) =>
 **`when(condition, thenFn, elseFn?)`** — Returns a reactive function that renders one branch or the other.
 
 ```js
-const [loggedIn, setLoggedIn] = Nv.signal(false);
+const [loggedIn, setLoggedIn] = Novoid.signal(false);
 
 h('div', {},
-  Nv.when(loggedIn,
+  Novoid.when(loggedIn,
     () => h('p', {}, 'Welcome back!'),
     () => h('button', { class: 'nv-btn nv-btn-primary', onClick: () => setLoggedIn(true) }, 'Log In')
   )
@@ -1656,7 +1656,7 @@ h('div', {},
 
 ```js
 h('div', {},
-  Nv.show(() => errors().length > 0,
+  Novoid.show(() => errors().length > 0,
     () => h('div', { class: 'nv-alert nv-alert-danger' }, 'There are errors')
   )
 );
@@ -1665,10 +1665,10 @@ h('div', {},
 **`match(value, cases)`** — Switch-like conditional rendering.
 
 ```js
-const [tab, setTab] = Nv.signal('home');
+const [tab, setTab] = Novoid.signal('home');
 
 h('div', {},
-  Nv.match(tab, {
+  Novoid.match(tab, {
     home:    () => h('div', {}, 'Home content'),
     about:   () => h('div', {}, 'About content'),
     contact: () => h('div', {}, 'Contact content'),
@@ -1684,11 +1684,11 @@ h('div', {},
 Simple string template rendering with `{{key}}` interpolation.
 
 ```js
-Nv.template(htmlString, data)
+Novoid.template(htmlString, data)
 ```
 
 ```js
-const card = Nv.template(
+const card = Novoid.template(
   '<div class="nv-card"><div class="nv-card-body"><h3 class="nv-h5">{{title}}</h3><p>{{body}}</p></div></div>',
   { title: 'Hello', body: 'World' }
 );
@@ -1706,7 +1706,7 @@ Values in `data` can be static or functions (getters — resolved on call).
 Render content into a different DOM node (like React `createPortal`).
 
 ```js
-Nv.portal(target, content)
+Novoid.portal(target, content)
 ```
 
 | Param | Type | Description |
@@ -1717,7 +1717,7 @@ Nv.portal(target, content)
 Returns a cleanup function.
 
 ```js
-const cleanup = Nv.portal('#modal-root', () =>
+const cleanup = Novoid.portal('#modal-root', () =>
   h('div', { class: 'nv-modal-overlay active' },
     h('div', { class: 'nv-modal' },
       h('div', { class: 'nv-modal-body' }, 'Portal content!')
@@ -1736,11 +1736,11 @@ cleanup();
 Catch and display render errors gracefully.
 
 ```js
-Nv.errorBoundary(renderFn, fallbackFn)
+Novoid.errorBoundary(renderFn, fallbackFn)
 ```
 
 ```js
-const safe = Nv.errorBoundary(
+const safe = Novoid.errorBoundary(
   () => RiskyComponent({ data }),
   (error) => h('div', { class: 'nv-alert nv-alert-danger' },
     h('div', { class: 'nv-alert-title' }, 'Something went wrong'),
@@ -1756,11 +1756,11 @@ const safe = Nv.errorBoundary(
 Show fallback UI while async content loads.
 
 ```js
-Nv.suspense(asyncFn, fallback?)
+Novoid.suspense(asyncFn, fallback?)
 ```
 
 ```js
-const content = Nv.suspense(
+const content = Novoid.suspense(
   async () => {
     const res = await fetch('/api/data');
     const data = await res.json();
@@ -1779,7 +1779,7 @@ const content = Nv.suspense(
 Lazy-load a component. Shows a spinner fallback automatically.
 
 ```js
-const HeavyChart = Nv.lazy(() => import('./chart.js'));
+const HeavyChart = Novoid.lazy(() => import('./chart.js'));
 
 // Usage — call like a component
 const el = HeavyChart({ data: myData });
@@ -1792,7 +1792,7 @@ const el = HeavyChart({ data: myData });
 Hash-based client-side router.
 
 ```js
-Nv.createRouter(routes, container)
+Novoid.createRouter(routes, container)
 ```
 
 **Route definition:**
@@ -1818,7 +1818,7 @@ const routes = [
 
 ```js
 const appContainer = document.getElementById('app');
-const { navigate, currentRoute } = Nv.createRouter(routes, appContainer);
+const { navigate, currentRoute } = Novoid.createRouter(routes, appContainer);
 
 // Programmatic navigation
 navigate('/users/42');
@@ -1845,11 +1845,11 @@ function UserPage({ params, navigate }) {
 Create a navigation link element.
 
 ```js
-Nv.link(text, path, className?)
+Novoid.link(text, path, className?)
 ```
 
 ```js
-Nv.link('Home', '/', 'nv-navbar-link');
+Novoid.link('Home', '/', 'nv-navbar-link');
 // → <a href="#/" class="nv-navbar-link">Home</a>
 ```
 
@@ -1860,7 +1860,7 @@ Nv.link('Home', '/', 'nv-navbar-link');
 Programmatic enter/leave animations on an element.
 
 ```js
-Nv.transition(element, { enter, leave, duration? })
+Novoid.transition(element, { enter, leave, duration? })
 ```
 
 Returns `{ in(), out() }`. `out()` returns a Promise.
@@ -1868,7 +1868,7 @@ Returns `{ in(), out() }`. `out()` returns a Promise.
 ```js
 const el = h('div', { class: 'nv-card nv-card-body' }, 'Animated');
 
-const anim = Nv.transition(el, {
+const anim = Novoid.transition(el, {
   enter: { from: { opacity: '0', transform: 'translateY(10px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
   leave: { to: { opacity: '0', transform: 'translateY(10px)' } },
   duration: 300,
@@ -1889,18 +1889,18 @@ Global publish/subscribe event bus.
 
 ```js
 // Subscribe
-const unsub = Nv.bus.on('user:login', (user) => {
+const unsub = Novoid.bus.on('user:login', (user) => {
   console.log('Logged in:', user.name);
 });
 
 // Emit
-Nv.bus.emit('user:login', { name: 'Alice' });
+Novoid.bus.emit('user:login', { name: 'Alice' });
 
 // Unsubscribe (specific handler)
-Nv.bus.off('user:login', myHandler);
+Novoid.bus.off('user:login', myHandler);
 
 // Unsubscribe (all handlers for event)
-Nv.bus.off('user:login');
+Novoid.bus.off('user:login');
 
 // Unsubscribe (via return value)
 unsub();
@@ -1919,7 +1919,7 @@ unsub();
 Form state management with validation.
 
 ```js
-Nv.createForm(schema)
+Novoid.createForm(schema)
 ```
 
 **Schema per field:**
@@ -1947,7 +1947,7 @@ Nv.createForm(schema)
 | `reset()` | `function` | Reset all fields and errors |
 
 ```js
-const form = Nv.createForm({
+const form = Novoid.createForm({
   email: {
     initial: '',
     required: true,
@@ -1998,21 +1998,21 @@ h('form', { onSubmit: (e) => { e.preventDefault(); form.handleSubmit(submitToAPI
 Async data fetching with loading/error states.
 
 ```js
-Nv.useAsync(asyncFn, deps?)
+Novoid.useAsync(asyncFn, deps?)
 ```
 
 Returns `{ data, loading, error, refetch }` — all are signal getters.
 
 ```js
-const { data, loading, error, refetch } = Nv.useAsync(async () => {
+const { data, loading, error, refetch } = Novoid.useAsync(async () => {
   const res = await fetch('https://api.example.com/users');
   return res.json();
 });
 
 h('div', {},
-  Nv.when(loading,
+  Novoid.when(loading,
     () => h('div', { class: 'nv-spinner' }),
-    () => Nv.when(error,
+    () => Novoid.when(error,
       () => h('div', { class: 'nv-alert nv-alert-danger' }, () => error().message),
       () => h('div', {},
         () => JSON.stringify(data())
@@ -2030,13 +2030,13 @@ h('div', {},
 Global toast notification system. Creates a `nv-toast-container` automatically.
 
 ```js
-Nv.toast.info('This is an info message');
-Nv.toast.success('Saved successfully!');
-Nv.toast.danger('Something went wrong');
-Nv.toast.warning('Please check your input');
+Novoid.toast.info('This is an info message');
+Novoid.toast.success('Saved successfully!');
+Novoid.toast.danger('Something went wrong');
+Novoid.toast.warning('Please check your input');
 
 // Custom duration (ms) — default is 3000
-Nv.toast.success('Done!', 5000);
+Novoid.toast.success('Done!', 5000);
 ```
 
 | Method | Description |
@@ -2054,12 +2054,12 @@ Lifecycle hooks.
 
 ```js
 // Run after mount() completes
-Nv.onMount(() => {
+Novoid.onMount(() => {
   console.log('App mounted');
 });
 
 // Register cleanup for a component ID
-Nv.onUnmount('my-component-id', () => {
+Novoid.onUnmount('my-component-id', () => {
   console.log('Component unmounted');
 });
 ```
@@ -2071,7 +2071,7 @@ Nv.onUnmount('my-component-id', () => {
 Global error handler.
 
 ```js
-Nv.onError((error, componentName) => {
+Novoid.onError((error, componentName) => {
   console.error(`Error in ${componentName}:`, error);
   trackError(error);
 });
@@ -2084,7 +2084,7 @@ Nv.onError((error, componentName) => {
 Mount an application to a DOM node. Clears the container, calls the app function, and fires onMount callbacks.
 
 ```js
-Nv.mount(selector, appFn)
+Novoid.mount(selector, appFn)
 ```
 
 | Param | Type | Description |
@@ -2093,7 +2093,7 @@ Nv.mount(selector, appFn)
 | `appFn` | `() => HTMLElement` | Function that returns the root element |
 
 ```js
-Nv.mount('#app', () => {
+Novoid.mount('#app', () => {
   return h('div', { class: 'nv-container nv-py-8' },
     h('h1', { class: 'nv-h1' }, 'My App')
   );
@@ -2119,7 +2119,7 @@ Optional real-time backend integration. Convex pushes updates via WebSocket subs
 Initialize a Convex client connection.
 
 ```js
-Nv.createClient(url)
+Novoid.createClient(url)
 ```
 
 | Param | Type | Description |
@@ -2129,7 +2129,7 @@ Nv.createClient(url)
 **Returns:** A `ConvexClient` instance.
 
 ```js
-const db = Nv.createClient('https://happy-animal-123.convex.cloud');
+const db = Novoid.createClient('https://happy-animal-123.convex.cloud');
 ```
 
 ---
@@ -2139,7 +2139,7 @@ const db = Nv.createClient('https://happy-animal-123.convex.cloud');
 Subscribe to a Convex query with reactive signals. Automatically re-subscribes when reactive args change.
 
 ```js
-Nv.useQuery(client, queryRef, args?)
+Novoid.useQuery(client, queryRef, args?)
 ```
 
 | Param | Type | Description |
@@ -2152,24 +2152,24 @@ Nv.useQuery(client, queryRef, args?)
 
 ```js
 // Static args
-const { data, loading, error } = Nv.useQuery(db, api.messages.list, { limit: 10 });
+const { data, loading, error } = Novoid.useQuery(db, api.messages.list, { limit: 10 });
 
 // Reactive args (re-subscribes when userId signal changes)
-const { data } = Nv.useQuery(db, api.users.get, () => ({ id: userId() }));
+const { data } = Novoid.useQuery(db, api.users.get, () => ({ id: userId() }));
 
 // Skip query conditionally
-const { data } = Nv.useQuery(db, api.users.get, () => userId() ? { id: userId() } : 'skip');
+const { data } = Novoid.useQuery(db, api.users.get, () => userId() ? { id: userId() } : 'skip');
 ```
 
 **Usage in UI:**
 
 ```js
-const { data: messages, loading } = Nv.useQuery(db, api.messages.list);
+const { data: messages, loading } = Novoid.useQuery(db, api.messages.list);
 
 h('div', {},
-  Nv.when(loading,
+  Novoid.when(loading,
     () => h('div', { class: 'nv-skeleton nv-h-8 nv-w-full' }),
-    () => Nv.list(
+    () => Novoid.list(
       h('ul', { class: 'nv-flex nv-flex-col nv-gap-2' }),
       messages,
       (msg) => msg._id,
@@ -2186,7 +2186,7 @@ h('div', {},
 Create a callable mutation with loading/error state.
 
 ```js
-Nv.useMutation(client, mutationRef)
+Novoid.useMutation(client, mutationRef)
 ```
 
 | Param | Type | Description |
@@ -2197,7 +2197,7 @@ Nv.useMutation(client, mutationRef)
 **Returns:** Async callable function with `.isLoading` and `.error` signal getters.
 
 ```js
-const sendMessage = Nv.useMutation(db, api.messages.send);
+const sendMessage = Novoid.useMutation(db, api.messages.send);
 
 // Call it
 await sendMessage({ body: 'Hello!' });
@@ -2210,8 +2210,8 @@ sendMessage.error();     // error or undefined signal getter
 **Usage in UI:**
 
 ```js
-const sendMessage = Nv.useMutation(db, api.messages.send);
-const [body, setBody] = Nv.signal('');
+const sendMessage = Novoid.useMutation(db, api.messages.send);
+const [body, setBody] = Novoid.signal('');
 
 h('form', {
   onSubmit: async (e) => {
@@ -2235,7 +2235,7 @@ h('form', {
 Create a callable action with loading/error state. Same shape as `useMutation` but wraps `client.action()`.
 
 ```js
-Nv.useAction(client, actionRef)
+Novoid.useAction(client, actionRef)
 ```
 
 | Param | Type | Description |
@@ -2246,7 +2246,7 @@ Nv.useAction(client, actionRef)
 **Returns:** Async callable function with `.isLoading` and `.error` signal getters.
 
 ```js
-const generateText = Nv.useAction(db, api.ai.generate);
+const generateText = Novoid.useAction(db, api.ai.generate);
 const result = await generateText({ prompt: 'Hello' });
 
 generateText.isLoading(); // boolean
@@ -2260,7 +2260,7 @@ generateText.error();     // error or undefined
 Manage Convex authentication state with reactive signals.
 
 ```js
-Nv.useAuth(client, fetchToken)
+Novoid.useAuth(client, fetchToken)
 ```
 
 | Param | Type | Description |
@@ -2277,13 +2277,13 @@ Nv.useAuth(client, fetchToken)
 | `logout` | `function` | Clears auth state and disconnects auth from client |
 
 ```js
-const { isAuthenticated, isLoading, logout } = Nv.useAuth(db, async ({ forceRefreshToken }) => {
+const { isAuthenticated, isLoading, logout } = Novoid.useAuth(db, async ({ forceRefreshToken }) => {
   const res = await fetch('/api/auth/token');
   return res.ok ? (await res.json()).token : null;
 });
 
 // Conditional UI
-Nv.when(isAuthenticated,
+Novoid.when(isAuthenticated,
   () => h('button', { class: 'nv-btn nv-btn-danger', onClick: logout }, 'Log Out'),
   () => h('a', { class: 'nv-btn nv-btn-primary', href: '/login' }, 'Sign In')
 );
@@ -2296,7 +2296,7 @@ Nv.when(isAuthenticated,
 Monitor the Convex WebSocket connection state.
 
 ```js
-Nv.useConnectionState(client)
+Novoid.useConnectionState(client)
 ```
 
 | Param | Type | Description |
@@ -2306,7 +2306,7 @@ Nv.useConnectionState(client)
 **Returns:** Signal getter — `'connecting'` | `'connected'` | `'disconnected'`.
 
 ```js
-const connState = Nv.useConnectionState(db);
+const connState = Novoid.useConnectionState(db);
 
 h('span', {
   class: () => `nv-badge ${connState() === 'connected' ? 'nv-badge-success' : 'nv-badge-warning'}`,
@@ -2320,7 +2320,7 @@ h('span', {
 AI-oriented action caller with response persistence and conversation history. Wraps the OpenRouter-via-Convex pattern where API keys live in the Convex DB and actions call OpenRouter server-side.
 
 ```js
-Nv.useAI(client, actionRef)
+Novoid.useAI(client, actionRef)
 ```
 
 | Param | Type | Description |
@@ -2344,7 +2344,7 @@ Nv.useAI(client, actionRef)
 - **`clear()`** resets conversation state for a new thread
 
 ```js
-const chat = Nv.useAI(db, api.ai.chat);
+const chat = Novoid.useAI(db, api.ai.chat);
 
 // Send a message
 const reply = await chat({ messages: [{ role: 'user', content: 'Hello' }] });
@@ -2361,17 +2361,17 @@ chat.clear();
 **Usage in UI:**
 
 ```js
-const chat = Nv.useAI(db, api.ai.chat);
-const [input, setInput] = Nv.signal('');
+const chat = Novoid.useAI(db, api.ai.chat);
+const [input, setInput] = Novoid.signal('');
 
 h('div', { class: 'nv-flex nv-flex-col nv-gap-4' },
   // Response
-  Nv.when(() => chat.response(),
+  Novoid.when(() => chat.response(),
     () => h('div', { class: 'nv-card nv-card-body nv-prose' }, () => chat.response()),
   ),
 
   // Loading indicator
-  Nv.when(chat.isLoading,
+  Novoid.when(chat.isLoading,
     () => h('div', { class: 'nv-skeleton nv-h-16 nv-w-full nv-rounded-lg' }),
   ),
 
@@ -2502,7 +2502,7 @@ export const chat = action({
 #### 3. Frontend consumes with useAI
 
 ```js
-const { h, signal, mount, createClient, useAI, when } = Nv;
+const { h, signal, mount, createClient, useAI, when } = Novoid;
 
 const db = createClient('https://your-deployment.convex.cloud');
 
@@ -2650,7 +2650,7 @@ A minimal reactive counter.
 ```html
 <div id="app"></div>
 <script>
-const { signal, h, mount } = Nv;
+const { signal, h, mount } = Novoid;
 
 mount('#app', () => {
   const [count, setCount] = signal(0);
@@ -2686,7 +2686,7 @@ Full todo app using `createStore`.
 ```html
 <div id="app"></div>
 <script>
-const { signal, computed, h, list, mount, createStore } = Nv;
+const { signal, computed, h, list, mount, createStore } = Novoid;
 
 const store = createStore(
   { todos: [], nextId: 1 },
@@ -2766,7 +2766,7 @@ Using `createForm` for validated user input.
 ```html
 <div id="app"></div>
 <script>
-const { h, mount, createForm, toast } = Nv;
+const { h, mount, createForm, toast } = Novoid;
 
 mount('#app', () => {
   const form = createForm({
@@ -2836,7 +2836,7 @@ Using `useAsync` to fetch and display data.
 ```html
 <div id="app"></div>
 <script>
-const { h, mount, useAsync, when } = Nv;
+const { h, mount, useAsync, when } = Novoid;
 
 mount('#app', () => {
   const { data, loading, error, refetch } = useAsync(async () => {
@@ -2888,7 +2888,7 @@ Multi-page SPA using `createRouter`.
 ```html
 <div id="app"></div>
 <script>
-const { h, signal, createRouter, link, mount } = Nv;
+const { h, signal, createRouter, link, mount } = Novoid;
 
 function Navbar(navigate) {
   return h('nav', { class: 'nv-navbar nv-navbar-sticky' },
@@ -3003,7 +3003,7 @@ A complete page layout with navbar, sidebar, main content, and footer.
 ```html
 <div id="app"></div>
 <script>
-const { h, signal, mount } = Nv;
+const { h, signal, mount } = Novoid;
 
 mount('#app', () => {
   const [sidebarOpen, setSidebarOpen] = signal(true);
@@ -3207,7 +3207,7 @@ export const ask = action({
 
 <div id="app"></div>
 <script>
-const { signal, h, mount, list, when, createClient, useQuery, useAI } = Nv;
+const { signal, h, mount, list, when, createClient, useQuery, useAI } = Novoid;
 
 const db = createClient('https://your-deployment.convex.cloud');
 
@@ -3280,9 +3280,9 @@ mount('#app', () => {
 
 1. **CSS prefix is `nv-`**. Every utility and component class starts with `nv-`. CSS variables start with `--nv-`.
 
-2. **JS global is `Nv`**. Destructure at the top of every script:
+2. **JS global is `Novoid`**. Destructure at the top of every script:
    ```js
-   const { signal, effect, h, mount } = Nv;
+   const { signal, effect, h, mount } = Novoid;
    ```
 
 3. **Signal getters are called as functions**: `count()` not `count`. This triggers dependency tracking.
@@ -3294,7 +3294,7 @@ mount('#app', () => {
 
 5. **Use `batch()` for multiple signal writes** to prevent intermediate re-renders:
    ```js
-   Nv.batch(() => {
+   Novoid.batch(() => {
      setA(1);
      setB(2);
    });
@@ -3311,7 +3311,7 @@ mount('#app', () => {
 
 7. **Use `list()` for dynamic arrays**. It handles keyed reconciliation efficiently. Do not use `.map()` inside reactive children for large lists.
 
-8. **Router is hash-based**. URLs look like `#/path`. Use `navigate()` for programmatic navigation, `Nv.link()` for anchor elements.
+8. **Router is hash-based**. URLs look like `#/path`. Use `navigate()` for programmatic navigation, `Novoid.link()` for anchor elements.
 
 9. **Dark mode** toggles surface tokens only. Component classes don't need to change — they reference token variables.
 
@@ -3319,13 +3319,13 @@ mount('#app', () => {
 
 11. **Form validation** is declarative via `createForm()` schema. Use `bind` for two-way input binding.
 
-12. **Toast notifications** are fire-and-forget. Call `Nv.toast.success('msg')` from anywhere.
+12. **Toast notifications** are fire-and-forget. Call `Novoid.toast.success('msg')` from anywhere.
 
 13. **Error boundaries** wrap risky components. Always use for async or user-generated content.
 
 14. **Component naming**: use PascalCase for component factories, lowercase for CSS classes:
     ```js
-    const UserCard = Nv.component('UserCard', (props) => { ... });
+    const UserCard = Novoid.component('UserCard', (props) => { ... });
     // CSS: class="nv-card nv-card-hoverable"
     ```
 
