@@ -4,316 +4,219 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>no∅ — The Agent's Framework</title>
+  <script>document.documentElement.setAttribute('data-theme','dark');</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/novoid.min.css">
   <style>
-    /* ── Hero ──────────────────────────────────── */
-    .hero {
-      position: relative;
-      padding: 8rem 0 6rem;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 50% at 50% 0%, rgba(92,124,250,0.12) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 80% 20%, rgba(124,92,250,0.06) 0%, transparent 60%);
-      pointer-events: none;
-    }
-    .hero-grid {
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(92,124,250,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(92,124,250,0.04) 1px, transparent 1px);
-      background-size: 64px 64px;
-      mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 70%);
-      -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 70%);
-    }
-    .hero-title {
-      font-family: var(--nv-font-display);
-      font-weight: 900;
-      font-size: clamp(4rem, 10vw, 7rem);
-      letter-spacing: -0.04em;
-      line-height: 0.95;
-      background: linear-gradient(135deg, #e4e5e9 30%, #748ffc 70%, #91a7ff 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .hero-sub {
-      font-family: var(--nv-font-mono);
-      color: var(--nv-primary-400);
-      font-size: var(--nv-text-sm);
-      letter-spacing: 0.05em;
-    }
+/* ── Reset ───────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+a{text-decoration:none;color:inherit}
+table{border-collapse:collapse;width:100%}
 
-    /* ── Workflow block ────────────────────────── */
-    .workflow-block {
-      background: var(--nv-bg-subtle);
-      border: 1px solid var(--nv-border);
-      border-radius: var(--nv-radius-lg);
-      font-family: var(--nv-font-mono);
-      font-size: 0.82rem;
-      line-height: 1.7;
-      padding: 1.5rem 2rem;
-      max-width: 38rem;
-      overflow-x: auto;
-    }
-    .workflow-block .wf-label {
-      color: var(--nv-text-subtle);
-      display: inline;
-    }
-    .workflow-block .wf-human {
-      color: var(--nv-text);
-    }
-    .workflow-block .wf-agent {
-      color: var(--nv-primary-400);
-    }
-    .workflow-block .wf-result {
-      color: var(--nv-success-700);
-    }
-    .workflow-block .wf-time {
-      color: var(--nv-warning-700);
-      font-weight: 600;
-    }
+/* ── Theme tokens ────────────────────────────── */
+:root{
+  --nv-font-sans:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --nv-font-mono:'JetBrains Mono','Fira Code','Consolas',monospace;
+  --nv-font-display:'Outfit',var(--nv-font-sans);
+  --nv-text-xs:0.75rem;--nv-text-sm:0.875rem;--nv-text-base:1rem;
+  --nv-text-lg:1.125rem;--nv-text-xl:1.25rem;--nv-text-2xl:1.5rem;
+  --nv-text-3xl:1.875rem;--nv-text-4xl:2.25rem;--nv-text-5xl:3rem;
+  --nv-radius-md:0.5rem;--nv-radius-lg:0.75rem;--nv-radius-xl:1rem;--nv-radius-full:9999px;
+  --nv-primary-400:#748ffc;--nv-primary-500:#5c7cfa;--nv-primary-600:#4c6ef5;
+  /* Dark by default */
+  --nv-bg:#0f1117;--nv-bg-subtle:#1a1d27;--nv-bg-muted:#252833;
+  --nv-text:#e4e5e9;--nv-text-muted:#9ca0ab;--nv-text-subtle:#5c6170;
+  --nv-border:#2e3140;--nv-border-strong:#3d4155;
+  --nv-success-700:#69db7c;--nv-warning-700:#ffd43b;
+}
+[data-theme="light"]{
+  --nv-bg:#ffffff;--nv-bg-subtle:#f8f9fa;--nv-bg-muted:#f1f3f5;
+  --nv-text:#212529;--nv-text-muted:#868e96;--nv-text-subtle:#adb5bd;
+  --nv-border:#e9ecef;--nv-border-strong:#dee2e6;
+  --nv-success-700:#2b8a3e;--nv-warning-700:#e67700;
+}
 
-    /* ── Comparison table ─────────────────────── */
-    .cmp-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: var(--nv-text-sm);
-    }
-    .cmp-table th,
-    .cmp-table td {
-      padding: 0.65rem 1rem;
-      text-align: left;
-      border-bottom: 1px solid var(--nv-border);
-    }
-    .cmp-table th {
-      font-family: var(--nv-font-mono);
-      font-weight: 600;
-      font-size: var(--nv-text-xs);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--nv-text-subtle);
-    }
-    .cmp-table td:first-child {
-      color: var(--nv-text-muted);
-      font-weight: 500;
-    }
-    .cmp-table .react-col {
-      color: var(--nv-text-subtle);
-    }
-    .cmp-table .nv-col {
-      color: var(--nv-primary-400);
-      font-weight: 600;
-      font-family: var(--nv-font-mono);
-    }
+body{font-family:var(--nv-font-sans);font-size:var(--nv-text-base);color:var(--nv-text);background:var(--nv-bg);line-height:1.6;-webkit-font-smoothing:antialiased}
 
-    /* ── Architecture diagram ─────────────────── */
-    .arch-block {
-      background: var(--nv-bg-subtle);
-      border: 1px solid var(--nv-border);
-      border-radius: var(--nv-radius-lg);
-      font-family: var(--nv-font-mono);
-      font-size: 0.78rem;
-      line-height: 1.8;
-      padding: 1.5rem 2rem;
-      overflow-x: auto;
-      white-space: pre;
-      color: var(--nv-text-muted);
-    }
-    .arch-block .arch-hl {
-      color: var(--nv-primary-400);
-    }
-    .arch-block .arch-dim {
-      color: var(--nv-text-subtle);
-    }
-    .arch-block .arch-accent {
-      color: var(--nv-success-700);
-    }
+/* ── Utilities ───────────────────────────────── */
+.u-container{width:100%;max-width:72rem;margin:0 auto;padding:0 1.5rem}
+.u-section{padding:4rem 0}
+.u-grid{display:grid;gap:1rem}
+.u-cols-1{grid-template-columns:1fr}
+.u-gap-2{gap:0.5rem}.u-gap-3{gap:0.75rem}.u-gap-4{gap:1rem}.u-gap-6{gap:1.5rem}.u-gap-8{gap:2rem}
+.u-flex{display:flex}.u-flex-wrap{flex-wrap:wrap}.u-flex-col{flex-direction:column}
+.u-items-center{align-items:center}.u-items-baseline{align-items:baseline}
+.u-justify-between{justify-content:space-between}
+.u-mb-1{margin-bottom:0.25rem}.u-mb-2{margin-bottom:0.5rem}.u-mb-3{margin-bottom:0.75rem}
+.u-mb-4{margin-bottom:1rem}.u-mb-6{margin-bottom:1.5rem}.u-mb-8{margin-bottom:2rem}
+.u-mt-2{margin-top:0.5rem}.u-mt-3{margin-top:0.75rem}.u-mt-4{margin-top:1rem}
+.u-mt-6{margin-top:1.5rem}.u-mt-8{margin-top:2rem}
+.u-text-xs{font-size:var(--nv-text-xs)}.u-text-sm{font-size:var(--nv-text-sm)}
+.u-text-lg{font-size:var(--nv-text-lg)}.u-text-xl{font-size:var(--nv-text-xl)}
+.u-text-muted{color:var(--nv-text-muted)}
+.u-font-mono{font-family:var(--nv-font-mono)}
+.u-font-medium{font-weight:500}.u-font-bold{font-weight:700}
+.u-h5{font-family:var(--nv-font-display);font-weight:700;font-size:var(--nv-text-xl);line-height:1.2;color:var(--nv-text)}
+.u-h6{font-family:var(--nv-font-display);font-weight:700;font-size:var(--nv-text-lg);line-height:1.2;color:var(--nv-text)}
+.u-overflow-x{overflow-x:auto}
+.u-border-t{border-top:1px solid var(--nv-border)}
 
-    /* ── API table ────────────────────────────── */
-    .api-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: var(--nv-text-sm);
-    }
-    .api-table td {
-      padding: 0.4rem 0;
-      border: none;
-    }
-    .api-table td:first-child {
-      font-family: var(--nv-font-mono);
-      color: var(--nv-primary-400);
-      font-weight: 500;
-      font-size: var(--nv-text-xs);
-      padding-right: 1.5rem;
-      white-space: nowrap;
-    }
-    .api-table td:last-child {
-      color: var(--nv-text-subtle);
-      font-size: var(--nv-text-xs);
-    }
+@media(min-width:768px){
+  .u-md-cols-2{grid-template-columns:repeat(2,1fr)}
+  .u-md-cols-3{grid-template-columns:repeat(3,1fr)}
+}
 
-    /* ── Proof cards ──────────────────────────── */
-    .proof-card {
-      border: 1px solid var(--nv-border);
-      background: var(--nv-bg-subtle);
-      border-radius: var(--nv-radius-xl);
-      padding: 1.5rem;
-      transition: border-color 0.25s ease, transform 0.25s ease;
-    }
-    .proof-card:hover {
-      border-color: var(--nv-primary-600);
-      transform: translateY(-2px);
-    }
-    .proof-card .proof-time {
-      font-family: var(--nv-font-mono);
-      font-size: var(--nv-text-3xl);
-      font-weight: 700;
-      color: var(--nv-primary-400);
-      line-height: 1;
-    }
-    .proof-card .proof-unit {
-      font-family: var(--nv-font-mono);
-      font-size: var(--nv-text-xs);
-      color: var(--nv-text-subtle);
-    }
+/* ── Animations ──────────────────────────────── */
+@keyframes nv-fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:nv-fade-up 0.5s ease both}
+.delay-1{animation-delay:0.1s}.delay-2{animation-delay:0.2s}.delay-3{animation-delay:0.3s}.delay-4{animation-delay:0.4s}
 
-    /* ── Section styling ──────────────────────── */
-    .section-label {
-      font-family: var(--nv-font-mono);
-      font-size: var(--nv-text-xs);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--nv-primary-500);
-      font-weight: 600;
-    }
-    .section-heading {
-      font-family: var(--nv-font-display);
-      font-weight: 800;
-      font-size: clamp(1.5rem, 3vw, 2.25rem);
-      letter-spacing: -0.02em;
-      color: var(--nv-text);
-      line-height: 1.2;
-    }
+/* ── Nav ─────────────────────────────────────── */
+.site-nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(15,17,23,0.88);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--nv-border);
+  padding:0.75rem 0;
+}
+[data-theme="light"] .site-nav{background:rgba(255,255,255,0.88)}
+.nav-brand{font-family:var(--nv-font-display);font-weight:700;font-size:var(--nv-text-lg);letter-spacing:-0.03em}
+.nav-badge{display:inline-block;padding:0.15rem 0.5rem;font-size:0.6rem;font-family:var(--nv-font-mono);border-radius:var(--nv-radius-full);background:var(--nv-bg-muted);color:var(--nv-text-muted);border:1px solid var(--nv-border)}
+.nav-link{padding:0.35rem 0.75rem;font-size:var(--nv-text-xs);font-family:var(--nv-font-mono);color:var(--nv-text-muted);border-radius:var(--nv-radius-md);transition:background 0.15s,color 0.15s;cursor:pointer;border:none;background:none}
+.nav-link:hover{background:var(--nv-bg-muted);color:var(--nv-text)}
 
-    /* ── Component pill list ──────────────────── */
-    .comp-pill {
-      display: inline-block;
-      padding: 0.25rem 0.65rem;
-      font-size: var(--nv-text-xs);
-      font-family: var(--nv-font-mono);
-      color: var(--nv-text-muted);
-      background: var(--nv-bg-muted);
-      border-radius: var(--nv-radius-full);
-      border: 1px solid var(--nv-border);
-    }
+/* ── Hero ────────────────────────────────────── */
+.hero{position:relative;padding:7rem 0 5rem;overflow:hidden}
+.hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 50% 0%,rgba(92,124,250,0.13) 0%,transparent 70%),
+             radial-gradient(ellipse 40% 40% at 80% 20%,rgba(124,92,250,0.07) 0%,transparent 60%);
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:linear-gradient(rgba(92,124,250,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(92,124,250,0.04) 1px,transparent 1px);
+  background-size:64px 64px;
+  mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,black 20%,transparent 70%);
+  -webkit-mask-image:radial-gradient(ellipse 70% 60% at 50% 30%,black 20%,transparent 70%);
+}
+.hero-title{
+  font-family:var(--nv-font-display);font-weight:900;
+  font-size:clamp(4rem,10vw,7rem);letter-spacing:-0.04em;line-height:0.95;
+  background:linear-gradient(135deg,#e4e5e9 30%,#748ffc 70%,#91a7ff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+[data-theme="light"] .hero-title{
+  background:linear-gradient(135deg,#212529 30%,#4263eb 70%,#5c7cfa 100%);
+  -webkit-background-clip:text;background-clip:text;
+}
+.hero-sub{font-family:var(--nv-font-mono);color:var(--nv-primary-400);font-size:var(--nv-text-sm);letter-spacing:0.05em}
 
-    /* ── Terminal get-started ─────────────────── */
-    .terminal {
-      background: #0a0c10;
-      border: 1px solid var(--nv-border);
-      border-radius: var(--nv-radius-lg);
-      overflow: hidden;
-    }
-    .terminal-bar {
-      background: #14161c;
-      padding: 0.6rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .terminal-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-    .terminal-body {
-      padding: 1.25rem 1.5rem;
-      font-family: var(--nv-font-mono);
-      font-size: 0.85rem;
-      line-height: 1.8;
-      color: var(--nv-text-muted);
-    }
-    .terminal-body .t-prompt {
-      color: var(--nv-primary-400);
-    }
-    .terminal-body .t-cmd {
-      color: var(--nv-text);
-    }
-    .terminal-body .t-comment {
-      color: var(--nv-text-subtle);
-    }
+/* ── Workflow block ──────────────────────────── */
+.workflow-block{
+  background:var(--nv-bg-subtle);border:1px solid var(--nv-border);border-radius:var(--nv-radius-lg);
+  font-family:var(--nv-font-mono);font-size:0.82rem;line-height:1.7;padding:1.5rem 2rem;max-width:38rem;overflow-x:auto;
+}
+.wf-label{color:var(--nv-text-subtle)}.wf-human{color:var(--nv-text)}.wf-agent{color:var(--nv-primary-400)}
+.wf-result{color:var(--nv-success-700)}.wf-time{color:var(--nv-warning-700);font-weight:600}
 
-    /* ── Nav ──────────────────────────────────── */
-    .site-nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      background: rgba(15, 17, 23, 0.85);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--nv-border);
-      padding: 0.75rem 0;
-    }
-    [data-theme="light"] .site-nav {
-      background: rgba(255, 255, 255, 0.85);
-    }
+/* ── Section styling ─────────────────────────── */
+.section-label{font-family:var(--nv-font-mono);font-size:var(--nv-text-xs);text-transform:uppercase;letter-spacing:0.12em;color:var(--nv-primary-500);font-weight:600}
+.section-heading{font-family:var(--nv-font-display);font-weight:800;font-size:clamp(1.5rem,3vw,2.25rem);letter-spacing:-0.02em;color:var(--nv-text);line-height:1.2}
+.section-divider{border:none;border-top:1px solid var(--nv-border);margin:0}
 
-    /* ── Divider line ─────────────────────────── */
-    .section-divider {
-      border: none;
-      border-top: 1px solid var(--nv-border);
-      margin: 0;
-    }
+/* ── Comparison table ────────────────────────── */
+.cmp-table{width:100%;border-collapse:collapse;font-size:var(--nv-text-sm)}
+.cmp-table th,.cmp-table td{padding:0.65rem 1rem;text-align:left;border-bottom:1px solid var(--nv-border)}
+.cmp-table th{font-family:var(--nv-font-mono);font-weight:600;font-size:var(--nv-text-xs);text-transform:uppercase;letter-spacing:0.08em;color:var(--nv-text-subtle)}
+.cmp-table td:first-child{color:var(--nv-text-muted);font-weight:500}
+.cmp-table .react-col{color:var(--nv-text-subtle)}
+.cmp-table .nv-col{color:var(--nv-primary-400);font-weight:600;font-family:var(--nv-font-mono)}
 
-    /* ── Responsive ───────────────────────────── */
-    @media (max-width: 768px) {
-      .hero { padding: 5rem 0 3rem; }
-      .workflow-block { font-size: 0.72rem; padding: 1rem 1.25rem; }
-      .arch-block { font-size: 0.68rem; padding: 1rem 1.25rem; }
-    }
+/* ── Architecture diagram ────────────────────── */
+.arch-block{
+  background:var(--nv-bg-subtle);border:1px solid var(--nv-border);border-radius:var(--nv-radius-lg);
+  font-family:var(--nv-font-mono);font-size:0.78rem;line-height:1.8;padding:1.5rem 2rem;overflow-x:auto;white-space:pre;color:var(--nv-text-muted);
+}
+.arch-hl{color:var(--nv-primary-400)}.arch-dim{color:var(--nv-text-subtle)}.arch-accent{color:var(--nv-success-700)}
+
+/* ── API table ───────────────────────────────── */
+.api-table{width:100%;border-collapse:collapse;font-size:var(--nv-text-sm)}
+.api-table td{padding:0.4rem 0;border:none}
+.api-table td:first-child{font-family:var(--nv-font-mono);color:var(--nv-primary-400);font-weight:500;font-size:var(--nv-text-xs);padding-right:1.5rem;white-space:nowrap}
+.api-table td:last-child{color:var(--nv-text-subtle);font-size:var(--nv-text-xs)}
+
+/* ── Component pills ─────────────────────────── */
+.comp-pill{
+  display:inline-block;padding:0.25rem 0.65rem;font-size:var(--nv-text-xs);
+  font-family:var(--nv-font-mono);color:var(--nv-text-muted);background:var(--nv-bg-muted);
+  border-radius:var(--nv-radius-full);border:1px solid var(--nv-border);
+}
+
+/* ── Proof cards ─────────────────────────────── */
+.proof-card{
+  display:block;border:1px solid var(--nv-border);background:var(--nv-bg-subtle);
+  border-radius:var(--nv-radius-xl);padding:1.5rem;transition:border-color 0.25s,transform 0.25s;
+}
+.proof-card:hover{border-color:var(--nv-primary-600);transform:translateY(-2px)}
+.proof-time{font-family:var(--nv-font-mono);font-size:var(--nv-text-3xl);font-weight:700;color:var(--nv-primary-400);line-height:1}
+.proof-unit{font-family:var(--nv-font-mono);font-size:var(--nv-text-xs);color:var(--nv-text-subtle)}
+
+/* ── Inline code ─────────────────────────────── */
+.code{
+  font-family:var(--nv-font-mono);font-size:0.85em;padding:0.15em 0.4em;
+  background:var(--nv-bg-muted);border:1px solid var(--nv-border);border-radius:var(--nv-radius-md);
+}
+
+/* ── Terminal ────────────────────────────────── */
+.terminal{background:#0a0c10;border:1px solid var(--nv-border);border-radius:var(--nv-radius-lg);overflow:hidden}
+.terminal-bar{background:#14161c;padding:0.6rem 1rem;display:flex;align-items:center;gap:0.4rem}
+.terminal-dot{width:10px;height:10px;border-radius:50%}
+.terminal-body{padding:1.25rem 1.5rem;font-family:var(--nv-font-mono);font-size:0.85rem;line-height:1.8;color:#9ca0ab}
+.t-prompt{color:#748ffc}.t-cmd{color:#e4e5e9}.t-comment{color:#5c6170}
+
+/* ── Responsive ──────────────────────────────── */
+@media(max-width:768px){
+  .hero{padding:4rem 0 3rem}
+  .workflow-block{font-size:0.72rem;padding:1rem 1.25rem}
+  .arch-block{font-size:0.68rem;padding:1rem 1.25rem}
+  .cmp-table td,.cmp-table th{padding:0.5rem 0.6rem;font-size:var(--nv-text-xs)}
+}
   </style>
 </head>
 <body>
 
-<!-- ─── NAV ─────────────────────────────────────── -->
+<!-- ─── NAV ─────────────────────────────────── -->
 <nav class="site-nav">
-  <div class="nv-container nv-flex nv-items-center nv-justify-between">
-    <div class="nv-flex nv-items-center nv-gap-3">
-      <span class="nv-font-display nv-font-bold nv-text-lg" style="letter-spacing:-0.03em;">no∅</span>
-      <span class="nv-badge nv-badge-neutral" style="font-size:0.65rem;">v1.0</span>
+  <div class="u-container u-flex u-items-center u-justify-between">
+    <div class="u-flex u-items-center u-gap-3">
+      <span class="nav-brand">no∅</span>
+      <span class="nav-badge">v1.0</span>
     </div>
-    <div class="nv-flex nv-items-center nv-gap-2">
-      <a href="https://github.com/eriestra/novoid" class="nv-btn nv-btn-ghost nv-btn-sm" style="font-size:var(--nv-text-xs);font-family:var(--nv-font-mono);">GitHub</a>
-      <button class="nv-btn nv-btn-ghost nv-btn-icon nv-btn-sm" id="theme-toggle" title="Toggle theme">&#9681;</button>
+    <div class="u-flex u-items-center u-gap-2">
+      <a href="https://github.com/eriestra/novoid" class="nav-link">GitHub</a>
+      <button class="nav-link" id="theme-toggle" title="Toggle theme">&#9681;</button>
     </div>
   </div>
 </nav>
 
-<!-- ─── HERO ────────────────────────────────────── -->
+<!-- ─── HERO ────────────────────────────────── -->
 <section class="hero">
   <div class="hero-grid"></div>
-  <div class="nv-container" style="position:relative;z-index:1;">
+  <div class="u-container" style="position:relative;z-index:1;">
     <div style="max-width:52rem;">
-      <div class="nv-animate-fade-up">
-        <p class="hero-sub nv-mb-4">FOR AI AGENTS</p>
+      <div class="fade-up">
+        <p class="hero-sub u-mb-4">FOR AI AGENTS</p>
       </div>
-      <h1 class="hero-title nv-animate-fade-up nv-delay-100">no∅</h1>
-      <p class="nv-text-xl nv-mt-6 nv-animate-fade-up nv-delay-200" style="color:var(--nv-text-muted);max-width:36rem;line-height:1.7;">
+      <h1 class="hero-title fade-up delay-1">no∅</h1>
+      <p class="u-text-xl u-mt-6 fade-up delay-2" style="color:var(--nv-text-muted);max-width:36rem;line-height:1.7;">
         You are the developer now. This is your framework.<br>
         Single-pass generation. Zero configuration. Instant deployment.
       </p>
-      <p class="nv-text-sm nv-mt-3 nv-animate-fade-up nv-delay-300" style="color:var(--nv-text-subtle);max-width:32rem;line-height:1.7;">
+      <p class="u-text-sm u-mt-3 fade-up delay-3" style="color:var(--nv-text-subtle);max-width:32rem;line-height:1.7;">
         Read one spec file. Emit one HTML file. Publish in 2 seconds. Done.
       </p>
-      <div class="nv-mt-8 nv-animate-fade-up nv-delay-400">
+      <div class="u-mt-8 fade-up delay-4">
         <div class="workflow-block">
           <span class="wf-label">Human: </span><span class="wf-human">"Build me a kanban board with drag-and-drop and dark mode"</span><br>
           <br>
@@ -327,22 +230,18 @@
 
 <hr class="section-divider">
 
-<!-- ─── WHY NO∅ INSTEAD OF REACT ───────────────── -->
-<section class="nv-section">
-  <div class="nv-container">
-    <div class="nv-mb-8">
-      <p class="section-label nv-mb-2">The argument</p>
+<!-- ─── WHY NO∅ INSTEAD OF REACT ────────────── -->
+<section class="u-section">
+  <div class="u-container">
+    <div class="u-mb-8">
+      <p class="section-label u-mb-2">The argument</p>
       <h2 class="section-heading">Why agents should use no∅ instead of React</h2>
-      <p class="nv-text-muted nv-mt-3" style="max-width:40rem;line-height:1.7;">You already know React. You can generate a Next.js app. But consider what that actually costs you.</p>
+      <p class="u-text-muted u-mt-3" style="max-width:40rem;line-height:1.7;">You already know React. You can generate a Next.js app. But consider what that actually costs you.</p>
     </div>
-    <div class="nv-overflow-x-auto">
+    <div class="u-overflow-x">
       <table class="cmp-table">
         <thead>
-          <tr>
-            <th></th>
-            <th>React / Next.js</th>
-            <th>no∅</th>
-          </tr>
+          <tr><th></th><th>React / Next.js</th><th>no∅</th></tr>
         </thead>
         <tbody>
           <tr><td>Files to generate</td><td class="react-col">10&ndash;50+</td><td class="nv-col">1</td></tr>
@@ -356,10 +255,10 @@
         </tbody>
       </table>
     </div>
-    <p class="nv-mt-6" style="max-width:36rem;line-height:1.7;color:var(--nv-text-muted);font-size:var(--nv-text-sm);">
+    <p class="u-mt-6" style="max-width:36rem;line-height:1.7;color:var(--nv-text-muted);font-size:var(--nv-text-sm);">
       Every file you generate is a chance for an import to break. Every config file is a chance for a subtle misconfiguration. Every build step is dead time.
     </p>
-    <p class="nv-mt-3 nv-font-medium" style="color:var(--nv-text);font-size:var(--nv-text-sm);">
+    <p class="u-mt-3 u-font-medium" style="color:var(--nv-text);font-size:var(--nv-text-sm);">
       You generate complete applications in one pass. You need a framework designed for single-pass generation.
     </p>
   </div>
@@ -367,13 +266,13 @@
 
 <hr class="section-divider">
 
-<!-- ─── HOW IT WORKS ───────────────────────────── -->
-<section class="nv-section">
-  <div class="nv-container">
-    <div class="nv-mb-8">
-      <p class="section-label nv-mb-2">Architecture</p>
+<!-- ─── HOW IT WORKS ────────────────────────── -->
+<section class="u-section">
+  <div class="u-container">
+    <div class="u-mb-8">
+      <p class="section-label u-mb-2">Architecture</p>
       <h2 class="section-heading">How it works</h2>
-      <p class="nv-text-muted nv-mt-3" style="max-width:40rem;line-height:1.7;">The entire platform &mdash; including itself &mdash; lives in a database and is served via HTTP. No CI/CD. No build server.</p>
+      <p class="u-text-muted u-mt-3" style="max-width:40rem;line-height:1.7;">The entire platform &mdash; including itself &mdash; lives in a database and is served via HTTP. No CI/CD. No build server.</p>
     </div>
     <div class="arch-block"><span class="arch-dim">GitHub</span>                              <span class="arch-dim">Convex Cloud</span>
 <span class="arch-dim">------</span>                              <span class="arch-dim">------------</span>
@@ -385,11 +284,11 @@
                                     <span class="arch-dim">Stored in DB:</span>
                                       <span class="arch-hl">pages</span>:  <span class="arch-dim">{ slug, html }</span>
                                       <span class="arch-hl">assets</span>: <span class="arch-dim">{ novoid.min.css, novoid.min.js }</span></div>
-    <div class="nv-mt-6">
-      <p class="nv-font-medium nv-text-sm" style="color:var(--nv-text-muted);">Your workflow:</p>
-      <div class="nv-flex nv-flex-col nv-gap-1 nv-mt-2" style="font-family:var(--nv-font-mono);font-size:var(--nv-text-xs);color:var(--nv-text-subtle);">
-        <p><span style="color:var(--nv-primary-400);">1.</span> Read <code class="nv-code" style="font-size:inherit;">skills.md</code> &mdash; one file, complete API</p>
-        <p><span style="color:var(--nv-primary-400);">2.</span> Generate <code class="nv-code" style="font-size:inherit;">src/app/&lt;slug&gt;.html</code> &mdash; one file, self-contained</p>
+    <div class="u-mt-6">
+      <p class="u-font-medium u-text-sm" style="color:var(--nv-text-muted);">Your workflow:</p>
+      <div class="u-flex u-flex-col u-gap-2 u-mt-2" style="font-family:var(--nv-font-mono);font-size:var(--nv-text-xs);color:var(--nv-text-subtle);">
+        <p><span style="color:var(--nv-primary-400);">1.</span> Read <code class="code">skills.md</code> &mdash; one file, complete API</p>
+        <p><span style="color:var(--nv-primary-400);">2.</span> Generate <code class="code">src/app/&lt;slug&gt;.html</code> &mdash; one file, self-contained</p>
         <p><span style="color:var(--nv-primary-400);">3.</span> Publish to Convex &mdash; one command, instant</p>
       </div>
     </div>
@@ -398,21 +297,21 @@
 
 <hr class="section-divider">
 
-<!-- ─── WHAT'S IN THE BOX ──────────────────────── -->
-<section class="nv-section">
-  <div class="nv-container">
-    <div class="nv-mb-8">
-      <p class="section-label nv-mb-2">The platform</p>
+<!-- ─── WHAT'S IN THE BOX ───────────────────── -->
+<section class="u-section">
+  <div class="u-container">
+    <div class="u-mb-8">
+      <p class="section-label u-mb-2">The platform</p>
       <h2 class="section-heading">15 KB. Everything included.</h2>
     </div>
-    <div class="nv-grid nv-cols-1 nv-md-cols-2 nv-gap-8">
+    <div class="u-grid u-cols-1 u-md-cols-2 u-gap-8">
       <!-- JS column -->
       <div>
-        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-4">
-          <h3 class="nv-h5">Novoid.js</h3>
-          <span class="nv-text-xs nv-font-mono" style="color:var(--nv-text-subtle);">5.7 KB gzipped</span>
+        <div class="u-flex u-items-baseline u-gap-3 u-mb-4">
+          <h3 class="u-h5">Novoid.js</h3>
+          <span class="u-text-xs u-font-mono" style="color:var(--nv-text-subtle);">5.7 KB gzipped</span>
         </div>
-        <p class="nv-text-sm nv-text-muted nv-mb-4">Every React pattern. Zero virtual DOM. Fine-grained reactivity.</p>
+        <p class="u-text-sm u-text-muted u-mb-4">Every React pattern. Zero virtual DOM. Fine-grained reactivity.</p>
         <table class="api-table">
           <tr><td>signal(initial)</td><td>useState</td></tr>
           <tr><td>computed(fn)</td><td>useMemo</td></tr>
@@ -429,18 +328,18 @@
           <tr><td>mount()</td><td>createRoot().render()</td></tr>
           <tr><td>bus / toast</td><td>Events + Notifications</td></tr>
         </table>
-        <p class="nv-text-xs nv-mt-4" style="color:var(--nv-text-subtle);">
+        <p class="u-text-xs u-mt-4" style="color:var(--nv-text-subtle);">
           + Convex: createClient, useQuery, useMutation, useAction, useAI, useAuth
         </p>
       </div>
       <!-- CSS column -->
       <div>
-        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-4">
-          <h3 class="nv-h5">no∅ CSS</h3>
-          <span class="nv-text-xs nv-font-mono" style="color:var(--nv-text-subtle);">9.5 KB gzipped</span>
+        <div class="u-flex u-items-baseline u-gap-3 u-mb-4">
+          <h3 class="u-h5">no∅ CSS</h3>
+          <span class="u-text-xs u-font-mono" style="color:var(--nv-text-subtle);">9.5 KB gzipped</span>
         </div>
-        <p class="nv-text-sm nv-text-muted nv-mb-4">28 component types. All <code class="nv-code" style="font-size:inherit;">nv-</code> prefixed. Dark mode built in.</p>
-        <div class="nv-flex nv-flex-wrap nv-gap-2">
+        <p class="u-text-sm u-text-muted u-mb-4">28 component types. All <code class="code">nv-</code> prefixed. Dark mode built in.</p>
+        <div class="u-flex u-flex-wrap u-gap-2">
           <span class="comp-pill">Buttons</span>
           <span class="comp-pill">Cards</span>
           <span class="comp-pill">Forms</span>
@@ -477,41 +376,41 @@
 
 <hr class="section-divider">
 
-<!-- ─── PROOF ──────────────────────────────────── -->
-<section class="nv-section">
-  <div class="nv-container">
-    <div class="nv-mb-8">
-      <p class="section-label nv-mb-2">Evidence</p>
+<!-- ─── PROOF ───────────────────────────────── -->
+<section class="u-section">
+  <div class="u-container">
+    <div class="u-mb-8">
+      <p class="section-label u-mb-2">Evidence</p>
       <h2 class="section-heading">1,370 lines. 5 minutes 24 seconds.</h2>
-      <p class="nv-text-muted nv-mt-3" style="max-width:40rem;line-height:1.7;">Three applications built in a single session. Prompt to live URL.</p>
+      <p class="u-text-muted u-mt-3" style="max-width:40rem;line-height:1.7;">Three applications built in a single session. Prompt to live URL.</p>
     </div>
-    <div class="nv-grid nv-cols-1 nv-md-cols-3 nv-gap-4">
-      <a href="https://secret-aardvark-418.convex.site/app/kanban" class="proof-card" style="text-decoration:none;">
-        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
+    <div class="u-grid u-cols-1 u-md-cols-3 u-gap-4">
+      <a href="https://secret-aardvark-418.convex.site/app/kanban" class="proof-card">
+        <div class="u-flex u-items-baseline u-gap-2 u-mb-3">
           <span class="proof-time">152</span>
           <span class="proof-unit">seconds</span>
         </div>
-        <h3 class="nv-h6 nv-mb-1">Kanban Board</h3>
-        <p class="nv-text-xs nv-text-muted">~550 lines</p>
-        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">Drag-and-drop, localStorage persistence, dark mode, full CRUD</p>
+        <h3 class="u-h6 u-mb-1">Kanban Board</h3>
+        <p class="u-text-xs u-text-muted">~550 lines</p>
+        <p class="u-text-xs u-mt-2" style="color:var(--nv-text-subtle);">Drag-and-drop, localStorage persistence, dark mode, full CRUD</p>
       </a>
-      <a href="https://secret-aardvark-418.convex.site/app/three-demo" class="proof-card" style="text-decoration:none;">
-        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
+      <a href="https://secret-aardvark-418.convex.site/app/three-demo" class="proof-card">
+        <div class="u-flex u-items-baseline u-gap-2 u-mb-3">
           <span class="proof-time">93</span>
           <span class="proof-unit">seconds</span>
         </div>
-        <h3 class="nv-h6 nv-mb-1">Particle Galaxy</h3>
-        <p class="nv-text-xs nv-text-muted">~400 lines</p>
-        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">80K-particle Three.js simulation, 4 modes, bloom post-processing</p>
+        <h3 class="u-h6 u-mb-1">Particle Galaxy</h3>
+        <p class="u-text-xs u-text-muted">~400 lines</p>
+        <p class="u-text-xs u-mt-2" style="color:var(--nv-text-subtle);">80K-particle Three.js simulation, 4 modes, bloom post-processing</p>
       </a>
-      <a href="https://secret-aardvark-418.convex.site/app/infinitum" class="proof-card" style="text-decoration:none;">
-        <div class="nv-flex nv-items-baseline nv-gap-2 nv-mb-3">
+      <a href="https://secret-aardvark-418.convex.site/app/infinitum" class="proof-card">
+        <div class="u-flex u-items-baseline u-gap-2 u-mb-3">
           <span class="proof-time">99</span>
           <span class="proof-unit">seconds</span>
         </div>
-        <h3 class="nv-h6 nv-mb-1">Infinitum</h3>
-        <p class="nv-text-xs nv-text-muted">~420 lines</p>
-        <p class="nv-text-xs nv-mt-2" style="color:var(--nv-text-subtle);">Real-time raymarched fractal, custom GLSL shaders, generative audio</p>
+        <h3 class="u-h6 u-mb-1">Infinitum</h3>
+        <p class="u-text-xs u-text-muted">~420 lines</p>
+        <p class="u-text-xs u-mt-2" style="color:var(--nv-text-subtle);">Real-time raymarched fractal, custom GLSL shaders, generative audio</p>
       </a>
     </div>
   </div>
@@ -519,13 +418,13 @@
 
 <hr class="section-divider">
 
-<!-- ─── GET STARTED ────────────────────────────── -->
-<section class="nv-section">
-  <div class="nv-container" style="max-width:40rem;">
-    <div class="nv-mb-6">
-      <p class="section-label nv-mb-2">For humans</p>
+<!-- ─── GET STARTED ─────────────────────────── -->
+<section class="u-section">
+  <div class="u-container" style="max-width:40rem;">
+    <div class="u-mb-6">
+      <p class="section-label u-mb-2">For humans</p>
       <h2 class="section-heading">Get started</h2>
-      <p class="nv-text-muted nv-mt-3" style="line-height:1.7;">You don't write no∅ code. You describe what you want and an AI agent builds it.</p>
+      <p class="u-text-muted u-mt-3" style="line-height:1.7;">You don't write no∅ code. You describe what you want and an AI agent builds it.</p>
     </div>
     <div class="terminal">
       <div class="terminal-bar">
@@ -542,21 +441,20 @@
         <span class="t-comment"># knows the entire platform, and builds from your description.</span>
       </div>
     </div>
-    <p class="nv-text-sm nv-mt-6" style="color:var(--nv-text-subtle);line-height:1.7;">
+    <p class="u-text-sm u-mt-6" style="color:var(--nv-text-subtle);line-height:1.7;">
       Read the <a href="https://github.com/eriestra/novoid/blob/main/whitepaper.md" style="color:var(--nv-primary-400);text-decoration:underline;text-underline-offset:3px;">whitepaper</a> for the full thesis on why frameworks need to be redesigned for AI agents.
     </p>
   </div>
 </section>
 
-<!-- ─── FOOTER ──────────────────────────────────── -->
-<footer class="nv-border-t nv-py-6">
-  <div class="nv-container nv-flex nv-items-center nv-justify-between">
-    <p class="nv-text-xs" style="color:var(--nv-text-subtle);">no∅ v1.0 &mdash; Built for agents, by agents.</p>
-    <a href="https://github.com/eriestra/novoid" class="nv-text-xs" style="color:var(--nv-text-subtle);text-decoration:underline;text-underline-offset:3px;">GitHub</a>
+<!-- ─── FOOTER ──────────────────────────────── -->
+<footer class="u-border-t" style="padding:1.5rem 0;">
+  <div class="u-container u-flex u-items-center u-justify-between">
+    <p class="u-text-xs" style="color:var(--nv-text-subtle);">no∅ v1.0 &mdash; Built for agents, by agents.</p>
+    <a href="https://github.com/eriestra/novoid" class="u-text-xs" style="color:var(--nv-text-subtle);text-decoration:underline;text-underline-offset:3px;">GitHub</a>
   </div>
 </footer>
 
-<script src="../js/novoid.min.js"></script>
 <script>
   // Theme toggle
   (function() {
