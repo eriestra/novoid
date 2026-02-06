@@ -3328,3 +3328,36 @@ mount('#app', () => {
     const UserCard = Nv.component('UserCard', (props) => { ... });
     // CSS: class="nv-card nv-card-hoverable"
     ```
+
+15. **Keep text inputs outside signals.** When using `effect(render)` with full DOM rebuild, input signals trigger re-renders that destroy the input element mid-typing — losing focus and cursor position. Instead, create the input element once and read its `.value` directly:
+    ```js
+    // BAD — input re-created every keystroke, loses focus
+    const [input, setInput] = signal("");
+    function render() {
+      var inp = h("input", { value: input() });
+      inp.addEventListener("input", (e) => setInput(e.target.value));
+    }
+    effect(render);
+
+    // GOOD — input persists across renders, never loses focus
+    var inputEl = h("input", { placeholder: "Type here..." });
+    inputEl.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+    function submit() {
+      var v = inputEl.value.trim();
+      if (!v) return;
+      doSomething(v);
+      inputEl.value = "";
+      inputEl.focus();
+    }
+    function render() {
+      app.innerHTML = "";
+      // ... rebuild list, but reuse inputEl
+      row.appendChild(inputEl);
+    }
+    effect(render);
+    ```
+
+16. **`Novoid` has no `text()` helper.** Use `document.createTextNode(String(s))` directly, or define a local helper:
+    ```js
+    const t = (s) => document.createTextNode(String(s));
+    ```
