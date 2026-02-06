@@ -2554,6 +2554,93 @@ mount('#app', () => {
 
 ---
 
+### Self-Hosting Platform
+
+no∅ is self-hosting: GitHub has only a minimal bootstrapper, and the actual platform is stored in and served from Convex. The platform admin UI is itself a page in the database — it can edit itself.
+
+#### Convex Schema
+
+```ts
+// convex/schema.ts
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  pages: defineTable({
+    slug: v.string(),
+    html: v.string(),
+    updatedAt: v.number(),
+  }).index("by_slug", ["slug"]),
+
+  assets: defineTable({
+    name: v.string(),
+    content: v.string(),
+    contentType: v.string(),
+  }).index("by_name", ["name"]),
+
+  keys: defineTable({
+    name: v.string(),
+    value: v.string(),
+  }).index("by_name", ["name"]),
+});
+```
+
+#### Pages API (`convex/pages.ts`)
+
+| Function | Type | Auth | Purpose |
+|---|---|---|---|
+| `publish` | mutation | `secret` required | Upsert a page by slug |
+| `remove` | mutation | `secret` required | Delete a page by slug |
+| `list` | query | public | List all pages (slug + updatedAt) |
+| `get` | query | public | Get full page by slug |
+
+#### Assets API (`convex/assets.ts`)
+
+| Function | Type | Auth | Purpose |
+|---|---|---|---|
+| `set` | mutation | `secret` required | Upsert an asset (CSS/JS) |
+| `get` | query | public | Get asset by name |
+
+#### Keys API (`convex/keys.ts`)
+
+| Function | Type | Purpose |
+|---|---|---|
+| `set` | internalMutation | Set a key (CLI only) |
+| `get` | internalQuery | Read a key (server-side only) |
+
+#### HTTP Routes (`convex/http.ts`)
+
+| Route | Response |
+|---|---|
+| `GET /platform` | Platform admin UI (HTML) |
+| `GET /app/:slug` | Any published page (HTML) |
+| `GET /css/:name` | CSS asset (e.g. novoid.min.css) |
+| `GET /js/:name` | JS asset (e.g. novoid.min.js) |
+
+#### Auth Model
+
+All write mutations require a `secret` argument verified against `PUBLISH_SECRET` in the `keys` table. The secret is set via `npx convex run seed:seedSecret` (CLI only — never callable from a browser). Read operations and HTTP routes are public.
+
+#### Publishing a Page
+
+From the platform UI or via Convex mutation:
+```js
+const client = Novoid.createClient(CONVEX_URL);
+const publish = Novoid.useMutation(client, "pages:publish");
+await publish({ slug: "my-page", html: "<h1>Hello</h1>", secret: PUBLISH_SECRET });
+// Live at: https://DEPLOYMENT.convex.site/app/my-page
+```
+
+#### Seed Script
+
+```sh
+# One-time setup after `npx convex dev`:
+npx convex run seed:seedSecret '{"name":"PUBLISH_SECRET","value":"your-secret"}'
+sh seed.sh https://YOUR-DEPLOYMENT.convex.cloud your-secret
+```
+
+---
+
 ## Tutorials
 
 ### Tutorial 1: Counter App

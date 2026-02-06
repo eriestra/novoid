@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-no∅ (novoid) is a zero-build-tool frontend platform — a CSS component library + reactive JS framework in a single `index.html`. The full API spec lives in `skills.md`. Read it before generating any code.
+no∅ (novoid) is a self-hosting frontend platform — a CSS component library + reactive JS framework served from Convex. The full API spec lives in `skills.md`. Read it before generating any code.
 
 ## How This Repo Works
 
-Users clone this repo and run `claude`. You already know the entire framework. When the user describes what they want to build, generate it using no∅ — no external dependencies, no build step.
+The platform is **self-hosting**: GitHub has only a minimal bootstrapper (`index.html`), and the actual platform (including itself) is stored in and served from Convex. Changes publish instantly — no git push, no CI, no deploy wait.
+
+Users clone this repo and run `claude`. When the user describes what they want to build, generate it using no∅ — no external dependencies, no build step.
 
 ## Quick Reference
 
@@ -17,20 +19,61 @@ Users clone this repo and run `claude`. You already know the entire framework. W
 - **Router:** hash-based (`#/path`)
 - **Fonts:** DM Sans (body), Outfit (headings), JetBrains Mono (code)
 
+## Self-Hosting Architecture
+
+```
+GitHub (eriestra.github.io/novoid)         Convex Cloud
+─────────────────────────────────          ────────────
+index.html (~40 lines)
+  │ fetch("/app/novoid")  ─────────────→  HTTP route: GET /app/:slug
+                                           │ read from pages table
+  document.write(html)  ◄──────────────── │ return HTML
+
+                                         pages table:
+                                           { slug: "novoid", html: "..." }
+                                           { slug: "platform", html: "..." }
+                                           { slug: "my-app", html: "..." }
+
+                                         assets table:
+                                           { name: "novoid.min.css", content: "..." }
+                                           { name: "novoid.min.js", content: "..." }
+
+                                         HTTP routes:
+                                           GET /app/:slug → serve page
+                                           GET /platform  → serve platform admin UI
+                                           GET /css/:name → serve framework CSS
+                                           GET /js/:name  → serve framework JS
+```
+
+- **Platform UI** (`/platform`): admin page that lists/edits/publishes pages — itself a page in the DB
+- **Published pages** (`/app/:slug`): any page stored in the pages table
+- **Framework assets** (`/css/`, `/js/`): novoid.min.css and novoid.min.js served from the assets table
+
 ## File Structure
 
 ```
 ├── CLAUDE.md          ← you read this first
 ├── skills.md          ← full API spec (read before generating code)
-├── index.html         ← demo/showcase page
+├── index.html         ← minimal bootstrapper (fetches from Convex)
+├── index.full.html    ← archived original showcase page
 ├── src/               ← SOURCE (readable, edit these)
 │   ├── novoid.css     ← CSS component library
 │   ├── novoid.js      ← reactive JS framework
 │   └── app/           ← user's app (Claude generates here)
+│       └── platform.html ← platform admin UI source
 ├── dist/              ← PRODUCTION (minified, never edit)
 │   ├── novoid.min.css
 │   └── novoid.min.js
-└── build.sh           ← instant minification (23ms)
+├── convex/            ← Convex backend
+│   ├── schema.ts      ← pages + assets + keys tables
+│   ├── pages.ts       ← CRUD for pages (auth-gated writes)
+│   ├── assets.ts      ← CRUD for assets (auth-gated writes)
+│   ├── keys.ts        ← secret management (internal only)
+│   ├── seed.ts        ← internal mutations for seeding data
+│   └── http.ts        ← HTTP router serving HTML/CSS/JS
+├── seed.sh            ← one-time setup script
+├── build.sh           ← instant minification (23ms)
+└── package.json       ← convex dependency only
 ```
 
 Always edit `src/`. Never edit `dist/`. Run `sh build.sh` to produce minified output.
@@ -44,6 +87,26 @@ which browser-sync || npm install -g browser-sync
 browser-sync start --server --files "*.html,src/**/*" --port 8000 --no-notify
 ```
 
+## Deployment
+
+```sh
+# 1. Start Convex dev (creates project first time)
+npx convex dev
+
+# 2. Set the publish secret (internal mutation, CLI only)
+npx convex run seed:seedSecret '{"name":"PUBLISH_SECRET","value":"your-secret"}'
+
+# 3. Seed framework assets + platform page
+sh seed.sh https://YOUR-DEPLOYMENT.convex.cloud your-secret
+
+# 4. Visit the platform
+open https://YOUR-DEPLOYMENT.convex.site/platform
+```
+
+## Auth Model
+
+All write mutations (`pages:publish`, `pages:remove`, `assets:set`) require a `secret` argument checked against `PUBLISH_SECRET` in the `keys` table. The secret is set via `npx convex run` (CLI only — never exposed to clients). Read operations are public.
+
 ## Key Rules
 
 - Always read `skills.md` for the full API before generating code
@@ -51,6 +114,7 @@ browser-sync start --server --files "*.html,src/**/*" --port 8000 --no-notify
 - Signal getters are called as functions: `count()` not `count`
 - No build tools, no npm, no transpilation — everything is vanilla
 - Never put literal `</script>` inside a `<script>` block — use string concatenation (`'</' + 'script>'`) to avoid premature tag closure
+- Never edit `convex/_generated/` — it's auto-generated by `npx convex dev`
 
 ## Convex + OpenRouter Pattern
 
