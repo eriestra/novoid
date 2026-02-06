@@ -8,280 +8,371 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/novoid.min.css">
   <style>
+    :root {
+      --p-bg: #0f1117;
+      --p-surface: #181a20;
+      --p-surface2: #1e2028;
+      --p-border: #2a2d37;
+      --p-border-focus: #5c7cfa;
+      --p-text: #e4e6eb;
+      --p-text-dim: #8b8fa3;
+      --p-text-faint: #555a6e;
+      --p-accent: #5c7cfa;
+      --p-accent-hover: #748ffc;
+      --p-accent-subtle: rgba(92, 124, 250, 0.12);
+      --p-danger: #e03131;
+      --p-danger-subtle: rgba(224, 49, 49, 0.12);
+      --p-success: #40c057;
+      --p-editor-bg: #0a0c10;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'DM Sans', sans-serif;
-      background: var(--nv-gray-900, #212529);
-      color: var(--nv-gray-100, #f1f3f5);
+      background: var(--p-bg);
+      color: var(--p-text);
       min-height: 100vh;
+      overflow: hidden;
     }
-    .platform-header {
+
+    /* ── Header ── */
+    .hdr {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--nv-gray-700, #495057);
-      background: var(--nv-gray-800, #343a40);
+      padding: 0 1.25rem;
+      height: 48px;
+      background: var(--p-surface);
+      border-bottom: 1px solid var(--p-border);
     }
-    .platform-header h1 {
+    .hdr-brand {
       font-family: 'Outfit', sans-serif;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--nv-primary-400, #748ffc);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
-    .platform-layout {
+    .hdr-brand span { color: var(--p-accent); }
+    .hdr-right {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--p-text-dim);
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .dot-ok { background: var(--p-success); box-shadow: 0 0 6px rgba(64,192,87,0.4); }
+    .dot-err { background: var(--p-danger); }
+
+    /* ── Layout ── */
+    .layout {
       display: grid;
-      grid-template-columns: 320px 1fr;
-      height: calc(100vh - 57px);
+      grid-template-columns: 280px 1fr;
+      height: calc(100vh - 48px);
     }
-    .panel-list {
-      border-right: 1px solid var(--nv-gray-700, #495057);
-      overflow-y: auto;
-      padding: 1rem;
-    }
-    .panel-editor {
+
+    /* ── Sidebar ── */
+    .side {
+      background: var(--p-surface);
+      border-right: 1px solid var(--p-border);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
-    .editor-toolbar {
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid var(--nv-gray-700, #495057);
-      background: var(--nv-gray-800, #343a40);
+    .side-section {
+      padding: 1rem 0.875rem 0;
     }
-    .editor-toolbar input {
-      background: var(--nv-gray-900, #212529);
-      border: 1px solid var(--nv-gray-600, #868e96);
-      color: var(--nv-gray-100, #f1f3f5);
-      padding: 0.4rem 0.75rem;
+    .side-label {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--p-text-faint);
+      margin-bottom: 0.5rem;
+    }
+    .secret-input {
+      width: 100%;
+      background: var(--p-bg);
+      border: 1px solid var(--p-border);
+      color: var(--p-text);
+      padding: 0.4rem 0.6rem;
       border-radius: 6px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      flex: 1;
-      max-width: 240px;
+      font-size: 0.75rem;
+      transition: border-color 0.15s;
     }
-    .editor-toolbar input:focus {
+    .secret-input:focus {
       outline: none;
-      border-color: var(--nv-primary-500, #5c7cfa);
+      border-color: var(--p-border-focus);
     }
-    .editor-area {
+    .secret-input::placeholder { color: var(--p-text-faint); }
+
+    /* ── Page list ── */
+    .page-list {
       flex: 1;
-      overflow: hidden;
+      overflow-y: auto;
+      padding: 0.5rem 0.5rem 1rem;
     }
-    .editor-area textarea {
-      width: 100%;
-      height: 100%;
-      background: var(--nv-gray-900, #212529);
-      color: var(--nv-gray-100, #f1f3f5);
-      border: none;
-      padding: 1rem;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
-      line-height: 1.5;
-      resize: none;
-      tab-size: 2;
-    }
-    .editor-area textarea:focus {
-      outline: none;
-    }
-    .page-item {
+    .page-list::-webkit-scrollbar { width: 4px; }
+    .page-list::-webkit-scrollbar-thumb { background: var(--p-border); border-radius: 2px; }
+    .pg {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0.6rem 0.75rem;
-      border-radius: 8px;
+      padding: 0.5rem 0.6rem;
+      border-radius: 6px;
       cursor: pointer;
-      transition: background 0.15s;
-      margin-bottom: 0.25rem;
+      transition: background 0.1s;
+      margin-bottom: 2px;
     }
-    .page-item:hover {
-      background: var(--nv-gray-700, #495057);
-    }
-    .page-item.active {
-      background: var(--nv-primary-900, #364fc7);
-    }
-    .page-item-name {
+    .pg:hover { background: var(--p-surface2); }
+    .pg.active { background: var(--p-accent-subtle); }
+    .pg-info { min-width: 0; }
+    .pg-name {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .page-item-meta {
-      font-size: 0.7rem;
-      color: var(--nv-gray-500, #adb5bd);
+    .pg.active .pg-name { color: var(--p-accent-hover); }
+    .pg-url {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--p-text-faint);
+      cursor: pointer;
+      margin-top: 1px;
     }
-    .page-item-actions {
+    .pg-url:hover { color: var(--p-accent); }
+    .pg-time {
+      font-size: 0.6rem;
+      color: var(--p-text-faint);
+      margin-top: 1px;
+    }
+    .pg-actions {
       display: flex;
-      gap: 0.25rem;
+      gap: 4px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    .pg:hover .pg-actions { opacity: 1; }
+    .pg.active .pg-actions { opacity: 1; }
+
+    /* ── Buttons ── */
+    .btn {
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      transition: all 0.12s;
+    }
+    .btn-xs {
+      padding: 0.2rem 0.45rem;
+      font-size: 0.65rem;
+      border-radius: 4px;
     }
     .btn-sm {
-      padding: 0.2rem 0.5rem;
-      font-size: 0.7rem;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 500;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
     }
-    .btn-edit {
-      background: var(--nv-primary-700, #4263eb);
-      color: white;
+    .btn-accent {
+      background: var(--p-accent);
+      color: #fff;
     }
-    .btn-delete {
-      background: var(--nv-gray-700, #495057);
-      color: var(--nv-gray-300, #dee2e6);
+    .btn-accent:hover { background: var(--p-accent-hover); }
+    .btn-accent:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--p-text-dim);
+      border: 1px solid var(--p-border);
     }
-    .btn-delete:hover {
-      background: #c92a2a;
-      color: white;
+    .btn-ghost:hover { background: var(--p-surface2); color: var(--p-text); }
+    .btn-danger-ghost {
+      background: transparent;
+      color: var(--p-text-faint);
     }
-    .btn-primary {
-      background: var(--nv-primary-600, #4c6ef5);
-      color: white;
-      border: none;
-      padding: 0.4rem 1rem;
+    .btn-danger-ghost:hover {
+      background: var(--p-danger-subtle);
+      color: var(--p-danger);
+    }
+    .btn-new {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px dashed var(--p-border);
+      background: transparent;
+      color: var(--p-text-faint);
       border-radius: 6px;
       cursor: pointer;
       font-family: 'DM Sans', sans-serif;
-      font-weight: 600;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
+      margin: 0.25rem 0.5rem;
+      transition: all 0.12s;
     }
-    .btn-primary:hover {
-      background: var(--nv-primary-500, #5c7cfa);
+    .btn-new:hover {
+      border-color: var(--p-accent);
+      color: var(--p-accent);
+      background: var(--p-accent-subtle);
     }
-    .btn-primary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+
+    /* ── Editor ── */
+    .editor {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
-    .btn-secondary {
-      background: var(--nv-gray-700, #495057);
-      color: var(--nv-gray-200, #e9ecef);
-      border: none;
-      padding: 0.4rem 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 500;
-      font-size: 0.85rem;
-    }
-    .section-title {
-      font-family: 'Outfit', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--nv-gray-500, #adb5bd);
-      padding: 0.5rem 0.75rem;
-      margin-bottom: 0.25rem;
-    }
-    .settings-row {
+    .editor-bar {
       display: flex;
       gap: 0.5rem;
       align-items: center;
-      padding: 0.5rem 0.75rem;
-      margin-bottom: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--p-surface);
+      border-bottom: 1px solid var(--p-border);
     }
-    .settings-row input {
-      background: var(--nv-gray-800, #343a40);
-      border: 1px solid var(--nv-gray-600, #868e96);
-      color: var(--nv-gray-100, #f1f3f5);
-      padding: 0.35rem 0.6rem;
+    .slug-group {
+      display: flex;
+      align-items: center;
+      background: var(--p-bg);
+      border: 1px solid var(--p-border);
       border-radius: 6px;
+      overflow: hidden;
+      flex: 1;
+      max-width: 300px;
+      transition: border-color 0.15s;
+    }
+    .slug-group:focus-within { border-color: var(--p-border-focus); }
+    .slug-prefix {
+      padding: 0.35rem 0 0.35rem 0.6rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--p-text-faint);
+      user-select: none;
+    }
+    .slug-input {
+      background: transparent;
+      border: none;
+      color: var(--p-text);
+      padding: 0.35rem 0.6rem 0.35rem 0.15rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.8rem;
       flex: 1;
+      min-width: 0;
     }
-    .settings-row input:focus {
-      outline: none;
-      border-color: var(--nv-primary-500, #5c7cfa);
+    .slug-input:focus { outline: none; }
+    .slug-input::placeholder { color: var(--p-text-faint); }
+    .editor-bar-right {
+      display: flex;
+      gap: 0.375rem;
+      margin-left: auto;
     }
-    .toast {
-      position: fixed;
-      bottom: 1.5rem;
-      right: 1.5rem;
-      background: var(--nv-primary-700, #4263eb);
-      color: white;
-      padding: 0.6rem 1.2rem;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.3s;
-      pointer-events: none;
-      z-index: 1000;
+    .file-info {
+      font-size: 0.7rem;
+      color: var(--p-text-faint);
+      margin-left: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
     }
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
+
+    /* ── Code area ── */
+    .code-wrap {
+      flex: 1;
+      overflow: hidden;
+      background: var(--p-editor-bg);
+      position: relative;
     }
-    .toast.error {
-      background: #c92a2a;
+    .code-wrap textarea {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      color: #c9d1d9;
+      border: none;
+      padding: 1rem 1rem 1rem 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 1.65;
+      resize: none;
+      tab-size: 2;
+      white-space: pre;
+      overflow-wrap: normal;
+      overflow-x: auto;
     }
-    .empty-state {
+    .code-wrap textarea:focus { outline: none; }
+    .code-wrap textarea::placeholder { color: var(--p-text-faint); }
+    .code-wrap textarea::selection { background: rgba(92, 124, 250, 0.25); }
+
+    /* ── Empty state ── */
+    .empty {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100%;
-      color: var(--nv-gray-500, #adb5bd);
-      font-size: 0.9rem;
-      gap: 0.5rem;
+      gap: 0.75rem;
     }
-    .url-badge {
+    .empty-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: var(--p-surface);
+      border: 1px solid var(--p-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem;
-      color: var(--nv-gray-400, #ced4da);
-      background: var(--nv-gray-800, #343a40);
-      padding: 0.15rem 0.4rem;
-      border-radius: 4px;
-      display: inline-block;
-      margin-top: 0.15rem;
-      cursor: pointer;
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-size: 1.1rem;
+      color: var(--p-text-faint);
     }
-    .url-badge:hover {
-      color: var(--nv-primary-300, #91a7ff);
-    }
-    .new-page-btn {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px dashed var(--nv-gray-600, #868e96);
-      background: transparent;
-      color: var(--nv-gray-400, #ced4da);
-      border-radius: 8px;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
+    .empty-text {
       font-size: 0.85rem;
-      margin-top: 0.5rem;
-      transition: all 0.15s;
+      color: var(--p-text-dim);
     }
-    .new-page-btn:hover {
-      border-color: var(--nv-primary-500, #5c7cfa);
-      color: var(--nv-primary-400, #748ffc);
+    .empty-hint {
+      font-size: 0.75rem;
+      color: var(--p-text-faint);
     }
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 0.4rem;
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+      z-index: 1000;
+      backdrop-filter: blur(8px);
     }
-    .status-dot.connected { background: #51cf66; }
-    .status-dot.disconnected { background: #ff6b6b; }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .toast-ok {
+      background: rgba(92, 124, 250, 0.9);
+      color: #fff;
+    }
+    .toast-err {
+      background: rgba(224, 49, 49, 0.9);
+      color: #fff;
+    }
+
+    /* ── Responsive ── */
     @media (max-width: 768px) {
-      .platform-layout {
+      .layout {
         grid-template-columns: 1fr;
         grid-template-rows: auto 1fr;
       }
-      .panel-list {
+      .side {
         border-right: none;
-        border-bottom: 1px solid var(--nv-gray-700, #495057);
-        max-height: 200px;
+        border-bottom: 1px solid var(--p-border);
+        max-height: 220px;
       }
     }
   </style>
@@ -311,6 +402,9 @@
       const removeMut = Novoid.useMutation(client, "pages:remove");
 
       // --- Helpers ---
+      const { h, effect } = Novoid;
+      const t = (s) => document.createTextNode(String(s));
+
       function toast(msg, isError) {
         setToastMsg(msg);
         setToastErr(!!isError);
@@ -346,7 +440,7 @@
         if (!sec) return toast("Set publish secret first", true);
         try {
           await publishMut({ slug, html, secret: sec });
-          toast("Published: " + slug);
+          toast("Published: /" + slug);
           setEditingExisting(true);
         } catch (e) {
           toast("Publish failed: " + e.message, true);
@@ -376,178 +470,206 @@
         setEditingExisting(false);
       }
 
-      function formatTime(ts) {
+      function fmtTime(ts) {
         if (!ts) return "";
-        const d = new Date(ts);
-        return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        var d = new Date(ts);
+        var now = new Date();
+        var diff = now - d;
+        if (diff < 60000) return "just now";
+        if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+        if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
+        return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      }
+
+      function charCount(s) {
+        if (!s) return "";
+        var len = s.length;
+        if (len < 1000) return len + " chars";
+        return (len / 1000).toFixed(1) + "K chars";
       }
 
       // --- Render ---
-      const { h, mount, effect } = Novoid;
-      const text = (s) => document.createTextNode(String(s));
-
       function render() {
-        const app = document.getElementById("app");
+        var app = document.getElementById("app");
         app.innerHTML = "";
 
         // Header
-        const header = h("div", { class: "platform-header" });
-        const titleArea = h("div", { style: "display:flex;align-items:center;gap:0.75rem" });
-        titleArea.appendChild(h("h1", {}, [text("no\u2205 Platform")]));
-        header.appendChild(titleArea);
-
-        const headerRight = h("div", { style: "display:flex;align-items:center;gap:0.5rem" });
-        const connDot = h("span", { class: "status-dot connected" });
-        headerRight.appendChild(connDot);
-        headerRight.appendChild(text("Connected"));
-        header.appendChild(headerRight);
-        app.appendChild(header);
+        var hdr = h("div", { class: "hdr" });
+        var brand = h("div", { class: "hdr-brand" });
+        brand.innerHTML = "<span>no\u2205</span> Platform";
+        hdr.appendChild(brand);
+        var right = h("div", { class: "hdr-right" });
+        right.appendChild(h("span", { class: "dot dot-ok" }));
+        right.appendChild(t("Connected"));
+        hdr.appendChild(right);
+        app.appendChild(hdr);
 
         // Layout
-        const layout = h("div", { class: "platform-layout" });
+        var layout = h("div", { class: "layout" });
 
-        // --- Left panel ---
-        const left = h("div", { class: "panel-list" });
+        // ── Sidebar ──
+        var side = h("div", { class: "side" });
 
-        // Settings
-        left.appendChild(h("div", { class: "section-title" }, [text("Settings")]));
-        const settingsRow = h("div", { class: "settings-row" });
-        const secretInput = h("input", {
+        // Secret
+        var sec1 = h("div", { class: "side-section" });
+        sec1.appendChild(h("div", { class: "side-label" }, [t("Publish Secret")]));
+        var si = h("input", {
+          class: "secret-input",
           type: "password",
-          placeholder: "Publish secret",
+          placeholder: "Enter secret to publish...",
           value: secret(),
         });
-        secretInput.addEventListener("input", (e) => saveSecret(e.target.value));
-        settingsRow.appendChild(secretInput);
-        left.appendChild(settingsRow);
+        si.addEventListener("input", function(e) { saveSecret(e.target.value); });
+        sec1.appendChild(si);
+        side.appendChild(sec1);
 
-        // Pages list
-        left.appendChild(h("div", { class: "section-title" }, [text("Pages")]));
+        // Pages header
+        var sec2 = h("div", { class: "side-section", style: "padding-bottom:0.25rem" });
+        sec2.appendChild(h("div", { class: "side-label" }, [t("Pages")]));
+        side.appendChild(sec2);
 
-        const pageData = pages.data();
-        const loading = pages.loading();
+        // Page list
+        var plist = h("div", { class: "page-list" });
+        var pageData = pages.data();
+        var loading = pages.loading();
 
         if (loading) {
-          left.appendChild(h("div", { style: "padding:0.5rem 0.75rem;color:var(--nv-gray-500);font-size:0.85rem" }, [text("Loading...")]));
+          plist.appendChild(h("div", { style: "padding:0.5rem;color:var(--p-text-faint);font-size:0.8rem" }, [t("Loading...")]));
         } else if (pageData && pageData.length > 0) {
-          const sorted = [...pageData].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-          sorted.forEach((page) => {
-            const item = h("div", {
-              class: "page-item" + (currentSlug() === page.slug ? " active" : ""),
-            });
-            const info = h("div", {});
-            info.appendChild(h("div", { class: "page-item-name" }, [text(page.slug)]));
-            const urlBadge = h("div", { class: "url-badge", title: SITE_URL + "/app/" + page.slug }, [
-              text("/app/" + page.slug),
-            ]);
-            urlBadge.addEventListener("click", (e) => {
+          var sorted = pageData.slice().sort(function(a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+          sorted.forEach(function(page) {
+            var pg = h("div", { class: "pg" + (currentSlug() === page.slug ? " active" : "") });
+
+            var info = h("div", { class: "pg-info" });
+            info.appendChild(h("div", { class: "pg-name" }, [t(page.slug)]));
+            var url = h("div", { class: "pg-url" }, [t("/app/" + page.slug)]);
+            url.addEventListener("click", function(e) {
               e.stopPropagation();
               navigator.clipboard.writeText(SITE_URL + "/app/" + page.slug);
               toast("URL copied");
             });
-            info.appendChild(urlBadge);
+            info.appendChild(url);
             if (page.updatedAt) {
-              info.appendChild(h("div", { class: "page-item-meta" }, [text(formatTime(page.updatedAt))]));
+              info.appendChild(h("div", { class: "pg-time" }, [t(fmtTime(page.updatedAt))]));
             }
-            item.appendChild(info);
+            pg.appendChild(info);
 
-            const actions = h("div", { class: "page-item-actions" });
-            const editBtn = h("button", { class: "btn-sm btn-edit" }, [text("Edit")]);
-            editBtn.addEventListener("click", (e) => { e.stopPropagation(); loadPage(page.slug); });
-            actions.appendChild(editBtn);
-            const delBtn = h("button", { class: "btn-sm btn-delete" }, [text("Del")]);
-            delBtn.addEventListener("click", (e) => { e.stopPropagation(); deletePage(page.slug); });
-            actions.appendChild(delBtn);
-            item.appendChild(actions);
+            var acts = h("div", { class: "pg-actions" });
+            var eb = h("button", { class: "btn btn-xs btn-accent" }, [t("Edit")]);
+            eb.addEventListener("click", function(e) { e.stopPropagation(); loadPage(page.slug); });
+            acts.appendChild(eb);
+            var db = h("button", { class: "btn btn-xs btn-danger-ghost" }, [t("Del")]);
+            db.addEventListener("click", function(e) { e.stopPropagation(); deletePage(page.slug); });
+            acts.appendChild(db);
+            pg.appendChild(acts);
 
-            item.addEventListener("click", () => loadPage(page.slug));
-            left.appendChild(item);
+            pg.addEventListener("click", function() { loadPage(page.slug); });
+            plist.appendChild(pg);
           });
         } else {
-          left.appendChild(h("div", { style: "padding:0.5rem 0.75rem;color:var(--nv-gray-500);font-size:0.85rem" }, [text("No pages yet")]));
+          plist.appendChild(h("div", { style: "padding:0.5rem;color:var(--p-text-faint);font-size:0.8rem" }, [t("No pages yet")]));
         }
+        side.appendChild(plist);
 
-        const newBtn = h("button", { class: "new-page-btn" }, [text("+ New Page")]);
-        newBtn.addEventListener("click", newPage);
-        left.appendChild(newBtn);
+        var nb = h("button", { class: "btn-new" }, [t("+ New Page")]);
+        nb.addEventListener("click", newPage);
+        side.appendChild(nb);
+        side.appendChild(h("div", { style: "height:0.5rem" }));
 
-        layout.appendChild(left);
+        layout.appendChild(side);
 
-        // --- Right panel: Editor ---
-        const right = h("div", { class: "panel-editor" });
+        // ── Editor panel ──
+        var editor = h("div", { class: "editor" });
 
-        const toolbar = h("div", { class: "editor-toolbar" });
-        const slugPrefix = h("span", { style: "color:var(--nv-gray-500);font-family:'JetBrains Mono',monospace;font-size:0.85rem" }, [text("/app/")]);
-        toolbar.appendChild(slugPrefix);
-        const slugInput = h("input", {
+        // Toolbar
+        var bar = h("div", { class: "editor-bar" });
+        var sg = h("div", { class: "slug-group" });
+        sg.appendChild(h("span", { class: "slug-prefix" }, [t("/app/")]));
+        var slugIn = h("input", {
+          class: "slug-input",
           type: "text",
           placeholder: "page-slug",
           value: currentSlug(),
         });
-        slugInput.addEventListener("input", (e) => {
+        slugIn.addEventListener("input", function(e) {
           setCurrentSlug(e.target.value);
           setEditingExisting(false);
         });
-        toolbar.appendChild(slugInput);
+        sg.appendChild(slugIn);
+        bar.appendChild(sg);
 
-        const pubBtn = h("button", { class: "btn-primary" }, [
-          text(editingExisting() ? "Update" : "Publish"),
-        ]);
-        pubBtn.addEventListener("click", publish);
-        if (publishMut.isLoading()) pubBtn.disabled = true;
-        toolbar.appendChild(pubBtn);
+        // Char count
+        var cc = editorHtml();
+        if (cc) {
+          bar.appendChild(h("span", { class: "file-info" }, [t(charCount(cc))]));
+        }
 
-        const previewBtn = h("button", { class: "btn-secondary" }, [text("Preview")]);
-        previewBtn.addEventListener("click", () => {
+        var barRight = h("div", { class: "editor-bar-right" });
+        var prevBtn = h("button", { class: "btn btn-sm btn-ghost" }, [t("Preview")]);
+        prevBtn.addEventListener("click", function() {
           if (currentSlug()) {
             window.open(SITE_URL + "/app/" + currentSlug(), "_blank");
           } else {
             toast("Set a slug first", true);
           }
         });
-        toolbar.appendChild(previewBtn);
+        barRight.appendChild(prevBtn);
 
-        right.appendChild(toolbar);
+        var pubBtn = h("button", { class: "btn btn-sm btn-accent" }, [
+          t(editingExisting() ? "Update" : "Publish"),
+        ]);
+        pubBtn.addEventListener("click", publish);
+        if (publishMut.isLoading()) pubBtn.disabled = true;
+        barRight.appendChild(pubBtn);
+        bar.appendChild(barRight);
 
-        const editorArea = h("div", { class: "editor-area" });
+        editor.appendChild(bar);
+
+        // Code editor or empty
+        var codeWrap = h("div", { class: "code-wrap" });
         if (currentSlug() || !editingExisting()) {
-          const ta = h("textarea", {
-            placeholder: "Paste or write your HTML here...",
+          var ta = h("textarea", {
+            placeholder: "Write or paste HTML here...\n\nTip: Use Tab for indentation, Cmd+S to publish.",
             spellcheck: "false",
+            autocomplete: "off",
+            autocorrect: "off",
+            autocapitalize: "off",
           });
           ta.value = editorHtml();
-          ta.addEventListener("input", (e) => setEditorHtml(e.target.value));
-          // Handle tab key for indentation
-          ta.addEventListener("keydown", (e) => {
+          ta.addEventListener("input", function(e) { setEditorHtml(e.target.value); });
+          ta.addEventListener("keydown", function(e) {
             if (e.key === "Tab") {
               e.preventDefault();
-              const start = ta.selectionStart;
-              const end = ta.selectionEnd;
-              const val = ta.value;
-              ta.value = val.substring(0, start) + "  " + val.substring(end);
-              ta.selectionStart = ta.selectionEnd = start + 2;
+              var s = ta.selectionStart;
+              var end = ta.selectionEnd;
+              ta.value = ta.value.substring(0, s) + "  " + ta.value.substring(end);
+              ta.selectionStart = ta.selectionEnd = s + 2;
               setEditorHtml(ta.value);
             }
+            if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+              e.preventDefault();
+              publish();
+            }
           });
-          editorArea.appendChild(ta);
+          codeWrap.appendChild(ta);
         } else {
-          const empty = h("div", { class: "empty-state" });
-          empty.appendChild(h("div", { style: "font-size:2rem;opacity:0.3" }, [text("{ }")]));
-          empty.appendChild(text("Select a page to edit or create a new one"));
-          editorArea.appendChild(empty);
+          var em = h("div", { class: "empty" });
+          em.appendChild(h("div", { class: "empty-icon" }, [t("</>")]));
+          em.appendChild(h("div", { class: "empty-text" }, [t("Select a page or create a new one")]));
+          em.appendChild(h("div", { class: "empty-hint" }, [t("Pages are served at " + SITE_URL + "/app/{slug}")]));
+          codeWrap.appendChild(em);
         }
-        right.appendChild(editorArea);
-        layout.appendChild(right);
+        editor.appendChild(codeWrap);
+        layout.appendChild(editor);
         app.appendChild(layout);
 
         // Toast
-        const toastEl = h("div", {
-          class: "toast" + (toastMsg() ? " show" : "") + (toastErr() ? " error" : ""),
-        }, [text(toastMsg())]);
-        app.appendChild(toastEl);
+        var cls = "toast";
+        if (toastMsg()) cls += " show";
+        cls += toastErr() ? " toast-err" : " toast-ok";
+        app.appendChild(h("div", { class: cls }, [t(toastMsg())]));
       }
 
-      // Re-render on any signal change
       effect(render);
     })();
   </script>
