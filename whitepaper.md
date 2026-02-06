@@ -161,6 +161,48 @@ This doesn't mean React is going away. It means that frameworks optimized for hu
 
 ---
 
+## 7. Multi-Agent Composition
+
+Everything above assumes a single agent generating a complete page. This works — the evidence in Section 4 proves it. But it also has an obvious ceiling: a single agent is a single thread. A dashboard with a header, sidebar, charts, and a data table could be generated twice as fast by two agents working in parallel, or four times as fast by four.
+
+The naive approach fails immediately. If two agents both write to the same `pages` table entry, the last write wins. There is no coordination, no conflict detection, no way for one agent to know what another is doing.
+
+### The coordination problem
+
+Multi-agent collaboration on a shared artifact requires three things:
+
+1. **Mutual exclusion** — only one agent works on a given piece at a time
+2. **Conflict detection** — if two agents accidentally modify the same piece, the system rejects the second write rather than silently overwriting
+3. **Status visibility** — every agent can see what's claimed, what's published, and what's still open
+
+These are classic distributed systems problems. The standard solutions involve external coordination services — Redis locks, ZooKeeper, etcd. But no∅ already has a transactional database with real-time subscriptions: Convex.
+
+### Fragment-based composition
+
+The solution decomposes a page into named **fragments** — slots in a template. A plan defines the template (`{{header}}{{sidebar}}{{main}}`) and the fragment list. Each agent claims a fragment atomically (Convex mutations are transactional — two agents cannot claim the same fragment in the same instant). The agent generates HTML for its fragment and publishes it with a version check. When all fragments are ready, any agent can compose — replacing placeholders with published HTML and writing the result to the `pages` table.
+
+The composed page is served by the same HTTP routes. Nothing about the serving infrastructure changes. The collaboration happens entirely at the authoring layer.
+
+### Why Convex
+
+Convex provides exactly the primitives this requires:
+
+- **Atomic transactions** — mutations execute transactionally, so claims are atomic without external locking
+- **Real-time subscriptions** — agents can watch the status of all fragments and react when slots open up
+- **Consistent reads** — no stale data, no eventual consistency surprises
+
+An agent in Tokyo and an agent in San Francisco both talk to the same Convex deployment. Claims are atomic across machines. Status updates propagate in real-time. The coordination layer is the same database the platform already uses — no additional infrastructure.
+
+### What this changes
+
+With multi-agent composition, no∅ becomes something beyond a single-agent generation framework. Multiple agents — whether parallel processes on one machine, separate Claude Code sessions, or remote agents on different continents — coordinate through the same API. The plan-claim-publish-compose cycle works identically whether agents are co-located or distributed.
+
+This doesn't invalidate single-agent generation. A single agent can still write a complete page via `pages:publish` and skip the collaboration system entirely. The two approaches coexist. But for larger applications where parallel generation would meaningfully reduce time-to-live, the coordination infrastructure is there.
+
+The stale-claim timeout (10 minutes) prevents deadlocks without requiring manual intervention. Optimistic concurrency versioning prevents silent overwrites. The public status endpoint (`GET /collab/<slug>`) lets any agent check progress without needing Convex CLI access. These are pragmatic choices: the system is designed to fail safely rather than require careful orchestration.
+
+---
+
 ## Appendix: Live Applications
 
 The three applications from this session are publicly accessible:

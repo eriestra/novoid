@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,266 +8,14 @@
   <link rel="stylesheet" href="../css/novoid.min.css">
   <style>
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: var(--nv-bg);
-      color: var(--nv-text);
-      font-family: var(--nv-font-sans);
-      min-height: 100vh;
-    }
-
-    .kb-board {
-      display: flex;
-      gap: var(--nv-space-5);
-      padding: var(--nv-space-6);
-      overflow-x: auto;
-      min-height: calc(100vh - 64px);
-      align-items: flex-start;
-    }
-
-    .kb-column {
-      min-width: 320px;
-      max-width: 340px;
-      flex-shrink: 0;
-      background: var(--nv-bg-subtle);
-      border-radius: var(--nv-radius-xl);
-      display: flex;
-      flex-direction: column;
-      max-height: calc(100vh - 100px);
-    }
-
-    .kb-column-header {
-      padding: var(--nv-space-4) var(--nv-space-5);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-
-    .kb-column-title {
-      font-family: var(--nv-font-display);
-      font-weight: 700;
-      font-size: var(--nv-text-base);
-      display: flex;
-      align-items: center;
-      gap: var(--nv-space-2);
-    }
-
-    .kb-count {
-      background: var(--nv-bg-muted);
-      color: var(--nv-text-muted);
-      font-size: var(--nv-text-xs);
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: var(--nv-radius-full);
-      font-family: var(--nv-font-sans);
-    }
-
-    .kb-cards {
-      padding: 0 var(--nv-space-3) var(--nv-space-3);
-      display: flex;
-      flex-direction: column;
-      gap: var(--nv-space-2);
-      overflow-y: auto;
-      flex: 1;
-      min-height: 48px;
-    }
-
-    .kb-cards::-webkit-scrollbar { width: 4px; }
-    .kb-cards::-webkit-scrollbar-track { background: transparent; }
-    .kb-cards::-webkit-scrollbar-thumb { background: var(--nv-border-strong); border-radius: 2px; }
-
-    .kb-card {
-      background: var(--nv-bg);
-      border: 1px solid var(--nv-border);
-      border-radius: var(--nv-radius-lg);
-      padding: var(--nv-space-4);
-      cursor: grab;
-      transition: box-shadow var(--nv-duration-fast) var(--nv-ease),
-                  border-color var(--nv-duration-fast) var(--nv-ease),
-                  transform var(--nv-duration-fast) var(--nv-ease);
-      position: relative;
-    }
-
-    .kb-card:hover {
-      border-color: var(--nv-border-strong);
-      box-shadow: var(--nv-shadow-sm);
-    }
-
-    .kb-card:active {
-      cursor: grabbing;
-    }
-
-    .kb-card.dragging {
-      opacity: 0.4;
-      transform: scale(0.97);
-    }
-
-    .kb-card-title {
-      font-weight: 600;
-      font-size: var(--nv-text-sm);
-      line-height: 1.4;
-      margin-bottom: var(--nv-space-1);
-    }
-
-    .kb-card-desc {
-      font-size: var(--nv-text-xs);
-      color: var(--nv-text-muted);
-      line-height: 1.5;
-    }
-
-    .kb-card-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: var(--nv-space-3);
-      gap: var(--nv-space-2);
-    }
-
-    .kb-priority {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 2px 8px;
-      border-radius: var(--nv-radius-full);
-    }
-
-    .kb-priority-low { background: var(--nv-success-50); color: var(--nv-success-700); }
-    .kb-priority-medium { background: var(--nv-warning-50); color: var(--nv-warning-700); }
-    .kb-priority-high { background: var(--nv-danger-50); color: var(--nv-danger-700); }
-
-    .kb-card-actions {
-      display: flex;
-      gap: 2px;
-      opacity: 0;
-      transition: opacity var(--nv-duration-fast) var(--nv-ease);
-    }
-
-    .kb-card:hover .kb-card-actions { opacity: 1; }
-
-    .kb-action-btn {
-      background: none;
-      border: none;
-      color: var(--nv-text-subtle);
-      cursor: pointer;
-      padding: 4px;
-      border-radius: var(--nv-radius-sm);
-      font-size: 13px;
-      line-height: 1;
-      transition: all var(--nv-duration-fast) var(--nv-ease);
-    }
-
-    .kb-action-btn:hover {
-      background: var(--nv-bg-muted);
-      color: var(--nv-text);
-    }
-
-    .kb-drop-zone {
-      border: 2px dashed var(--nv-primary-300);
-      border-radius: var(--nv-radius-lg);
-      padding: var(--nv-space-6);
-      text-align: center;
-      color: var(--nv-primary-400);
-      font-size: var(--nv-text-sm);
-      font-weight: 500;
-      background: color-mix(in srgb, var(--nv-primary-50) 50%, transparent);
-      transition: all var(--nv-duration-fast) var(--nv-ease);
-    }
-
-    .kb-drop-zone.over {
-      border-color: var(--nv-primary-500);
-      background: var(--nv-primary-50);
-    }
-
-    .kb-add-card-btn {
-      width: 100%;
-      padding: var(--nv-space-3);
-      border: none;
-      border-radius: var(--nv-radius-lg);
-      background: transparent;
-      color: var(--nv-text-muted);
-      font-size: var(--nv-text-sm);
-      font-weight: 500;
-      cursor: pointer;
-      text-align: left;
-      transition: all var(--nv-duration-fast) var(--nv-ease);
-      font-family: var(--nv-font-sans);
-      display: flex;
-      align-items: center;
-      gap: var(--nv-space-2);
-    }
-
-    .kb-add-card-btn:hover {
-      background: var(--nv-bg-muted);
-      color: var(--nv-text);
-    }
-
-    .kb-add-form {
-      padding: 0 var(--nv-space-3) var(--nv-space-3);
-    }
-
-    .kb-add-form-inner {
-      background: var(--nv-bg);
-      border: 1px solid var(--nv-border);
-      border-radius: var(--nv-radius-lg);
-      padding: var(--nv-space-3);
-    }
-
-    .kb-add-form textarea {
-      width: 100%;
-      border: none;
-      outline: none;
-      resize: none;
-      font-family: var(--nv-font-sans);
-      font-size: var(--nv-text-sm);
-      font-weight: 600;
-      background: transparent;
-      color: var(--nv-text);
-      line-height: 1.4;
-      min-height: 40px;
-    }
-
-    .kb-add-form textarea::placeholder { color: var(--nv-text-subtle); }
-
-    .kb-add-form textarea.desc-input {
-      font-weight: 400;
-      font-size: var(--nv-text-xs);
-      color: var(--nv-text-muted);
-      min-height: 28px;
-      margin-top: var(--nv-space-1);
-    }
-
-    .kb-add-column-btn {
-      min-width: 320px;
-      flex-shrink: 0;
-      padding: var(--nv-space-4) var(--nv-space-5);
-      border: 2px dashed var(--nv-border);
-      border-radius: var(--nv-radius-xl);
-      background: transparent;
-      color: var(--nv-text-muted);
-      font-family: var(--nv-font-display);
-      font-weight: 600;
-      font-size: var(--nv-text-sm);
-      cursor: pointer;
-      transition: all var(--nv-duration-fast) var(--nv-ease);
-      text-align: center;
-    }
-
-    .kb-add-column-btn:hover {
-      border-color: var(--nv-primary-300);
-      color: var(--nv-primary-500);
-      background: color-mix(in srgb, var(--nv-primary-50) 30%, transparent);
-    }
+    body { margin: 0; background: var(--nv-bg); color: var(--nv-text); font-family: var(--nv-font-sans); }
 
     .kb-header {
+      height: 56px;
+      padding: 0 var(--nv-space-6);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: var(--nv-space-4) var(--nv-space-6);
       border-bottom: 1px solid var(--nv-border);
       background: var(--nv-bg);
       position: sticky;
@@ -278,67 +26,179 @@
     .kb-logo {
       font-family: var(--nv-font-display);
       font-weight: 800;
-      font-size: var(--nv-text-xl);
+      font-size: var(--nv-text-lg);
       display: flex;
       align-items: center;
-      gap: var(--nv-space-3);
+      gap: var(--nv-space-2);
     }
 
-    .kb-logo-icon {
-      width: 32px;
-      height: 32px;
+    .kb-logo-mark {
+      width: 28px; height: 28px;
       background: linear-gradient(135deg, var(--nv-primary-500), var(--nv-primary-700));
       border-radius: var(--nv-radius-md);
-      display: grid;
-      place-items: center;
-      color: white;
-      font-size: 16px;
-      font-weight: 900;
+      display: grid; place-items: center;
+      color: #fff; font-size: 14px; font-weight: 900;
     }
 
-    /* Drag ghost placeholder */
+    .kb-board {
+      display: flex;
+      gap: var(--nv-space-4);
+      padding: var(--nv-space-5);
+      overflow-x: auto;
+      min-height: calc(100vh - 56px);
+      align-items: flex-start;
+    }
+
+    .kb-col {
+      min-width: 300px; max-width: 320px; flex-shrink: 0;
+      background: var(--nv-bg-subtle);
+      border-radius: var(--nv-radius-xl);
+      display: flex; flex-direction: column;
+      max-height: calc(100vh - 80px);
+    }
+
+    .kb-col-head {
+      padding: var(--nv-space-3) var(--nv-space-4);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .kb-col-title {
+      font-family: var(--nv-font-display);
+      font-weight: 700; font-size: var(--nv-text-sm);
+      display: flex; align-items: center; gap: var(--nv-space-2);
+    }
+
+    .kb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .kb-count {
+      background: var(--nv-bg-muted); color: var(--nv-text-muted);
+      font-size: 11px; font-weight: 600;
+      padding: 1px 7px; border-radius: var(--nv-radius-full);
+    }
+
+    .kb-cards {
+      padding: 0 var(--nv-space-3) var(--nv-space-2);
+      display: flex; flex-direction: column; gap: var(--nv-space-2);
+      overflow-y: auto; flex: 1; min-height: 40px;
+      transition: background var(--nv-duration-fast) var(--nv-ease);
+      border-radius: var(--nv-radius-md);
+      margin: 0 4px;
+    }
+
+    .kb-cards.drag-over {
+      background: color-mix(in srgb, var(--nv-primary-500) 6%, transparent);
+    }
+
+    .kb-cards::-webkit-scrollbar { width: 4px; }
+    .kb-cards::-webkit-scrollbar-thumb { background: var(--nv-border-strong); border-radius: 2px; }
+
+    .kb-card {
+      background: var(--nv-bg);
+      border: 1px solid var(--nv-border);
+      border-radius: var(--nv-radius-lg);
+      padding: var(--nv-space-3) var(--nv-space-4);
+      cursor: grab;
+      transition: box-shadow var(--nv-duration-fast) var(--nv-ease),
+                  border-color var(--nv-duration-fast) var(--nv-ease),
+                  transform var(--nv-duration-fast) var(--nv-ease);
+      position: relative;
+    }
+
+    .kb-card:hover { border-color: var(--nv-border-strong); box-shadow: var(--nv-shadow-sm); }
+    .kb-card:active { cursor: grabbing; }
+    .kb-card.dragging { opacity: 0.35; transform: scale(0.96); }
+
+    .kb-card-title { font-weight: 600; font-size: var(--nv-text-sm); line-height: 1.4; margin-bottom: 2px; }
+    .kb-card-desc { font-size: var(--nv-text-xs); color: var(--nv-text-muted); line-height: 1.5; }
+
+    .kb-card-foot {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: var(--nv-space-2);
+    }
+
+    .kb-pri {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; padding: 2px 8px;
+      border-radius: var(--nv-radius-full);
+    }
+    .kb-pri-low { background: var(--nv-success-50); color: var(--nv-success-700); }
+    .kb-pri-med { background: var(--nv-warning-50); color: var(--nv-warning-700); }
+    .kb-pri-high { background: var(--nv-danger-50); color: var(--nv-danger-700); }
+
+    .kb-acts {
+      display: flex; gap: 2px; opacity: 0;
+      transition: opacity var(--nv-duration-fast) var(--nv-ease);
+    }
+    .kb-card:hover .kb-acts { opacity: 1; }
+
+    .kb-act {
+      background: none; border: none; color: var(--nv-text-subtle);
+      cursor: pointer; padding: 3px; border-radius: var(--nv-radius-sm);
+      font-size: 13px; line-height: 1;
+      transition: all var(--nv-duration-fast) var(--nv-ease);
+    }
+    .kb-act:hover { background: var(--nv-bg-muted); color: var(--nv-text); }
+
     .kb-placeholder {
       border: 2px dashed var(--nv-primary-300);
       border-radius: var(--nv-radius-lg);
-      background: color-mix(in srgb, var(--nv-primary-50) 40%, transparent);
-      min-height: 60px;
+      background: color-mix(in srgb, var(--nv-primary-50) 30%, transparent);
+      min-height: 48px;
+    }
+
+    .kb-add-btn {
+      width: 100%; padding: var(--nv-space-2) var(--nv-space-3);
+      border: none; border-radius: var(--nv-radius-lg);
+      background: transparent; color: var(--nv-text-muted);
+      font-size: var(--nv-text-sm); font-weight: 500; cursor: pointer;
+      text-align: left; font-family: inherit;
+      display: flex; align-items: center; gap: var(--nv-space-2);
+      transition: all var(--nv-duration-fast) var(--nv-ease);
+      margin: 0 var(--nv-space-3) var(--nv-space-3);
+    }
+    .kb-add-btn:hover { background: var(--nv-bg-muted); color: var(--nv-text); }
+
+    .kb-form {
+      padding: 0 var(--nv-space-3) var(--nv-space-3);
+    }
+
+    .kb-form-inner {
+      background: var(--nv-bg); border: 1px solid var(--nv-border);
+      border-radius: var(--nv-radius-lg); padding: var(--nv-space-3);
+    }
+
+    .kb-form textarea {
+      width: 100%; border: none; outline: none; resize: none;
+      font-family: var(--nv-font-sans); font-size: var(--nv-text-sm);
+      font-weight: 600; background: transparent; color: var(--nv-text);
+      line-height: 1.4; min-height: 36px;
+    }
+    .kb-form textarea::placeholder { color: var(--nv-text-subtle); }
+    .kb-form textarea.desc { font-weight: 400; font-size: var(--nv-text-xs); color: var(--nv-text-muted); min-height: 24px; margin-top: 4px; }
+
+    .kb-add-col {
+      min-width: 300px; flex-shrink: 0;
+      padding: var(--nv-space-3); border: 2px dashed var(--nv-border);
+      border-radius: var(--nv-radius-xl); background: transparent;
+      color: var(--nv-text-muted); font-family: var(--nv-font-display);
+      font-weight: 600; font-size: var(--nv-text-sm); cursor: pointer;
+      text-align: center;
       transition: all var(--nv-duration-fast) var(--nv-ease);
     }
+    .kb-add-col:hover { border-color: var(--nv-primary-300); color: var(--nv-primary-500); }
 
-    /* Edit modal overlay */
-    .kb-edit-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      backdrop-filter: blur(4px);
-      display: grid;
-      place-items: center;
+    .kb-modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(4px); display: grid; place-items: center;
       z-index: var(--nv-z-modal);
-      opacity: 0;
-      pointer-events: none;
+      opacity: 0; pointer-events: none;
       transition: opacity var(--nv-duration-fast) var(--nv-ease);
     }
-
-    .kb-edit-overlay.active {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    .kb-color-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .kb-column-color-todo { background: var(--nv-primary-400); }
-    .kb-column-color-progress { background: var(--nv-warning-500); }
-    .kb-column-color-done { background: var(--nv-success-500); }
-    .kb-column-color-default { background: var(--nv-gray-400); }
+    .kb-modal-bg.active { opacity: 1; pointer-events: all; }
 
     @media (max-width: 768px) {
       .kb-board { padding: var(--nv-space-3); gap: var(--nv-space-3); }
-      .kb-column { min-width: 280px; }
+      .kb-col { min-width: 270px; }
     }
   </style>
 </head>
@@ -348,537 +208,392 @@
   <script>
     const { signal, computed, effect, batch, h, mount, list } = Novoid;
 
-    // ─── persistence ───
-    const STORAGE_KEY = 'nv-kanban-data';
+    // ── Persistence ──
+    const KEY = 'nv-kanban';
 
-    function loadData() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) return JSON.parse(raw);
-      } catch(e) {}
+    function load() {
+      try { const r = localStorage.getItem(KEY); if (r) return JSON.parse(r); } catch(e) {}
       return null;
     }
 
-    function saveData(columns) {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(columns)); } catch(e) {}
+    function save(data) {
+      try { localStorage.setItem(KEY, JSON.stringify(data)); } catch(e) {}
     }
 
-    const defaultColumns = [
-      { id: 'col-1', title: 'To Do', color: 'todo', cards: [
-        { id: 'c-1', title: 'Research competitors', desc: 'Analyze top 5 competitors and document findings', priority: 'medium' },
-        { id: 'c-2', title: 'Design system audit', desc: 'Review current tokens and components', priority: 'high' },
-        { id: 'c-3', title: 'Write unit tests', desc: '', priority: 'low' },
+    const defaults = [
+      { id: 'c1', title: 'To Do', dot: 'var(--nv-primary-400)', cards: [
+        { id: 'k1', title: 'Research competitors', desc: 'Analyze top 5 competitors and document findings', pri: 'med' },
+        { id: 'k2', title: 'Design system audit', desc: 'Review current tokens and components', pri: 'high' },
+        { id: 'k3', title: 'Write unit tests', desc: '', pri: 'low' },
       ]},
-      { id: 'col-2', title: 'In Progress', color: 'progress', cards: [
-        { id: 'c-4', title: 'Build dashboard layout', desc: 'Implement responsive grid with sidebar nav', priority: 'high' },
-        { id: 'c-5', title: 'API integration', desc: 'Connect auth endpoints', priority: 'medium' },
+      { id: 'c2', title: 'In Progress', dot: 'var(--nv-warning-500)', cards: [
+        { id: 'k4', title: 'Build dashboard layout', desc: 'Responsive grid with sidebar navigation', pri: 'high' },
+        { id: 'k5', title: 'API integration', desc: 'Connect auth endpoints', pri: 'med' },
       ]},
-      { id: 'col-3', title: 'Done', color: 'done', cards: [
-        { id: 'c-6', title: 'Project kickoff', desc: 'Initial team meeting and scope definition', priority: 'low' },
+      { id: 'c3', title: 'Review', dot: 'var(--nv-info-500)', cards: [
+        { id: 'k6', title: 'Code review: auth module', desc: 'Security audit pending', pri: 'high' },
+      ]},
+      { id: 'c4', title: 'Done', dot: 'var(--nv-success-500)', cards: [
+        { id: 'k7', title: 'Project kickoff', desc: 'Team meeting and scope definition', pri: 'low' },
+        { id: 'k8', title: 'Set up CI pipeline', desc: '', pri: 'med' },
       ]},
     ];
 
-    const [columns, setColumns] = signal(loadData() || defaultColumns);
+    const [cols, setCols] = signal(load() || defaults);
+    effect(() => save(cols()));
 
-    // Autosave
-    effect(() => saveData(columns()));
+    // ── IDs ──
+    let _id = Date.now();
+    const uid = () => 'k' + (++_id);
+    const cuid = () => 'c' + (++_id);
 
-    // ─── drag state ───
-    let dragCardId = null;
-    let dragSourceCol = null;
+    // ── Drag state ──
+    let dragId = null, dragFrom = null;
 
-    // ─── helpers ───
-    let idCounter = Date.now();
-    function uid() { return 'c-' + (++idCounter); }
-    function colUid() { return 'col-' + (++idCounter); }
-
-    function getColorClass(color) {
-      const map = { todo: 'kb-column-color-todo', progress: 'kb-column-color-progress', done: 'kb-column-color-done' };
-      return map[color] || 'kb-column-color-default';
-    }
-
-    // ─── card operations ───
-    function addCard(colId, title, desc, priority) {
-      setColumns(cols => cols.map(c =>
-        c.id === colId
-          ? { ...c, cards: [...c.cards, { id: uid(), title, desc: desc || '', priority: priority || 'medium' }] }
-          : c
-      ));
+    // ── Card operations ──
+    function addCard(colId, title, desc, pri) {
+      setCols(cs => cs.map(c => c.id === colId
+        ? { ...c, cards: [...c.cards, { id: uid(), title, desc: desc || '', pri: pri || 'med' }] }
+        : c));
     }
 
     function removeCard(colId, cardId) {
-      setColumns(cols => cols.map(c =>
-        c.id === colId ? { ...c, cards: c.cards.filter(k => k.id !== cardId) } : c
-      ));
+      setCols(cs => cs.map(c => c.id === colId
+        ? { ...c, cards: c.cards.filter(k => k.id !== cardId) } : c));
     }
 
-    function updateCard(colId, cardId, updates) {
-      setColumns(cols => cols.map(c =>
-        c.id === colId
-          ? { ...c, cards: c.cards.map(k => k.id === cardId ? { ...k, ...updates } : k) }
-          : c
-      ));
+    function updateCard(colId, cardId, upd) {
+      setCols(cs => cs.map(c => c.id === colId
+        ? { ...c, cards: c.cards.map(k => k.id === cardId ? { ...k, ...upd } : k) } : c));
     }
 
-    function moveCard(fromColId, toColId, cardId, beforeCardId) {
-      setColumns(cols => {
+    function moveCard(fromCol, toCol, cardId, beforeId) {
+      setCols(cs => {
         let card = null;
-        const after = cols.map(c => {
-          if (c.id === fromColId) {
+        const step1 = cs.map(c => {
+          if (c.id === fromCol) {
             card = c.cards.find(k => k.id === cardId);
             return { ...c, cards: c.cards.filter(k => k.id !== cardId) };
           }
           return c;
         });
-        if (!card) return cols;
-        return after.map(c => {
-          if (c.id === toColId) {
-            const newCards = [...c.cards];
-            const idx = beforeCardId ? newCards.findIndex(k => k.id === beforeCardId) : -1;
-            if (idx >= 0) newCards.splice(idx, 0, card);
-            else newCards.push(card);
-            return { ...c, cards: newCards };
+        if (!card) return cs;
+        return step1.map(c => {
+          if (c.id === toCol) {
+            const arr = [...c.cards];
+            const idx = beforeId ? arr.findIndex(k => k.id === beforeId) : -1;
+            idx >= 0 ? arr.splice(idx, 0, card) : arr.push(card);
+            return { ...c, cards: arr };
           }
           return c;
         });
       });
     }
 
-    function addColumn(title) {
-      setColumns(cols => [...cols, { id: colUid(), title, color: 'default', cards: [] }]);
+    function addCol(title) {
+      setCols(cs => [...cs, { id: cuid(), title, dot: 'var(--nv-gray-400)', cards: [] }]);
     }
 
-    function removeColumn(colId) {
-      setColumns(cols => cols.filter(c => c.id !== colId));
+    function removeCol(colId) { setCols(cs => cs.filter(c => c.id !== colId)); }
+    function renameCol(colId, title) { setCols(cs => cs.map(c => c.id === colId ? { ...c, title } : c)); }
+
+    // ── Edit modal state ──
+    const [editing, setEditing] = signal(null);
+
+    // ── Components ──
+
+    function PriBadge(pri) {
+      const lbl = { low: 'Low', med: 'Med', high: 'High' };
+      return h('span', { class: `kb-pri kb-pri-${pri}` }, lbl[pri] || pri);
     }
 
-    function renameColumn(colId, title) {
-      setColumns(cols => cols.map(c => c.id === colId ? { ...c, title } : c));
-    }
-
-    // ─── edit modal state ───
-    const [editingCard, setEditingCard] = signal(null); // { colId, card }
-
-    // ─── components ───
-
-    function PriorityBadge(priority) {
-      const labels = { low: 'Low', medium: 'Med', high: 'High' };
-      return h('span', { class: `kb-priority kb-priority-${priority}` }, labels[priority] || priority);
-    }
-
-    function CardEl(card, colId) {
+    function Card(card, colId) {
       const el = h('div', {
         class: 'kb-card',
         draggable: 'true',
         onDragstart: (e) => {
-          dragCardId = card.id;
-          dragSourceCol = colId;
+          dragId = card.id;
+          dragFrom = colId;
           el.classList.add('dragging');
           e.dataTransfer.effectAllowed = 'move';
           e.dataTransfer.setData('text/plain', card.id);
         },
         onDragend: () => {
           el.classList.remove('dragging');
-          dragCardId = null;
-          dragSourceCol = null;
-          // Remove any leftover placeholders
+          dragId = null; dragFrom = null;
           document.querySelectorAll('.kb-placeholder').forEach(p => p.remove());
         },
       },
         h('div', { class: 'kb-card-title' }, card.title),
         card.desc ? h('div', { class: 'kb-card-desc' }, card.desc) : null,
-        h('div', { class: 'kb-card-footer' },
-          PriorityBadge(card.priority),
-          h('div', { class: 'kb-card-actions' },
-            h('button', {
-              class: 'kb-action-btn',
-              onClick: (e) => {
-                e.stopPropagation();
-                setEditingCard({ colId, card: { ...card } });
-              }
-            }, '✎'),
-            h('button', {
-              class: 'kb-action-btn',
-              onClick: (e) => {
-                e.stopPropagation();
-                removeCard(colId, card.id);
-                Novoid.toast.info('Card removed');
-              }
-            }, '✕'),
-          )
-        )
+        h('div', { class: 'kb-card-foot' },
+          PriBadge(card.pri),
+          h('div', { class: 'kb-acts' },
+            h('button', { class: 'kb-act', onClick: (e) => { e.stopPropagation(); setEditing({ colId, card: { ...card } }); } }, '✎'),
+            h('button', { class: 'kb-act', onClick: (e) => { e.stopPropagation(); removeCard(colId, card.id); Novoid.toast.info('Card removed'); } }, '✕'),
+          ),
+        ),
       );
       return el;
     }
 
-    function AddCardForm(colId) {
+    function AddForm(colId) {
       const [open, setOpen] = signal(false);
       const [title, setTitle] = signal('');
       const [desc, setDesc] = signal('');
-      const [priority, setPriority] = signal('medium');
+      const [pri, setPri] = signal('med');
 
       function submit() {
         const t = title().trim();
         if (!t) return;
-        addCard(colId, t, desc().trim(), priority());
-        batch(() => { setTitle(''); setDesc(''); setPriority('medium'); setOpen(false); });
+        addCard(colId, t, desc().trim(), pri());
+        batch(() => { setTitle(''); setDesc(''); setPri('med'); setOpen(false); });
         Novoid.toast.success('Card added');
       }
 
       return h('div', {},
-        // Button
-        h('div', { show: () => !open(), class: 'nv-px-3 nv-pb-3' },
-          h('button', { class: 'kb-add-card-btn', onClick: () => setOpen(true) },
-            h('span', { style: { fontSize: '18px', lineHeight: '1' } }, '+'),
-            'Add a card'
-          )
+        h('button', { class: 'kb-add-btn', show: () => !open(), onClick: () => setOpen(true) },
+          h('span', { style: { fontSize: '16px', lineHeight: '1' } }, '+'), 'Add card'
         ),
-        // Form
-        h('div', { show: open, class: 'kb-add-form' },
-          h('div', { class: 'kb-add-form-inner' },
+        h('div', { show: open, class: 'kb-form' },
+          h('div', { class: 'kb-form-inner' },
             h('textarea', {
-              rows: 1,
-              placeholder: 'Card title...',
+              rows: 1, placeholder: 'Card title…',
               bind: [title, setTitle],
               onKeydown: (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
                 if (e.key === 'Escape') setOpen(false);
-              }
+              },
             }),
             h('textarea', {
-              rows: 1,
-              class: 'desc-input',
-              placeholder: 'Description (optional)',
+              rows: 1, class: 'desc', placeholder: 'Description (optional)',
               bind: [desc, setDesc],
-              onKeydown: (e) => { if (e.key === 'Escape') setOpen(false); }
+              onKeydown: (e) => { if (e.key === 'Escape') setOpen(false); },
             }),
           ),
           h('div', { class: 'nv-flex nv-items-center nv-justify-between nv-mt-2 nv-gap-2' },
             h('div', { class: 'nv-flex nv-gap-1' },
-              ...['low', 'medium', 'high'].map(p =>
+              ...['low', 'med', 'high'].map(p =>
                 h('button', {
-                  class: () => `kb-priority kb-priority-${p} nv-cursor-pointer nv-transition-fast`,
-                  style: () => ({ outline: priority() === p ? '2px solid var(--nv-primary-400)' : 'none', outlineOffset: '1px' }),
-                  onClick: () => setPriority(p),
-                }, p === 'low' ? 'Low' : p === 'medium' ? 'Med' : 'High')
+                  class: () => `kb-pri kb-pri-${p} nv-cursor-pointer`,
+                  style: () => ({ outline: pri() === p ? '2px solid var(--nv-primary-400)' : 'none', outlineOffset: '1px' }),
+                  onClick: () => setPri(p),
+                }, p === 'low' ? 'Low' : p === 'med' ? 'Med' : 'High')
               )
             ),
             h('div', { class: 'nv-flex nv-gap-2' },
-              h('button', {
-                class: 'nv-btn nv-btn-ghost nv-btn-sm',
-                onClick: () => { batch(() => { setTitle(''); setDesc(''); setOpen(false); }); }
-              }, 'Cancel'),
-              h('button', {
-                class: 'nv-btn nv-btn-primary nv-btn-sm',
-                onClick: submit,
-              }, 'Add'),
-            )
-          )
-        )
+              h('button', { class: 'nv-btn nv-btn-ghost nv-btn-sm', onClick: () => batch(() => { setTitle(''); setDesc(''); setOpen(false); }) }, 'Cancel'),
+              h('button', { class: 'nv-btn nv-btn-primary nv-btn-sm', onClick: submit }, 'Add'),
+            ),
+          ),
+        ),
       );
     }
 
-    function Column(col) {
-      const cardsContainer = h('div', { class: 'kb-cards' });
-      const [isEditingTitle, setIsEditingTitle] = signal(false);
-      const [titleDraft, setTitleDraft] = signal(col.title);
+    function Col(col) {
+      const cardsEl = h('div', { class: 'kb-cards' });
+      let ph = null;
 
-      // Drag-over handling for the column
-      let placeholder = null;
-
-      function removePlaceholder() {
-        if (placeholder && placeholder.parentNode === cardsContainer) {
-          cardsContainer.removeChild(placeholder);
-        }
-        placeholder = null;
+      function removePh() {
+        if (ph && ph.parentNode === cardsEl) cardsEl.removeChild(ph);
+        ph = null;
       }
 
-      cardsContainer.addEventListener('dragover', (e) => {
+      cardsEl.addEventListener('dragover', (e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        if (!dragCardId) return;
-
-        if (!placeholder) {
-          placeholder = document.createElement('div');
-          placeholder.className = 'kb-placeholder';
+        if (!dragId) return;
+        cardsEl.classList.add('drag-over');
+        if (!ph) { ph = document.createElement('div'); ph.className = 'kb-placeholder'; }
+        const cards = [...cardsEl.querySelectorAll('.kb-card:not(.dragging)')];
+        let placed = false;
+        for (const c of cards) {
+          const r = c.getBoundingClientRect();
+          if (e.clientY < r.top + r.height / 2) { cardsEl.insertBefore(ph, c); placed = true; break; }
         }
-
-        const cards = [...cardsContainer.querySelectorAll('.kb-card:not(.dragging)')];
-        let inserted = false;
-        for (const card of cards) {
-          const rect = card.getBoundingClientRect();
-          if (e.clientY < rect.top + rect.height / 2) {
-            cardsContainer.insertBefore(placeholder, card);
-            inserted = true;
-            break;
-          }
-        }
-        if (!inserted) {
-          cardsContainer.appendChild(placeholder);
-        }
+        if (!placed) cardsEl.appendChild(ph);
       });
 
-      cardsContainer.addEventListener('dragleave', (e) => {
-        if (!cardsContainer.contains(e.relatedTarget)) {
-          removePlaceholder();
-        }
+      cardsEl.addEventListener('dragleave', (e) => {
+        if (!cardsEl.contains(e.relatedTarget)) { removePh(); cardsEl.classList.remove('drag-over'); }
       });
 
-      cardsContainer.addEventListener('drop', (e) => {
+      cardsEl.addEventListener('drop', (e) => {
         e.preventDefault();
-        if (!dragCardId) return;
-
-        // Find insert position
-        const cards = [...cardsContainer.querySelectorAll('.kb-card:not(.dragging)')];
-        let beforeCardId = null;
-        if (placeholder) {
-          const next = placeholder.nextElementSibling;
+        cardsEl.classList.remove('drag-over');
+        if (!dragId) return;
+        const cards = [...cardsEl.querySelectorAll('.kb-card:not(.dragging)')];
+        let beforeId = null;
+        if (ph) {
+          const next = ph.nextElementSibling;
           if (next && next.classList.contains('kb-card')) {
-            // Find the card ID from the data
             const idx = cards.indexOf(next);
-            const currentCols = columns();
-            const targetCol = currentCols.find(c => c.id === col.id);
-            if (targetCol && targetCol.cards[idx]) {
-              beforeCardId = targetCol.cards[idx].id;
-            }
+            const target = cols().find(c => c.id === col.id);
+            if (target && target.cards[idx]) beforeId = target.cards[idx].id;
           }
         }
-
-        removePlaceholder();
-        moveCard(dragSourceCol, col.id, dragCardId, beforeCardId);
+        removePh();
+        moveCard(dragFrom, col.id, dragId, beforeId);
       });
 
-      // Render cards reactively
-      const cardSignal = computed(() => {
-        const currentCols = columns();
-        const c = currentCols.find(x => x.id === col.id);
+      const colCards = computed(() => {
+        const c = cols().find(x => x.id === col.id);
         return c ? c.cards : [];
       });
 
-      list(cardsContainer, cardSignal, k => k.id, (card) => CardEl(card, col.id));
+      const count = computed(() => colCards().length);
 
-      const cardCount = computed(() => {
-        const currentCols = columns();
-        const c = currentCols.find(x => x.id === col.id);
-        return c ? c.cards.length : 0;
-      });
+      list(cardsEl, colCards, k => k.id, (card) => Card(card, col.id));
 
-      return h('div', { class: 'kb-column' },
-        h('div', { class: 'kb-column-header' },
-          h('div', { show: () => !isEditingTitle() },
+      const [editingTitle, setEditingTitle] = signal(false);
+      const [draft, setDraft] = signal(col.title);
+
+      return h('div', { class: 'kb-col' },
+        h('div', { class: 'kb-col-head' },
+          h('div', { show: () => !editingTitle() },
             h('div', {
-              class: 'kb-column-title nv-cursor-pointer',
-              onDblclick: () => { setTitleDraft(col.title); setIsEditingTitle(true); }
+              class: 'kb-col-title nv-cursor-pointer',
+              onDblclick: () => { setDraft(col.title); setEditingTitle(true); },
             },
-              h('div', { class: `kb-color-dot ${getColorClass(col.color)}` }),
-              h('span', {}, col.title),
-              h('span', { class: 'kb-count' }, () => `${cardCount()}`),
-            )
+              h('div', { class: 'kb-dot', style: { background: col.dot } }),
+              col.title,
+              h('span', { class: 'kb-count' }, () => String(count())),
+            ),
           ),
-          h('div', { show: isEditingTitle, class: 'nv-flex nv-gap-1 nv-items-center' },
+          h('div', { show: editingTitle, class: 'nv-flex nv-gap-1 nv-items-center' },
             h('input', {
-              class: 'nv-input nv-input-sm',
-              style: { width: '140px' },
-              bind: [titleDraft, setTitleDraft],
+              class: 'nv-input nv-input-sm', style: { width: '120px' },
+              bind: [draft, setDraft],
               onKeydown: (e) => {
-                if (e.key === 'Enter') {
-                  renameColumn(col.id, titleDraft().trim() || col.title);
-                  col.title = titleDraft().trim() || col.title;
-                  setIsEditingTitle(false);
-                }
-                if (e.key === 'Escape') setIsEditingTitle(false);
+                if (e.key === 'Enter') { const t = draft().trim() || col.title; renameCol(col.id, t); col.title = t; setEditingTitle(false); }
+                if (e.key === 'Escape') setEditingTitle(false);
               },
             }),
-            h('button', {
-              class: 'kb-action-btn',
-              onClick: () => {
-                renameColumn(col.id, titleDraft().trim() || col.title);
-                col.title = titleDraft().trim() || col.title;
-                setIsEditingTitle(false);
-              }
-            }, '✓'),
+            h('button', { class: 'kb-act', onClick: () => { const t = draft().trim() || col.title; renameCol(col.id, t); col.title = t; setEditingTitle(false); } }, '✓'),
           ),
           h('button', {
-            class: 'kb-action-btn',
-            style: { fontSize: '16px' },
+            class: 'kb-act', style: { fontSize: '15px' },
             onClick: () => {
-              if (columns().length > 1) {
-                removeColumn(col.id);
-                Novoid.toast.info('Column removed');
-              } else {
-                Novoid.toast.warning('Need at least one column');
-              }
-            }
+              if (cols().length > 1) { removeCol(col.id); Novoid.toast.info('Column removed'); }
+              else Novoid.toast.warning('Need at least one column');
+            },
           }, '✕'),
         ),
-        cardsContainer,
-        AddCardForm(col.id),
+        cardsEl,
+        AddForm(col.id),
       );
     }
 
     function EditModal() {
-      const [title, setTitle] = signal('');
-      const [desc, setDesc] = signal('');
-      const [priority, setPriority] = signal('medium');
+      const [t, setT] = signal('');
+      const [d, setD] = signal('');
+      const [p, setP] = signal('med');
 
       effect(() => {
-        const data = editingCard();
-        if (data) {
-          batch(() => {
-            setTitle(data.card.title);
-            setDesc(data.card.desc || '');
-            setPriority(data.card.priority || 'medium');
-          });
-        }
+        const e = editing();
+        if (e) batch(() => { setT(e.card.title); setD(e.card.desc || ''); setP(e.card.pri || 'med'); });
       });
 
       function save() {
-        const data = editingCard();
-        if (!data) return;
-        updateCard(data.colId, data.card.id, { title: title(), desc: desc(), priority: priority() });
-        setEditingCard(null);
+        const e = editing();
+        if (!e) return;
+        updateCard(e.colId, e.card.id, { title: t(), desc: d(), pri: p() });
+        setEditing(null);
         Novoid.toast.success('Card updated');
       }
 
       return h('div', {
-        class: () => `kb-edit-overlay ${editingCard() ? 'active' : ''}`,
-        onClick: (e) => { if (e.target === e.currentTarget) setEditingCard(null); }
+        class: () => `kb-modal-bg ${editing() ? 'active' : ''}`,
+        onClick: (e) => { if (e.target === e.currentTarget) setEditing(null); },
       },
-        h('div', { class: 'nv-card', style: { width: '100%', maxWidth: '28rem' } },
+        h('div', { class: 'nv-card', style: { width: '100%', maxWidth: '26rem' } },
           h('div', { class: 'nv-card-header nv-flex nv-items-center nv-justify-between' },
             h('h3', { class: 'nv-h5' }, 'Edit Card'),
-            h('button', { class: 'kb-action-btn', style: { fontSize: '18px' }, onClick: () => setEditingCard(null) }, '✕'),
+            h('button', { class: 'kb-act', style: { fontSize: '18px' }, onClick: () => setEditing(null) }, '✕'),
           ),
           h('div', { class: 'nv-card-body' },
             h('div', { class: 'nv-field' },
               h('label', { class: 'nv-label' }, 'Title'),
-              h('input', {
-                class: 'nv-input',
-                bind: [title, setTitle],
-                onKeydown: (e) => { if (e.key === 'Enter') save(); }
-              }),
+              h('input', { class: 'nv-input', bind: [t, setT], onKeydown: (e) => { if (e.key === 'Enter') save(); } }),
             ),
             h('div', { class: 'nv-field' },
               h('label', { class: 'nv-label' }, 'Description'),
-              h('textarea', { class: 'nv-textarea', rows: 3, bind: [desc, setDesc] }),
+              h('textarea', { class: 'nv-textarea', rows: 3, bind: [d, setD] }),
             ),
             h('div', { class: 'nv-field' },
               h('label', { class: 'nv-label nv-mb-2' }, 'Priority'),
               h('div', { class: 'nv-flex nv-gap-2' },
-                ...['low', 'medium', 'high'].map(p =>
+                ...['low', 'med', 'high'].map(pr =>
                   h('button', {
-                    class: () => `kb-priority kb-priority-${p} nv-cursor-pointer`,
-                    style: () => ({
-                      outline: priority() === p ? '2px solid var(--nv-primary-400)' : 'none',
-                      outlineOffset: '1px',
-                      padding: '4px 12px',
-                      fontSize: '12px',
-                    }),
-                    onClick: () => setPriority(p),
-                  }, p === 'low' ? 'Low' : p === 'medium' ? 'Medium' : 'High')
-                )
+                    class: () => `kb-pri kb-pri-${pr} nv-cursor-pointer`,
+                    style: () => ({ outline: p() === pr ? '2px solid var(--nv-primary-400)' : 'none', outlineOffset: '1px', padding: '4px 12px', fontSize: '12px' }),
+                    onClick: () => setP(pr),
+                  }, pr === 'low' ? 'Low' : pr === 'med' ? 'Medium' : 'High')
+                ),
               ),
             ),
           ),
           h('div', { class: 'nv-card-footer nv-flex nv-justify-end nv-gap-2' },
-            h('button', { class: 'nv-btn nv-btn-secondary nv-btn-sm', onClick: () => setEditingCard(null) }, 'Cancel'),
+            h('button', { class: 'nv-btn nv-btn-secondary nv-btn-sm', onClick: () => setEditing(null) }, 'Cancel'),
             h('button', { class: 'nv-btn nv-btn-primary nv-btn-sm', onClick: save }, 'Save'),
           ),
-        )
+        ),
       );
     }
 
-    // ─── add column ───
-    function AddColumnBtn() {
-      const [adding, setAdding] = signal(false);
+    function AddColBtn() {
+      const [open, setOpen] = signal(false);
       const [name, setName] = signal('');
 
       return h('div', { style: { flexShrink: '0' } },
-        h('button', {
-          class: 'kb-add-column-btn',
-          show: () => !adding(),
-          onClick: () => setAdding(true),
-        }, '+ Add Column'),
-        h('div', {
-          show: adding,
-          style: { minWidth: '320px' }
-        },
+        h('button', { class: 'kb-add-col', show: () => !open(), onClick: () => setOpen(true) }, '+ Add Column'),
+        h('div', { show: open, style: { minWidth: '300px' } },
           h('div', { class: 'nv-card', style: { background: 'var(--nv-bg-subtle)', border: 'none' } },
             h('div', { class: 'nv-card-body' },
               h('input', {
-                class: 'nv-input nv-mb-3',
-                placeholder: 'Column name...',
+                class: 'nv-input nv-mb-3', placeholder: 'Column name…',
                 bind: [name, setName],
                 onKeydown: (e) => {
-                  if (e.key === 'Enter' && name().trim()) {
-                    addColumn(name().trim());
-                    batch(() => { setName(''); setAdding(false); });
-                  }
-                  if (e.key === 'Escape') { batch(() => { setName(''); setAdding(false); }); }
-                }
+                  if (e.key === 'Enter' && name().trim()) { addCol(name().trim()); batch(() => { setName(''); setOpen(false); }); }
+                  if (e.key === 'Escape') batch(() => { setName(''); setOpen(false); });
+                },
               }),
               h('div', { class: 'nv-flex nv-gap-2' },
-                h('button', {
-                  class: 'nv-btn nv-btn-primary nv-btn-sm',
-                  onClick: () => {
-                    if (name().trim()) {
-                      addColumn(name().trim());
-                      batch(() => { setName(''); setAdding(false); });
-                    }
-                  }
-                }, 'Add'),
-                h('button', {
-                  class: 'nv-btn nv-btn-ghost nv-btn-sm',
-                  onClick: () => { batch(() => { setName(''); setAdding(false); }); }
-                }, 'Cancel'),
-              )
-            )
-          )
-        )
+                h('button', { class: 'nv-btn nv-btn-primary nv-btn-sm', onClick: () => { if (name().trim()) { addCol(name().trim()); batch(() => { setName(''); setOpen(false); }); } } }, 'Add'),
+                h('button', { class: 'nv-btn nv-btn-ghost nv-btn-sm', onClick: () => batch(() => { setName(''); setOpen(false); }) }, 'Cancel'),
+              ),
+            ),
+          ),
+        ),
       );
     }
 
-    // ─── theme toggle ───
     function ThemeToggle() {
-      const [dark, setDark] = signal(
-        document.documentElement.getAttribute('data-theme') === 'dark' ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-      );
-
-      effect(() => {
-        document.documentElement.setAttribute('data-theme', dark() ? 'dark' : 'light');
-      });
-
+      const [dark, setDark] = signal(document.documentElement.getAttribute('data-theme') === 'dark');
+      effect(() => document.documentElement.setAttribute('data-theme', dark() ? 'dark' : 'light'));
       return h('button', {
-        class: 'nv-btn nv-btn-ghost nv-btn-icon',
+        class: 'nv-btn nv-btn-ghost nv-btn-icon nv-btn-sm',
         onClick: () => setDark(d => !d),
         title: 'Toggle theme',
-      }, () => dark() ? '☀️' : '🌙');
+      }, () => dark() ? '☀' : '☽');
     }
 
-    // ─── mount ───
+    // ── Mount ──
     mount('#app', () => {
       const board = h('div', { class: 'kb-board' });
-
-      list(board, columns, c => c.id, (col) => Column(col));
-
-      board.appendChild(AddColumnBtn());
+      list(board, cols, c => c.id, (col) => Col(col));
+      board.appendChild(AddColBtn());
 
       return h('div', {},
         h('header', { class: 'kb-header' },
           h('div', { class: 'kb-logo' },
-            h('div', { class: 'kb-logo-icon' }, '▦'),
+            h('div', { class: 'kb-logo-mark' }, '▦'),
             'Kanban',
           ),
           h('div', { class: 'nv-flex nv-items-center nv-gap-2' },
             h('button', {
               class: 'nv-btn nv-btn-ghost nv-btn-sm',
-              onClick: () => {
-                if (confirm('Reset board to defaults?')) {
-                  setColumns(defaultColumns);
-                  Novoid.toast.info('Board reset');
-                }
-              }
+              onClick: () => { if (confirm('Reset board to defaults?')) { setCols(defaults); Novoid.toast.info('Board reset'); } },
             }, 'Reset'),
             ThemeToggle(),
           ),

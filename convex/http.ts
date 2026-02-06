@@ -99,4 +99,26 @@ http.route({
   }),
 });
 
+// GET /collab/:slug — JSON status for multi-agent coordination
+http.route({
+  pathPrefix: "/collab/",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const slug = url.pathname.replace("/collab/", "");
+    if (!slug) {
+      return new Response("Missing slug", { status: 400 });
+    }
+    const result = await ctx.runQuery(api.collab.status, { slug });
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache",
+      },
+    });
+  }),
+});
+
 export default http;

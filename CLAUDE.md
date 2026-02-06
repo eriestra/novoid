@@ -65,12 +65,13 @@ index.html (~40 lines)
 │   ├── novoid.min.css
 │   └── novoid.min.js
 ├── convex/            ← Convex backend
-│   ├── schema.ts      ← pages + assets + keys tables
+│   ├── schema.ts      ← pages + assets + keys + plans + fragments tables
 │   ├── pages.ts       ← CRUD for pages (auth-gated writes)
 │   ├── assets.ts      ← CRUD for assets (auth-gated writes)
+│   ├── collab.ts      ← multi-agent coordination (plans, fragments, compose)
 │   ├── keys.ts        ← secret management (internal only)
 │   ├── seed.ts        ← internal mutations for seeding data
-│   └── http.ts        ← HTTP router serving HTML/CSS/JS
+│   └── http.ts        ← HTTP router serving HTML/CSS/JS + /collab/:slug
 ├── seed.sh            ← one-time setup script
 ├── build.sh           ← instant minification (23ms)
 └── package.json       ← convex dependency only
@@ -148,6 +149,52 @@ npx convex run pages:publish "{\"slug\":\"<slug>\",\"html\":$HTML_JSON,\"secret\
 <link rel="stylesheet" href="../css/novoid.min.css">
 <script src="../js/novoid.min.js"><\/script>
 ```
+
+## Multi-Agent Collaboration
+
+Multiple agents can work on the same page in parallel — on one machine or across remote machines. Convex coordinates everything in real-time.
+
+### How it works
+
+1. **Lead agent creates a plan** — defines fragments (named slots) and a template with `{{fragment-name}}` placeholders
+2. **Any agent claims a fragment** — atomic lock, 10-min stale timeout
+3. **Agent generates HTML** for its fragment and publishes it
+4. **Any agent composes** — assembles all fragments into the final page
+
+### Agent workflow
+
+Generate a unique agent ID at session start:
+```sh
+AGENT_ID="claude-$(date +%s | tail -c 5)"
+```
+
+Check what's available:
+```sh
+npx convex run collab:status '{"slug":"<slug>"}'
+```
+
+Claim a fragment:
+```sh
+source .env.local
+npx convex run collab:claim '{"slug":"<slug>","name":"<fragment>","agentId":"'$AGENT_ID'","secret":"'$PUBLISH_SECRET'"}'
+```
+
+Generate the fragment HTML as `src/app/fragments/{slug}-{name}.html`, then publish:
+```sh
+HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/fragments/{slug}-{name}.html)
+npx convex run collab:publishFragment '{"slug":"<slug>","name":"<fragment>","html":'$HTML_JSON',"expectedVersion":1,"agentId":"'$AGENT_ID'","secret":"'$PUBLISH_SECRET'"}'
+```
+
+Compose the final page:
+```sh
+npx convex run collab:compose '{"slug":"<slug>","secret":"'$PUBLISH_SECRET'"}'
+```
+
+### Remote agents
+
+Any machine with the `PUBLISH_SECRET` can participate. The coordination endpoint is public:
+
+`GET https://<deployment>.convex.site/collab/<slug>` — returns JSON status of all fragments
 
 ## Key Rules
 

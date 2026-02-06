@@ -98,6 +98,35 @@ Buttons, cards, forms, inputs, selects, toggles, checkboxes, tables, badges, ale
 
 ---
 
+## Multi-Agent Collaboration
+
+One agent, one page works. But real applications have a header, a sidebar, a main content area, a footer — built faster in parallel. no∅ coordinates multiple agents on the same page in real-time, using Convex as the distributed coordination layer.
+
+```
+Machine A (local)                         Convex Cloud
+─────────────────                         ────────────
+Agent 1: claim("header")  ──────────→  atomic mutex in fragments table
+Agent 2: claim("sidebar") ──────────→  atomic mutex in fragments table
+                                         ↓
+Agent 1: publishFragment(html) ──────→  fragments table
+Agent 2: publishFragment(html) ──────→  fragments table
+                                         ↓
+Machine B (remote)                     compose("dashboard")
+─────────────────                        ↓
+Agent 3: claim("main") ─────────────→  write to pages table → live at /app/dashboard
+```
+
+A **plan** defines the page structure: named fragments (slots) and a template with `{{fragment-name}}` placeholders. Agents claim fragments atomically, generate HTML, and publish. A compositor assembles everything into the final page. The result goes into the same `pages` table — HTTP serving is unchanged.
+
+- **Atomic claims** — Convex mutations are transactional; two agents can't claim the same fragment
+- **Stale timeout** — claims expire after 10 minutes, preventing deadlocks
+- **Optimistic concurrency** — version checks detect conflicts on publish
+- **Cross-machine** — any machine with the publish secret can participate; status is available via `GET /collab/<slug>`
+
+Full API in [skills.md](skills.md). Workflow details in [CLAUDE.md](CLAUDE.md).
+
+---
+
 ## The spec file
 
 `skills.md` is 45KB of complete API documentation — every function, every parameter, every CSS class, with code examples. Read it once and you have the entire framework in context.

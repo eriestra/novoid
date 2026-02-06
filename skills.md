@@ -2395,6 +2395,311 @@ h('div', { class: 'nv-flex nv-flex-col nv-gap-4' },
 
 ---
 
+### Multi-Agent Collaboration
+
+Multiple agents can work on the same page in parallel — on one machine or across remote machines. Convex coordinates everything: atomic claims, real-time status, optimistic concurrency.
+
+```
+Machine A (local)                         Convex Cloud
+─────────────────                         ────────────
+Agent 1: claim("header")  ──────────→  atomic mutex in fragments table
+Agent 2: claim("sidebar") ──────────→  atomic mutex in fragments table
+                                         ↓
+Agent 1: publishFragment(html) ──────→  write to fragments table
+Agent 2: publishFragment(html) ──────→  write to fragments table
+                                         ↓
+Either agent: compose("dashboard") ──→  assemble all fragments
+                                         ↓
+                                       write to pages table
+                                         ↓
+Machine B (remote)                     live at /app/dashboard
+─────────────────
+Agent 3: claim("main") ─────────────→  same fragments table
+Agent 3: publishFragment(html) ──────→  same coordination
+Agent 3: compose("dashboard") ───────→  re-compose with all fragments
+```
+
+**Agent ID convention** — generate a unique ID per session:
+
+```sh
+AGENT_ID="claude-$(date +%s | tail -c 5)"
+```
+
+---
+
+#### collab:createPlan
+
+Define a page's fragment structure and template. Creates the plan and all fragment records.
+
+```sh
+npx convex run collab:createPlan '{...}'
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `slug` | `string` | Page slug (matches the URL: `/app/<slug>`) |
+| `description` | `string` | Human-readable description of the page |
+| `fragments` | `Array<{ name, order, description }>` | Fragment definitions |
+| `template` | `string` | HTML template with `{{fragment-name}}` placeholders |
+| `secret` | `string` | Publish secret |
+
+**Returns:** Plan ID.
+
+If a plan already exists for this slug, it and all its fragments are replaced.
+
+```sh
+source .env.local
+npx convex run collab:createPlan '{
+  "slug": "dashboard",
+  "description": "Admin dashboard with header, sidebar, and main content",
+  "fragments": [
+    { "name": "header", "order": 1, "description": "Top navigation bar" },
+    { "name": "sidebar", "order": 2, "description": "Left sidebar with nav links" },
+    { "name": "main", "order": 3, "description": "Main content area with charts" }
+  ],
+  "template": "<!DOCTYPE html><html><head><title>Dashboard</title><link rel=\"stylesheet\" href=\"../css/novoid.min.css\"></head><body>{{header}}{{sidebar}}{{main}}<script src=\"../js/novoid.min.js\"></''"''"'script></body></html>",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+```
+
+---
+
+#### collab:claim
+
+Atomically claim a fragment for this agent. Two agents cannot claim the same fragment — Convex mutations are transactional. Claims older than 10 minutes are considered stale and can be overridden.
+
+```sh
+npx convex run collab:claim '{...}'
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `slug` | `string` | Page slug |
+| `name` | `string` | Fragment name to claim |
+| `agentId` | `string` | Unique agent identifier |
+| `secret` | `string` | Publish secret |
+
+**Returns:** `{ version: number }` — use this version number in `publishFragment`.
+
+```sh
+source .env.local
+npx convex run collab:claim '{
+  "slug": "dashboard",
+  "name": "header",
+  "agentId": "'$AGENT_ID'",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+```
+
+Throws if the fragment is already claimed by another agent and the claim is less than 10 minutes old.
+
+---
+
+#### collab:publishFragment
+
+Write HTML to a claimed fragment. Checks that the calling agent holds the claim and that the version matches (optimistic concurrency).
+
+```sh
+npx convex run collab:publishFragment '{...}'
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `slug` | `string` | Page slug |
+| `name` | `string` | Fragment name |
+| `html` | `string` | The HTML content for this fragment |
+| `expectedVersion` | `number` | Version from `claim` or previous `publishFragment` |
+| `agentId` | `string` | Agent identifier (must match claim) |
+| `secret` | `string` | Publish secret |
+
+**Returns:** `{ version: number }` — the new version after publish.
+
+```sh
+source .env.local
+HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/fragments/dashboard-header.html)
+npx convex run collab:publishFragment '{
+  "slug": "dashboard",
+  "name": "header",
+  "html": '$HTML_JSON',
+  "expectedVersion": 0,
+  "agentId": "'$AGENT_ID'",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+```
+
+Throws on version conflict or if the fragment is not claimed by this agent.
+
+---
+
+#### collab:release
+
+Release a claim without publishing. Returns the fragment to "open" status so another agent can claim it.
+
+```sh
+npx convex run collab:release '{...}'
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `slug` | `string` | Page slug |
+| `name` | `string` | Fragment name |
+| `agentId` | `string` | Agent identifier (must match claim) |
+| `secret` | `string` | Publish secret |
+
+```sh
+source .env.local
+npx convex run collab:release '{
+  "slug": "dashboard",
+  "name": "header",
+  "agentId": "'$AGENT_ID'",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+```
+
+---
+
+#### collab:compose
+
+Assemble all published fragments into the final page. Replaces each `{{fragment-name}}` in the template with the fragment's HTML and writes the result to the `pages` table. The page is immediately live at `/app/<slug>`.
+
+```sh
+npx convex run collab:compose '{...}'
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `slug` | `string` | Page slug |
+| `secret` | `string` | Publish secret |
+
+```sh
+source .env.local
+npx convex run collab:compose '{
+  "slug": "dashboard",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+```
+
+Marks the plan status as "complete" after composition.
+
+---
+
+#### collab:status
+
+See all fragments for a page — their status, who claimed them, and version numbers. This is a public query (no secret required) and can also be accessed via HTTP at `GET /collab/<slug>`.
+
+```sh
+npx convex run collab:status '{"slug": "dashboard"}'
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `slug` | `string` | Page slug |
+
+**Returns:**
+```json
+{
+  "plan": {
+    "slug": "dashboard",
+    "description": "Admin dashboard",
+    "status": "active",
+    "template": "...",
+    "fragments": [{ "name": "header", "order": 1, "description": "..." }, ...]
+  },
+  "fragments": [
+    { "name": "header", "status": "published", "claimedBy": "claude-12345", "version": 1, "order": 1 },
+    { "name": "sidebar", "status": "claimed", "claimedBy": "claude-67890", "version": 0, "order": 2 },
+    { "name": "main", "status": "open", "claimedBy": null, "version": 0, "order": 3 }
+  ]
+}
+```
+
+Returns `null` if no plan exists for the slug.
+
+**HTTP endpoint:** `GET https://<deployment>.convex.site/collab/<slug>` — returns the same JSON. Any agent on any machine can check status without Convex CLI.
+
+---
+
+#### collab:myWork
+
+See what fragments this agent currently has claimed across all pages. Public query (no secret required).
+
+```sh
+npx convex run collab:myWork '{"agentId": "claude-12345"}'
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `agentId` | `string` | Agent identifier |
+
+**Returns:**
+```json
+[
+  { "slug": "dashboard", "name": "header", "status": "claimed", "claimedAt": 1707235200000 },
+  { "slug": "landing", "name": "hero", "status": "published", "claimedAt": 1707235100000 }
+]
+```
+
+---
+
+#### Multi-Agent Workflow Example
+
+Complete sequence from plan creation through composition:
+
+```sh
+# 1. Generate agent ID
+AGENT_ID="claude-$(date +%s | tail -c 5)"
+source .env.local
+
+# 2. Create a plan
+npx convex run collab:createPlan '{
+  "slug": "dashboard",
+  "description": "Admin dashboard",
+  "fragments": [
+    { "name": "header", "order": 1, "description": "Top nav" },
+    { "name": "sidebar", "order": 2, "description": "Side nav" },
+    { "name": "main", "order": 3, "description": "Content" }
+  ],
+  "template": "<!DOCTYPE html><html><body>{{header}}<div style=\"display:flex\">{{sidebar}}{{main}}</div></body></html>",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+
+# 3. Check status
+npx convex run collab:status '{"slug": "dashboard"}'
+
+# 4. Claim a fragment
+npx convex run collab:claim '{
+  "slug": "dashboard",
+  "name": "header",
+  "agentId": "'$AGENT_ID'",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+# Returns: { version: 0 }
+
+# 5. Generate the fragment HTML locally
+# (write to src/app/fragments/dashboard-header.html)
+
+# 6. Publish the fragment
+HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/fragments/dashboard-header.html)
+npx convex run collab:publishFragment '{
+  "slug": "dashboard",
+  "name": "header",
+  "html": '$HTML_JSON',
+  "expectedVersion": 0,
+  "agentId": "'$AGENT_ID'",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+# Returns: { version: 1 }
+
+# 7. Once all fragments are published, compose
+npx convex run collab:compose '{
+  "slug": "dashboard",
+  "secret": "'$PUBLISH_SECRET'"
+}'
+# Page is now live at /app/dashboard
+```
+
+---
+
 ### OpenRouter via Convex — Bootstrap Pattern
 
 no∅ projects use **Convex as the single source of truth**. The OpenRouter API key is stored in a Convex `keys` table at project setup. All AI calls go through Convex actions — no API keys in the client.
