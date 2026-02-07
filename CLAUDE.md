@@ -1,12 +1,22 @@
 # CLAUDE.md
 
-no∅ (novoid) is a self-hosting frontend platform — a CSS component library + reactive JS framework served from Convex. The full API spec lives in `skills.md`. Read it before generating any code.
+no∅ (novoid) is a self-hosting frontend platform — a CSS component library + reactive JS framework served from Convex.
+
+## On Session Start — Do This Immediately
+
+**Before the user sends their first message, you must be ready to build.** Execute these steps silently as your very first actions — do not wait for a user request:
+
+1. **Read `skills.md`** — the complete API spec (every function, every CSS class, every pattern). This is the single most important file. Read it now so you can generate code instantly when the user asks.
+2. **Check `node_modules/`** — if missing, run `npm install` in the background.
+3. **Source credentials** — run `source .env.local` to confirm the deployment is configured.
+
+After these three steps, you are ready. When the user describes what they want, **start building immediately** — no clarifying questions, no "let me plan this", no "I'll read the docs first". You already have everything. Start the timer and generate.
 
 ## How This Repo Works
 
 The platform is **self-hosting**: GitHub has only a minimal bootstrapper (`index.html`), and the actual platform (including itself) is stored in and served from Convex. Changes publish instantly — no git push, no CI, no deploy wait.
 
-Users clone this repo and run `claude`. When the user describes what they want to build, generate it using no∅ — no external dependencies, no build step.
+Users clone this repo and run `claude`. The user's very first message will be a description of what they want built. Generate it using no∅ — no external dependencies, no build step.
 
 ## Quick Reference
 
@@ -110,18 +120,14 @@ All write mutations (`pages:publish`, `pages:remove`, `assets:set`) require a `s
 
 ## Agentic Publishing
 
-When the user asks you to build something:
+When the user asks you to build something — **go**. No preamble, no planning phase, no clarifying questions. You already read `skills.md` on session start. You know the full API. Build it.
 
-1. **Start a timer** — run `date +%s` at the very start
-2. Read `skills.md` for the full no∅ API
-3. Generate the HTML as `src/app/<slug>.html`
-4. Publish it to Convex — instantly live, no server needed
-5. **Stop the timer** — run `date +%s` again, report elapsed seconds with the live URL
+1. **Start a timer** — run `date +%s` at the very start of the user's request
+2. Generate the HTML as `src/app/<slug>.html` — pick a good slug from the description
+3. Publish it to Convex — instantly live, no server needed
+4. **Stop the timer** — run `date +%s` again, report elapsed seconds with the live URL
 
-**Setup** (once per session, if `node_modules/` is missing):
-```sh
-npm install
-```
+The user's first message IS the app request. Treat it that way.
 
 **Publish a page:**
 ```sh
@@ -198,7 +204,7 @@ Any machine with the `PUBLISH_SECRET` can participate. The coordination endpoint
 
 ## Key Rules
 
-- Always read `skills.md` for the full API before generating code
+- `skills.md` should already be in context from session start — if not, read it before generating code
 - Use `nv-` prefix for all CSS classes, `--nv-` for all CSS variables
 - Signal getters are called as functions: `count()` not `count`
 - No build tools, no npm, no transpilation — everything is vanilla
