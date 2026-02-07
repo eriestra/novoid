@@ -1,0 +1,98 @@
+# no∅ (novoid)
+
+> A 15KB frontend platform designed for AI agents. CSS component library + reactive JS framework + self-hosting deployment via Convex. Single-file output, zero build tools, 2-second deploys. The developer is an LLM — the framework is optimized for single-pass code generation.
+
+## Links
+
+- [README](https://github.com/eriestra/novoid/blob/main/README.md): Project overview, architecture, setup instructions
+- [skills.md](https://github.com/eriestra/novoid/blob/main/skills.md): Complete API specification — every function, every CSS class, with examples (45KB)
+- [whitepaper.md](https://github.com/eriestra/novoid/blob/main/whitepaper.md): Design thesis — why frameworks need different tradeoffs when the developer is an LLM
+- [CLAUDE.md](https://github.com/eriestra/novoid/blob/main/CLAUDE.md): Agent instructions — how to generate and publish code with no∅
+- [essay.md](https://github.com/eriestra/novoid/blob/main/essay.md): Narrative account of building no∅ and its first applications in a single night
+- [Full LLM context](https://github.com/eriestra/novoid/blob/main/llms-full.txt): Everything an LLM needs in one document
+
+## Quick Start
+
+An AI agent's workflow with no∅:
+
+1. Read `skills.md` — one file, complete API
+2. Generate `src/app/<slug>.html` — one self-contained HTML file
+3. Publish to Convex — one CLI command, 2 seconds, live URL
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../css/novoid.min.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../js/novoid.min.js"></script>
+  <script>
+    const { signal, effect, h, mount } = Novoid;
+    mount('#app', () => {
+      const [count, setCount] = signal(0);
+      return h('div', { class: 'nv-container nv-py-8' },
+        h('h1', { class: 'nv-h2' }, 'Hello'),
+        h('p', {}, () => `Count: ${count()}`),
+        h('button', { class: 'nv-btn nv-btn-primary', onClick: () => setCount(n => n + 1) }, '+1')
+      );
+    });
+  </script>
+</body>
+</html>
+```
+
+## Architecture
+
+```
+GitHub Pages                        Convex Cloud
+────────────                        ────────────
+index.html (40 lines)
+  │ fetch("/app/slug") ──────────→  HTTP route reads from pages table
+  │                                   │
+  document.write(html) ◄────────── returns full HTML page
+
+                                    Stored in DB:
+                                      pages:  { slug, html }
+                                      assets: { novoid.min.css, novoid.min.js }
+```
+
+GitHub holds only a bootstrapper. The actual platform — including its own admin UI — lives in a Convex database. Publishing is a database write. The page is live immediately.
+
+## API Overview
+
+### CSS (9.5 KB gzipped)
+- **Prefix:** `nv-` for classes, `--nv-` for variables
+- **28 components:** buttons, cards, forms, inputs, selects, toggles, tables, badges, alerts, navbar, tabs, modals, dropdowns, tooltips, avatars, progress, spinners, skeletons, breadcrumbs, pagination, dividers, tags, toasts, accordions, code blocks, prose
+- **Layout:** container, grid (1-12 cols, responsive), flexbox utilities
+- **Dark mode:** `[data-theme="dark"]` or `.nv-dark` on any ancestor
+
+### JS (5.7 KB gzipped)
+- **Global:** `Novoid`
+- **Reactivity:** `signal(initial)` → `[getter, setter]`, `computed(fn)`, `effect(fn)`, `batch(fn)`
+- **DOM:** `h(tag, attrs, ...children)`, `list(container, items, key, render)`, `mount(selector, fn)`
+- **State:** `createStore(state, actions)`, `createContext(default)`
+- **Routing:** `createRouter(routes, container)` — hash-based
+- **Forms:** `createForm(schema)` — validation, submission, reset
+- **Advanced:** `portal()`, `errorBoundary()`, `suspense()`, `lazy()`
+- **Utilities:** `bus.on/emit/off`, `toast.success/danger/info/warning`
+- **Convex:** `createClient()`, `useQuery()`, `useMutation()`, `useAction()`, `useAI()`, `useAuth()`
+
+## Key Decisions
+
+1. **Single-file output** — eliminates cross-file coherence errors (imports, circular deps, type mismatches)
+2. **Zero build step** — no transpilation, no bundling, no tree-shaking, no source maps
+3. **Small API surface** — ~25 JS functions + ~120 CSS classes vs. 500+ symbols in React/Tailwind/Next.js
+4. **Single-source specification** — one 45KB file contains the entire API
+5. **Self-hosting** — pages stored in a database and served via HTTP, deploy = database write
+6. **Fine-grained reactivity** — signals, not virtual DOM diffing
+7. **Multi-agent collaboration** — fragment-based composition with atomic claims via Convex transactions
+
+## Source
+
+- Repository: https://github.com/eriestra/novoid
+- Live platform: https://secret-aardvark-418.convex.site/platform
+- License: MIT

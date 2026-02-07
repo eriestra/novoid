@@ -1,0 +1,596 @@
+# no∅ (novoid) — Complete LLM Reference
+
+> A 15KB frontend platform designed for AI agents. CSS component library (9.5KB gzipped) + reactive JS framework (5.7KB gzipped) + self-hosting deployment via Convex. Single-file output, zero build tools, 2-second deploys. The developer is an LLM — the framework is optimized for single-pass code generation.
+
+Source: https://github.com/eriestra/novoid
+Live platform: https://secret-aardvark-418.convex.site/platform
+
+---
+
+## What This Is
+
+no∅ is a frontend platform where the developer is an AI agent. An agent reads one spec file (skills.md, 45KB), generates one self-contained HTML file, publishes it with one CLI command, and gets a live URL in 2 seconds. No build tools, no npm, no transpilation, no CI/CD.
+
+### Why It Exists
+
+| | React/Next.js | no∅ |
+|---|---|---|
+| Files to generate | 10-50+ | 1 |
+| Config files | 3-8 | 0 |
+| Build step | Required (3-45s) | None |
+| Deploy pipeline | Required (30-120s) | 1 command (2s) |
+| API surface | 500+ symbols | ~145 symbols |
+| Error surface | Imports, builds, SSR, types | Virtually none |
+
+Every file an agent generates is a chance for an import to break. Every config file is a chance for misconfiguration. Every build step is dead time. no∅ eliminates all of it.
+
+### What's Not Included
+
+- No TypeScript — agent generates correct types from context
+- No ecosystem — anything beyond the 15KB bundle, the agent writes from scratch
+- No multi-developer collaboration tools — single-file output doesn't need them
+- Maintenance model is regenerate-from-scratch — works for prototypes and tools, not for apps with complex accumulated state
+
+---
+
+## Architecture
+
+```
+GitHub Pages                        Convex Cloud
+────────────                        ────────────
+index.html (40 lines)
+  │ fetch("/app/slug") ──────────→  HTTP route reads from pages table
+  │                                   │
+  document.write(html) ◄────────── returns full HTML page
+
+                                    Stored in DB:
+                                      pages:  { slug, html }
+                                      assets: { novoid.min.css, novoid.min.js }
+```
+
+GitHub holds only a bootstrapper. The actual platform — including its own admin UI — lives in a Convex database. Publishing is a database write. The page is live immediately at `https://<deployment>.convex.site/app/<slug>`.
+
+### Self-Hosting Setup
+
+1. Clone and install: `git clone https://github.com/eriestra/novoid && cd novoid && npm install`
+2. Start Convex: `npx convex dev` (provisions deployment, gives you .convex.cloud and .convex.site URLs)
+3. Seed: `sh seed.sh https://<deployment>.convex.cloud your-secret`
+4. Create `.env.local` with `CONVEX_URL`, `CONVEX_SITE_URL`, `PUBLISH_SECRET`
+5. Visit `https://<deployment>.convex.site/platform`
+
+### Auth Model
+
+All write mutations require a `secret` argument checked against `PUBLISH_SECRET` in the `keys` table. Read operations are public.
+
+---
+
+## Quick Start
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/novoid.min.css">
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../js/novoid.min.js"></script>
+  <script>
+    const { signal, effect, h, mount } = Novoid;
+
+    mount('#app', () => {
+      const [count, setCount] = signal(0);
+      return h('div', { class: 'nv-container nv-py-8' },
+        h('h1', { class: 'nv-h2 nv-mb-4' }, 'Hello no∅'),
+        h('p', { class: 'nv-text-lg nv-mb-4' }, () => `Count: ${count()}`),
+        h('button', { class: 'nv-btn nv-btn-primary', onClick: () => setCount(n => n + 1) }, 'Increment')
+      );
+    });
+  </script>
+</body>
+</html>
+```
+
+---
+
+## Identity
+
+| Key | Value |
+|---|---|
+| Name | no∅ |
+| CSS class prefix | `nv-` |
+| CSS variable prefix | `--nv-` |
+| JS global | `Novoid` |
+| Build tools | None |
+| Fonts | DM Sans (body), Outfit (headings), JetBrains Mono (code) |
+| Breakpoints | 640px (sm), 768px (md), 1024px (lg), 1280px (xl) |
+| Dark mode | `[data-theme="dark"]` or `.nv-dark` on ancestor |
+| Reactivity | Fine-grained signals — no virtual DOM |
+| Router | Hash-based (`#/path`) |
+
+---
+
+## CSS Reference (9.5 KB gzipped)
+
+### Design Tokens
+
+All tokens are CSS custom properties on `:root`. Dark theme overrides surface tokens automatically.
+
+**Primary colors** (indigo scale): `--nv-primary-50` through `--nv-primary-900`
+**Neutral colors** (gray scale): `--nv-gray-50` through `--nv-gray-900`
+**Semantic colors** (each has -50, -500, -700): `--nv-success-*`, `--nv-warning-*`, `--nv-danger-*`, `--nv-info-*`
+
+**Theme surfaces** (auto-switch in dark mode):
+| Token | Light | Dark |
+|---|---|---|
+| `--nv-bg` | `#ffffff` | `#0f1117` |
+| `--nv-bg-subtle` | gray-50 | `#1a1d27` |
+| `--nv-bg-muted` | gray-100 | `#252833` |
+| `--nv-text` | gray-900 | `#e4e5e9` |
+| `--nv-text-muted` | gray-600 | `#9ca0ab` |
+| `--nv-text-subtle` | gray-400 | `#5c6170` |
+| `--nv-border` | gray-200 | `#2e3140` |
+| `--nv-border-strong` | gray-300 | `#3d4155` |
+| `--nv-ring` | primary-500 | primary-500 |
+
+**Typography tokens**: `--nv-font-sans`, `--nv-font-mono`, `--nv-font-display`
+**Font sizes**: `--nv-text-xs` (0.75rem) through `--nv-text-6xl` (3.75rem)
+**Spacing**: `--nv-space-0` through `--nv-space-24`
+**Radius**: `--nv-radius-none` through `--nv-radius-full`
+**Shadows**: `--nv-shadow-xs` through `--nv-shadow-2xl`
+**Z-index**: `--nv-z-base` (0), `--nv-z-dropdown` (100), `--nv-z-sticky` (200), `--nv-z-overlay` (300), `--nv-z-modal` (400), `--nv-z-popover` (500), `--nv-z-toast` (600)
+
+### Dark Mode
+
+```html
+<html data-theme="dark">
+<!-- or section-level: -->
+<div class="nv-dark">...</div>
+```
+
+Toggle via JS: `document.documentElement.setAttribute('data-theme', currentTheme === 'dark' ? 'light' : 'dark');`
+
+### Layout
+
+**Container**: `nv-container` (responsive max-width), `nv-container-fluid` (full width), `nv-section` (vertical padding)
+
+**Grid**: `nv-grid`, `nv-cols-{1-6,12}`, `nv-col-span-{1-4,6,8,12}`, `nv-col-span-full`
+Responsive: `nv-sm-cols-{2,3}`, `nv-md-cols-{2,3,4}`, `nv-lg-cols-{2,3,4,5,6}`
+
+**Flexbox**: `nv-flex`, `nv-inline-flex`, `nv-flex-row`, `nv-flex-col`, `nv-flex-wrap`, `nv-flex-1`, `nv-flex-auto`, `nv-flex-none`, `nv-grow`, `nv-shrink-0`
+
+**Alignment**: `nv-items-{start,center,end,stretch,baseline}`, `nv-justify-{start,center,end,between,around,evenly}`, `nv-self-{start,center,end}`
+
+### Spacing
+
+**Padding**: `nv-p-{0-12}`, `nv-px-{0-8}`, `nv-py-{0-8}`
+**Margin**: `nv-m-{0-4,auto}`, `nv-mx-auto`, `nv-my-{0-8}`, `nv-mt-{0-8}`, `nv-mb-{0-8}`, `nv-ml-auto`, `nv-mr-auto`
+**Gap**: `nv-gap-{0-8}`
+
+### Sizing
+
+`nv-w-full`, `nv-w-auto`, `nv-w-screen`, `nv-h-full`, `nv-h-screen`, `nv-min-h-screen`
+`nv-max-w-{xs,sm,md,lg,xl,2xl,3xl,4xl,prose}`
+
+### Display & Position
+
+`nv-block`, `nv-inline-block`, `nv-inline`, `nv-hidden`
+`nv-relative`, `nv-absolute`, `nv-fixed`, `nv-sticky`
+`nv-top-0`, `nv-right-0`, `nv-bottom-0`, `nv-left-0`, `nv-inset-0`
+`nv-overflow-{hidden,auto}`, `nv-overflow-{x,y}-auto`
+
+### Typography
+
+**Headings**: `nv-h1` (3rem) through `nv-h6` (1.125rem) — use `--nv-font-display`, bold
+**Text sizes**: `nv-text-xs` through `nv-text-6xl`
+**Weights**: `nv-font-{light,normal,medium,semibold,bold,black}`
+**Families**: `nv-font-sans`, `nv-font-mono`, `nv-font-display`
+**Alignment**: `nv-text-{left,center,right,justify}`
+**Transform**: `nv-uppercase`, `nv-lowercase`, `nv-capitalize`
+**Tracking**: `nv-tracking-{tight,wide,wider}`
+**Leading**: `nv-leading-{tight,normal,relaxed}`
+**Truncation**: `nv-truncate`, `nv-line-clamp-{2,3}`
+
+### Colors
+
+**Text**: `nv-text-{primary,muted,subtle,success,warning,danger,info,white}`
+**Background**: `nv-bg-{primary,subtle,muted,success,warning,danger,info,white}`
+
+### Borders & Radius
+
+`nv-border`, `nv-border-strong`, `nv-border-{t,b,l,r}`, `nv-border-none`
+`nv-border-{primary,danger}`, `nv-border-2`
+`nv-rounded-{none,sm,(default),lg,xl,2xl,full}`
+
+### Shadows & Opacity
+
+`nv-shadow-{xs,sm,(default),lg,xl,2xl,none}`
+`nv-opacity-{0,25,50,75,100}`
+
+### Transitions & Animations
+
+`nv-transition`, `nv-transition-{fast,slow,colors,transform,opacity}`
+`nv-scale-{95,100,105}`, `nv-translate-y-{1,0}`, `nv--translate-y-1`
+`nv-animate-{fade-in,fade-up,fade-down,scale-in,slide-right,slide-left,bounce,pulse}`
+`nv-delay-{100,200,300,400,500}`
+
+### Components
+
+**Button** (`nv-btn`):
+- Variants: `nv-btn-{primary,secondary,success,danger,warning,ghost,outline,link}`
+- Sizes: `nv-btn-{sm,lg,xl}`
+- Modifiers: `nv-btn-{icon,block,pill}`
+- Group: `nv-btn-group`
+
+**Card** (`nv-card`):
+- Variants: `nv-card-elevated`, `nv-card-hoverable`
+- Sections: `nv-card-header`, `nv-card-body`, `nv-card-footer`, `nv-card-img`
+
+**Forms**:
+- `nv-label`, `nv-input`, `nv-textarea`, `nv-select`, `nv-checkbox`, `nv-radio`
+- Input states: `nv-input-{error,success,sm,lg}`
+- Layout: `nv-field`, `nv-field-inline`, `nv-helper`, `nv-error-text`
+- Input group: `nv-input-group`, `nv-input-addon`
+- Toggle: `nv-toggle` + `nv-toggle-slider`
+
+**Table** (`nv-table`): `nv-table-{striped,hover,compact}`
+
+**Badge** (`nv-badge`): `nv-badge-{primary,success,warning,danger,info,neutral,solid-primary}`, `nv-badge-{dot,lg}`
+
+**Alert** (`nv-alert`): `nv-alert-{info,success,warning,danger}`, `nv-alert-title`
+
+**Navbar**: `nv-navbar`, `nv-navbar-brand`, `nv-navbar-nav`, `nv-navbar-link`, `nv-navbar-sticky`
+
+**Tabs**: `nv-tabs`, `nv-tab`, `nv-tab-panel`, `nv-tabs-pill`
+
+**Modal**: `nv-modal-overlay`, `nv-modal`, `nv-modal-{header,title,body,footer,close}`, `nv-modal-{sm,lg,xl}`
+Toggle: add/remove `active` class on `nv-modal-overlay`
+
+**Dropdown**: `nv-dropdown`, `nv-dropdown-menu`, `nv-dropdown-item`, `nv-dropdown-divider`, `nv-dropdown-right`
+Toggle: add/remove `active` class on `nv-dropdown`
+
+**Tooltip**: `nv-tooltip` + `data-tooltip="text"`
+
+**Avatar** (`nv-avatar`): `nv-avatar-{sm,lg,xl}`, `nv-avatar-group`
+
+**Progress**: `nv-progress`, `nv-progress-bar` (set `width` via style), `nv-progress-{success,danger,striped,animated,lg}`
+
+**Spinner**: `nv-spinner`, `nv-spinner-{sm,lg}`
+
+**Skeleton**: `nv-skeleton`, `nv-skeleton-text`, `nv-skeleton-circle`
+
+**Breadcrumb**: `nv-breadcrumb`, `nv-breadcrumb-item`, `nv-breadcrumb-sep`
+
+**Pagination**: `nv-pagination`, `nv-page-item` (+ `.active`, `.disabled`)
+
+**Divider**: `nv-divider`, `nv-divider-text`
+
+**Tag**: `nv-tag`, `nv-tag-remove`
+
+**Toast** (CSS): `nv-toast-container`, `nv-toast`, `nv-toast-{success,danger,warning}`, `nv-toast-exit`
+
+**Accordion**: `nv-accordion`, `nv-accordion-item` (+ `.active`), `nv-accordion-trigger`, `nv-accordion-icon`, `nv-accordion-content`, `nv-accordion-body`
+
+**Code**: `nv-code` (inline), `nv-pre` (block)
+
+**Prose**: `nv-prose` — auto-styles child h1-h4, p, a, ul, ol, blockquote, code, pre, hr, img
+
+### Responsive & Print
+
+`nv-hide-sm`, `nv-hide-md`, `nv-show-sm-only`, `nv-hide-below-lg`, `nv-show-below-lg-only`
+`nv-no-print`
+
+### Accessibility
+
+`nv-sr-only` (screen reader only), `nv-focus-ring` (visible focus outline)
+
+---
+
+## JavaScript Reference (5.7 KB gzipped)
+
+All APIs are on the `Novoid` global. Destructure for convenience:
+```js
+const { signal, computed, effect, batch, h, mount } = Novoid;
+```
+
+### Reactivity
+
+**signal(initial)** — reactive state, returns `[getter, setter]`. Getter is called as a function.
+```js
+const [count, setCount] = signal(0);
+count();          // read: 0
+setCount(5);      // write: direct value
+setCount(n => n + 1); // write: updater function
+count.peek();     // read without subscribing
+count.subscribe(fn); // manual subscribe, returns unsub
+```
+
+**computed(fn)** — derived reactive value, auto-tracks dependencies.
+```js
+const fullName = computed(() => `${first()} ${last()}`);
+fullName(); // "Jane Doe"
+```
+
+**effect(fn)** — side-effect that re-runs when tracked signals change. Returns dispose function.
+```js
+const dispose = effect(() => { console.log(count()); });
+// With explicit deps:
+effect(() => { document.title = count(); }, () => [count()]);
+// With cleanup:
+effect(() => { const id = setInterval(tick, 1000); return () => clearInterval(id); });
+dispose(); // stop
+```
+
+**batch(fn)** — groups signal updates into one flush.
+```js
+batch(() => { setA(1); setB(2); }); // effects run once, not twice
+```
+
+**memo(fn, deps)** — memoized computation with explicit dependency tracking.
+
+**ref(initial?)** — mutable reference object (like useRef). Not reactive.
+```js
+const myRef = ref(null);
+h('input', { ref: myRef }); // myRef.current → DOM element
+```
+
+### State Management
+
+**createContext(default)** — shared state through Provider/use pattern.
+```js
+const ThemeCtx = createContext('light');
+ThemeCtx.Provider('dark', () => { const theme = ThemeCtx.use(); /* "dark" */ });
+```
+
+**createStore(state, actions)** — global state with action reducers.
+```js
+const store = createStore({ todos: [], filter: 'all' }, {
+  addTodo: (state, text) => ({ ...state, todos: [...state.todos, { id: Date.now(), text, done: false }] }),
+  toggleTodo: (state, id) => ({ ...state, todos: state.todos.map(t => t.id === id ? { ...t, done: !t.done } : t) }),
+});
+store.get(); // read state
+store.actions.addTodo('Buy milk'); // dispatch
+store.set(prev => ({ ...prev, filter: 'done' })); // direct set
+store.subscribe(fn); // subscribe
+```
+
+### DOM
+
+**h(tag, attrs?, ...children)** — create DOM elements with reactive bindings. Equivalent to JSX.
+```js
+h('div', { class: 'nv-card' },
+  h('div', { class: 'nv-card-body' },
+    h('h2', { class: 'nv-h4' }, 'Title'),
+    h('p', {}, () => `Count: ${count()}`)  // reactive child must be a function
+  )
+);
+```
+
+Special attributes:
+- `ref` — assign a ref to capture DOM element
+- `class` — string or reactive function: `() => \`nv-tab ${active() ? 'active' : ''}\``
+- `style` — object (static or reactive function returning object)
+- `on*` — event listeners (camelCase): `onClick`, `onInput`, `onSubmit`
+- `html` — set innerHTML (static or reactive)
+- `show` — toggle `display: none` (reactive): `show: () => count() > 0`
+- `bind` — two-way binding: `bind: [getter, setter]`
+- Any other attribute set as HTML attribute (reactive if function)
+
+**CRITICAL WARNING — bind + effect = focus loss**: If an input with `bind` is inside an `effect()` that rebuilds DOM, every keystroke triggers re-render → input destroyed → focus lost. Create inputs ONCE outside effects and reuse them.
+
+**list(container, items, keyFn, renderFn)** — keyed list rendering with efficient reconciliation.
+```js
+const ul = h('ul', {});
+list(ul, todos, t => t.id, (todo) => h('li', {}, todo.text));
+```
+
+**when(condition, thenFn, elseFn?)** — conditional rendering.
+**show(condition, content)** — like `when` but no else branch.
+**match(value, cases)** — switch-like conditional rendering.
+
+**component(name, fn)** — named reusable component. Returns factory function.
+```js
+const Card = component('Card', (props) => h('div', { class: 'nv-card' }, ...));
+const el = Card({ title: 'Hello' });
+```
+
+**template(htmlString, data)** — string template with `{{key}}` interpolation.
+
+**mount(selector, appFn)** — mount application to DOM node.
+```js
+mount('#app', () => h('div', {}, 'Hello'));
+```
+
+### Advanced
+
+**portal(target, content)** — render into a different DOM node. Returns cleanup function.
+**errorBoundary(renderFn, fallbackFn)** — catch render errors gracefully.
+**suspense(asyncFn, fallback?)** — show fallback while async content loads.
+**lazy(importFn)** — lazy-load a component.
+**transition(element, { enter, leave, duration? })** — programmatic enter/leave animations. Returns `{ in(), out() }`.
+
+**createRouter(routes, container)** — hash-based client-side router.
+```js
+const routes = [
+  { path: '/', component: HomePage },
+  { path: '/users/:id', component: UserPage },
+  { path: '/admin', component: AdminPage, guard: () => isLoggedIn(), redirect: '/login' },
+  { path: '*', component: NotFoundPage },
+];
+const { navigate, currentRoute } = createRouter(routes, container);
+```
+
+**link(text, path, className?)** — create navigation link element.
+
+### Utilities
+
+**bus** — global event bus: `bus.on(event, fn)`, `bus.emit(event, data)`, `bus.off(event, fn?)`
+
+**createForm(schema)** — form state with validation.
+```js
+const form = createForm({
+  email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email' },
+  password: { required: true, minLength: 8 },
+});
+// form.fields.email.get/set, form.errors.email.get, form.isValid(), form.handleSubmit(fn), form.reset()
+```
+
+**useAsync(asyncFn, deps?)** — async data fetching. Returns `{ data, loading, error, refetch }` (signal getters).
+
+**toast** — global notifications: `toast.info(msg)`, `toast.success(msg)`, `toast.danger(msg)`, `toast.warning(msg)`
+
+**onMount(fn)** — run after mount() completes.
+**onUnmount(id, fn)** — cleanup for a component.
+**onError(fn)** — global error handler.
+
+### Convex Integration (optional)
+
+Real-time backend integration. Load Convex CDN bundle before app script:
+```html
+<script src="https://unpkg.com/convex@latest/dist/browser.bundle.js"></script>
+```
+
+**createClient(url)** — initialize Convex client connection.
+```js
+const db = createClient('https://your-deployment.convex.cloud');
+```
+
+**useQuery(client, queryRef, args?)** — reactive subscription to Convex query. Returns `{ data, loading, error }` (signal getters). Args can be static object, reactive function, or `'skip'`.
+
+**useMutation(client, mutationRef)** — callable mutation with `.isLoading` and `.error` signal getters.
+
+**useAction(client, actionRef)** — callable action with `.isLoading` and `.error` signal getters.
+
+**useAI(client, actionRef)** — AI-oriented action caller with response persistence and conversation history.
+```js
+const chat = useAI(db, api.ai.chat);
+await chat({ prompt: 'Hello' });
+chat.response();  // last AI response (persists)
+chat.isLoading(); // true while generating
+chat.history();   // array of { args, result, ts }
+chat.clear();     // reset conversation
+```
+
+**useAuth(client, fetchToken)** — auth state management. Returns `{ isAuthenticated, isLoading, logout }`.
+
+**useConnectionState(client)** — WebSocket connection monitor. Returns signal getter: `'connecting'` | `'connected'` | `'disconnected'`.
+
+### OpenRouter via Convex Pattern
+
+API key stored in Convex `keys` table. Actions read key server-side, call OpenRouter, return result. No API keys in client code.
+
+```
+Browser (no∅) → Convex action → reads key from DB → calls OpenRouter → returns response → signal update
+```
+
+---
+
+## Multi-Agent Collaboration
+
+Multiple agents can work on the same page in parallel using Convex for coordination.
+
+1. **Lead agent creates a plan** — defines fragments (named slots) and a template with `{{fragment-name}}` placeholders
+2. **Any agent claims a fragment** — atomic lock via Convex transaction, 10-min stale timeout
+3. **Agent generates HTML** for its fragment and publishes it with version check
+4. **Any agent composes** — assembles all fragments into the final page
+
+### API
+
+- `collab:createPlan` — define page structure (slug, fragments, template)
+- `collab:claim` — atomically claim a fragment (returns version number)
+- `collab:publishFragment` — write HTML to claimed fragment (optimistic concurrency)
+- `collab:release` — release a claim without publishing
+- `collab:compose` — assemble all fragments into final page
+- `collab:status` — see all fragment statuses (public query, also via GET /collab/<slug>)
+- `collab:myWork` — see what this agent has claimed
+
+---
+
+## Patterns & Gotchas
+
+1. CSS prefix is `nv-`. CSS variables start with `--nv-`.
+2. JS global is `Novoid`. Destructure at top of every script.
+3. Signal getters are called as functions: `count()` not `count`.
+4. No virtual DOM — effects auto-track and update DOM directly.
+5. Use `batch()` for multiple signal writes to prevent intermediate re-renders.
+6. Reactive children in `h()` must be functions: `() => \`Count: ${count()}\``
+7. Use `list()` for dynamic arrays, not `.map()` inside reactive children.
+8. Router is hash-based. URLs: `#/path`.
+9. Dark mode toggles surface tokens only — component classes don't change.
+10. No build tools needed. Serve CSS and JS as static files.
+11. Form validation is declarative via `createForm()` schema.
+12. Toast notifications: `Novoid.toast.success('msg')` from anywhere.
+13. Error boundaries: always wrap risky or async components.
+14. Component naming: PascalCase for factories, lowercase for CSS.
+15. **CRITICAL: Never create text inputs inside effect() blocks.** If input is inside an effect that rebuilds DOM, every keystroke → re-render → input destroyed → focus lost. Create inputs ONCE outside effects and reuse them.
+16. `Novoid` has no `text()` helper. Use `document.createTextNode(String(s))`.
+17. Never put literal `</script>` inside a `<script>` block — use `'</' + 'script>'`.
+
+---
+
+## Publishing Workflow
+
+```sh
+# Setup (once per session)
+npm install
+
+# Publish a page
+source .env.local
+HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < src/app/<slug>.html)
+npx convex run pages:publish "{\"slug\":\"<slug>\",\"html\":$HTML_JSON,\"secret\":\"$PUBLISH_SECRET\"}"
+
+# Or using seed (no auth needed for internal mutation):
+npx convex run seed:seedPage "{\"slug\":\"<slug>\",\"html\":$HTML_JSON}"
+
+# CSS/JS references in published pages:
+# <link rel="stylesheet" href="../css/novoid.min.css">
+# <script src="../js/novoid.min.js"></script>
+```
+
+---
+
+## Evidence
+
+Three applications built in a single session:
+
+| Project | Time | Lines | Description |
+|---|---|---|---|
+| Kanban Board | 152s | ~550 | Drag-and-drop, localStorage, dark mode, CRUD |
+| Particle Galaxy | 93s | ~400 | 80K-particle Three.js simulation, 4 modes, bloom |
+| Infinitum | 99s | ~420 | Raymarched fractal, GLSL shaders, generative audio |
+
+Total: 1,370 lines in 5 minutes 24 seconds.
+
+---
+
+## File Structure
+
+```
+novoid/
+├── CLAUDE.md          # agent instructions
+├── skills.md          # complete API spec (45KB)
+├── whitepaper.md      # design thesis
+├── essay.md           # narrative of building no∅
+├── llms.txt           # LLM discovery file (concise)
+├── llms-full.txt      # this file
+├── index.html         # 40-line bootstrapper
+├── src/
+│   ├── novoid.css     # CSS component library source
+│   ├── novoid.js      # reactive framework source
+│   └── app/           # generated apps go here
+├── dist/
+│   ├── novoid.min.css # 9.5 KB gzipped
+│   └── novoid.min.js  # 5.7 KB gzipped
+├── convex/            # self-hosting backend
+│   ├── schema.ts      # pages + assets + keys + plans + fragments
+│   ├── pages.ts       # CRUD for pages
+│   ├── assets.ts      # CRUD for assets
+│   ├── collab.ts      # multi-agent coordination
+│   ├── keys.ts        # secret management
+│   ├── seed.ts        # seeding data
+│   └── http.ts        # HTTP router
+└── build.sh           # minification (23ms)
+```
