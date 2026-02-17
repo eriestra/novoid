@@ -323,6 +323,23 @@ http.route({
   }),
 });
 
+// GET /favicon.ico — serve favicon as SVG
+http.route({
+  path: "/favicon.ico",
+  method: "GET",
+  handler: httpAction(async () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="85" font-family="system-ui,sans-serif" text-anchor="middle" x="50">∅</text></svg>`;
+    return new Response(svg, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/svg+xml",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=86400",
+      },
+    });
+  }),
+});
+
 // GET /llms.txt — LLM discovery file
 http.route({
   path: "/llms.txt",
