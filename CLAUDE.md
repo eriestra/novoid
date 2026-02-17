@@ -22,6 +22,7 @@ Why: no∅ is built for agents. Agents don't manage deployment pipelines, promot
 |novoid-agents.md       — Nex, Vox, personas, memory, multi-channel, inline apps
 |novoid-math.md         — KaTeX integration, TeX notation, MathML visibility fix
 |novoid-convex.md       — Convex client, reactive queries, mutations, actions, AI helper
+|novoid-motion.md       — Motion.dev: animate, scroll, stagger, timeline, inView, spring
 |novoid-improve.md      — feature expansion checklist, consistency rules, agent SEO
 ```
 
