@@ -4,6 +4,12 @@ no∅ (novoid) — frictionless frontend framework. Describe it, it's live.
 
 > Skill-led reasoning. Skills are the source of truth — codified, compressed, always in context. When skills and pre-training agree, you're on the right path. When they diverge, skills win.
 
+## Core Principle: One Environment
+
+There is no prod/dev split. The dev Convex deployment (`secret-aardvark-418`) **is** production. All pages, assets, and data live there. Ignore `quixotic-stoat-346` (legacy prod — unused).
+
+Why: no∅ is built for agents. Agents don't manage deployment pipelines, promotion workflows, or environment configs. One DB, one `publish.sh`, one live URL. Friction is the enemy.
+
 ## Skills Index
 
 ```

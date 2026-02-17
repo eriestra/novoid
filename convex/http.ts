@@ -28,7 +28,7 @@ const APP_SECURITY_HEADERS = {
     "font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
     "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://unpkg.com; " +
     "img-src * data: blob:; " +
-    "frame-ancestors 'self';",
+    "frame-ancestors 'self' https://eriestra.github.io;",
 };
 
 // CORS helper: restrict admin routes to same-origin or localhost
