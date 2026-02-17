@@ -1,0 +1,12 @@
+# nous-contract: nav-bar
+name: nav-bar
+structure:
+  nav:
+    contains:
+      a:
+        min: 1
+      "[role=navigation]":
+        min: 0
+        max: 1
+    accessibility:
+      - "nav has: [aria-label | aria-labelledby]"

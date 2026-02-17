@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <style>
+    .dashboard { display: flex; gap: 1rem; padding: 1rem; }
+
+    /* BUG: Three stat cards in flex row, each min-width 300px = 900px min
+       Viewport 320px can't fit them → overflow */
+    .stat-card {
+      min-width: 300px;
+      flex: 1;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .stat-card h3 { margin: 0 0 0.5rem; font-size: 0.875rem; color: #666; }
+    .stat-card .value { font-size: 2rem; font-weight: bold; }
+
+    .chart-area {
+      background: white;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    /* BUG: Cascade conflict — .metric and .stat-card .value both set font-size
+       at same specificity (0,0,2,0) targeting .value inside compound selectors */
+    .stat-card .value { font-size: 2rem; }
+    .metric .value { font-size: 1.5rem; }
+
+    @media (max-width: 768px) {
+      .dashboard { flex-direction: column; }
+      .stat-card { min-width: auto; }
+    }
+    @media (min-width: 1200px) {
+      .dashboard { max-width: 1400px; margin: 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <!-- BUG: No <main> landmark, no nav — accessibility issue -->
+  <div class="dashboard">
+    <div class="stat-card">
+      <h3>Users</h3>
+      <div class="value">1,234</div>
+    </div>
+    <div class="stat-card">
+      <h3>Revenue</h3>
+      <div class="value">$56,789</div>
+    </div>
+    <div class="stat-card metric">
+      <h3>Growth</h3>
+      <div class="value">+12%</div>
+    </div>
+  </div>
+  <div class="chart-area">
+    <canvas id="chart"></canvas>
+  </div>
+  <script>
+    const [timeRange, setTimeRange] = Novoid.signal("7d");
+    const [chartData, setChartData] = Novoid.signal([]);
+
+    // BUG: Dead derived — computed but never read by any effect
+    const [totalRevenue, setTotalRevenue] = Novoid.signal(0);
+
+    const summary = Novoid.derived(() => {
+      const data = chartData();
+      return { total: data.length, range: timeRange() };
+    });
+
+    // summary is computed but never read → dead derived
+    // (effect only reads chartData directly)
+    Novoid.effect(() => {
+      const data = chartData();
+      console.log("Chart updated with", data.length, "points");
+    });
+
+    // BUG: State machine — "refreshing" has no error recovery
+    const [loadState, setLoadState] = Novoid.signal("initial");
+    setLoadState("loading");
+    setLoadState("loaded");
+    setLoadState("refreshing");
+    // No setLoadState("error") or back to "initial" from refreshing
+  </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{
+  "name": "nous",
+  "version": "0.1.0",
+  "description": "The Web Physics Engine — formal verification for web documents",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "analyze": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "acorn": "^8.14.0",
+    "css-tree": "^3.1.0",
+    "js-yaml": "^4.1.0",
+    "parse5": "^7.2.1"
+  },
+  "devDependencies": {
+    "@types/css-tree": "^2.3.11",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

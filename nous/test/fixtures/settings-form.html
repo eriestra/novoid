@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings</title>
+  <style>
+    .settings { max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+    .settings h1 { font-family: sans-serif; }
+    .field { margin-bottom: 1rem; }
+    .field label { display: block; margin-bottom: 0.25rem; font-weight: 600; }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+    .actions button {
+      padding: 0.5rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .actions .save { background: #2563eb; color: white; }
+    .actions .cancel { background: #e5e7eb; color: #333; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="settings">
+      <h1>Account Settings</h1>
+      <form>
+        <div class="field">
+          <label for="display-name">Display Name</label>
+          <input type="text" id="display-name" name="displayName">
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email">
+        </div>
+        <div class="field">
+          <!-- BUG: textarea has no label, no aria-label, no for= match -->
+          <textarea name="bio" placeholder="Tell us about yourself"></textarea>
+        </div>
+        <div class="field">
+          <!-- BUG: select has no label -->
+          <select name="timezone">
+            <option>UTC-8 Pacific</option>
+            <option>UTC-5 Eastern</option>
+            <option>UTC+0 London</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button type="submit" class="save">Save Changes</button>
+          <button type="button" class="cancel">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </main>
+  <script>
+    const [formData, setFormData] = Novoid.signal({
+      displayName: "",
+      email: "",
+      bio: "",
+      timezone: "UTC-8 Pacific",
+    });
+
+    const [saveStatus, setSaveStatus] = Novoid.signal("idle");
+
+    // BUG: Dead signal — validation errors computed but never displayed
+    const [errors, setErrors] = Novoid.signal({});
+
+    const isDirty = Novoid.derived(() => {
+      const data = formData();
+      return data.displayName !== "" || data.email !== "";
+    });
+
+    Novoid.effect(() => {
+      const dirty = isDirty();
+      // Enable/disable save button based on dirty state
+      console.log("Form dirty:", dirty);
+    });
+
+    Novoid.effect(() => {
+      const status = saveStatus();
+      console.log("Save status:", status);
+    });
+
+    function save() {
+      setSaveStatus("saving");
+      fetch("/api/settings", { method: "POST" })
+        .then(() => setSaveStatus("saved"))
+        .catch(() => setSaveStatus("error"));
+    }
+
+    // BUG: No recovery from "saved" or "error" back to "idle"
+    // User saves once, status stuck at "saved" forever
+  </script>
+</body>
+</html>

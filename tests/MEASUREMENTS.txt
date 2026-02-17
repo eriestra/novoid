@@ -1,0 +1,22 @@
+SETUP_TIME=25s
+BUILD_TIME=6s
+NODE_MODULES_SIZE=421 MB
+NEXT_DIR_SIZE=8.3 MB
+STATIC_JS_TOTAL=573 KB (586585 bytes across 20 chunks)
+STATIC_JS_CHUNKS=20
+
+counter: LOC=19, SERVER_PAGE=1062 bytes
+todo: LOC=41, SERVER_PAGE=1056 bytes
+calc: LOC=47, SERVER_PAGE=1056 bytes
+timer: LOC=45, SERVER_PAGE=1058 bytes
+kanban: LOC=60, SERVER_PAGE=1060 bytes
+form: LOC=47, SERVER_PAGE=1056 bytes
+dash: LOC=44, SERVER_PAGE=1056 bytes
+tabs: LOC=27, SERVER_PAGE=1056 bytes
+router: LOC=28, SERVER_PAGE=1060 bytes
+theme: LOC=37, SERVER_PAGE=1058 bytes
+TOTAL_LOC=395
+
+NOTE: Next.js 16 + Turbopack produces shared static chunks (573 KB total JS).
+Per-route client bundles are code-split across shared chunks and not individually measurable.
+Server page.js files (~1 KB each) are thin RSC stubs that reference client chunks.

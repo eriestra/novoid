@@ -1,0 +1,17 @@
+# nous-contract: login-form
+name: login-form
+structure:
+  form:
+    contains:
+      input[type=email]:
+        min: 1
+        max: 1
+      input[type=password]:
+        min: 1
+        max: 1
+      button[type=submit]:
+        min: 1
+        max: 1
+    accessibility:
+      - "every input has: [label | aria-label | aria-labelledby]"
+      - "focus-order: [email, password, submit]"

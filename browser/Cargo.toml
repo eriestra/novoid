@@ -1,0 +1,18 @@
+[package]
+name = "novoid-browser"
+version = "0.1.0"
+edition = "2021"
+description = "Headless runtime that turns no∅ apps into typed APIs for AI agents"
+
+[[bin]]
+name = "novoid-browser"
+path = "src/main.rs"
+
+[dependencies]
+rquickjs = { version = "0.8", features = ["bindgen", "classes", "properties", "parallel"] }
+scraper = "0.22"
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["blocking"] }
+url = "2"

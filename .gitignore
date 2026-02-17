@@ -1,0 +1,22 @@
+node_modules/
+package-lock.json
+.env
+.env.local
+convex/_generated/
+
+# Apps live in Convex, not git
+src/app/
+.nex-opened
+
+# Symlinks for novoid-browser local resolution
+src/css
+src/js
+
+# Rust build artifacts
+browser/target/
+
+# SvelteKit generated
+nous/.svelte-kit/
+
+# Supraversity credentials
+skills/certified/certificate.json

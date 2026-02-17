@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <style>
+    .login-form {
+      max-width: 400px;
+      margin: 2rem auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .login-form label {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .login-form input {
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .login-form button {
+      padding: 0.75rem;
+      background: #333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <form class="login-form" aria-label="Login form">
+      <label>
+        Email
+        <input type="email" name="email" required aria-label="Email address">
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" required aria-label="Password">
+      </label>
+      <button type="submit">Sign In</button>
+    </form>
+  </main>
+  <script>
+    const form = document.querySelector('.login-form');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      console.log('Login submitted');
+    });
+  </script>
+</body>
+</html>

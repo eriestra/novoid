@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager</title>
+  <style>
+    /* BUG 1: Cascade conflict — .nv-card and .task-card both target cards at same specificity */
+    .nv-card { padding: 1rem; background: white; border-radius: 8px; }
+    .task-card { padding: 2rem; background: #f5f5f5; border-radius: 8px; }
+
+    /* BUG 2: Another cascade conflict — competing color on .btn */
+    .primary .btn { color: white; background: blue; }
+    .actions .btn { color: black; background: gray; }
+
+    .container {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    /* BUG 3: Flex children min-widths exceed small viewports */
+    .sidebar {
+      min-width: 250px;
+      flex-shrink: 0;
+    }
+    .main-content {
+      min-width: 400px;
+      flex: 1;
+    }
+
+    .task-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+    /* BUG 4: This .error-toast class is defined but the element is dynamically inserted
+       without matching structural CSS — cross-pillar issue */
+
+    @media (min-width: 768px) {
+      .sidebar { width: 300px; }
+    }
+    @media (min-width: 1024px) {
+      .container { max-width: 1200px; margin: 0 auto; }
+    }
+
+    h1 { font-family: sans-serif; margin: 0; }
+    input { padding: 0.5rem; border: 1px solid #ccc; }
+    button { padding: 0.5rem 1rem; cursor: pointer; border: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="container">
+      <aside class="sidebar">
+        <h2>Filters</h2>
+        <select aria-label="Filter by status">
+          <option>All</option>
+          <option>Active</option>
+          <option>Done</option>
+        </select>
+      </aside>
+      <div class="main-content">
+        <h1>Tasks</h1>
+        <form class="add-task">
+          <input type="text" placeholder="New task..." aria-label="New task name">
+          <button type="submit">Add</button>
+        </form>
+        <div class="task-list primary actions">
+          <div class="nv-card task-card">
+            <span>Buy groceries</span>
+            <button class="btn">Complete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    // Novoid reactive task manager
+    const [tasks, setTasks] = Novoid.signal([
+      { id: 1, text: "Buy groceries", done: false },
+      { id: 2, text: "Write tests", done: false },
+    ]);
+    const [filter, setFilter] = Novoid.signal("all");
+
+    // BUG 5: Dead signal — newId is set but never read anywhere
+    const [newId, setNewId] = Novoid.signal(3);
+
+    // BUG 6: tempDraft signal — setter never called, signal can never change
+    const [tempDraft, setTempDraft] = Novoid.signal("");
+
+    const filtered = Novoid.derived(() => {
+      const f = filter();
+      const t = tasks();
+      if (f === "active") return t.filter(x => !x.done);
+      if (f === "done") return t.filter(x => x.done);
+      return t;
+    });
+
+    Novoid.effect(() => {
+      const list = filtered();
+      console.log("Rendering", list.length, "tasks");
+    });
+
+    // BUG 7: State machine with missing recovery path
+    const [syncStatus, setSyncStatus] = Novoid.signal("idle");
+
+    function addTask(text) {
+      setSyncStatus("syncing");
+      fetch("/api/tasks", { method: "POST", body: JSON.stringify({ text }) })
+        .then(() => setSyncStatus("synced"))
+        .catch(() => setSyncStatus("error"));
+      // BUG: no transition from "error" back to "idle" — user is stuck
+      // BUG: no transition from "synced" back to "idle" — can't add more
+    }
+
+    setNewId(4); // newId setter IS called, but getter never read
+  </script>
+</body>
+</html>
