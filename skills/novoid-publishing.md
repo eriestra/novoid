@@ -117,6 +117,7 @@ Bypasses verification. **Only for confirmed false positives** (e.g., Convex-depe
 - Resource names are store state keys directly: `count`, `display`, `tasks`. No `store_0.` prefix.
 - Apps must use `createStore` for testability — store actions become MCP tools.
 - `seed` pre-populates Convex queries for apps that depend on backend data.
+- `contains` is shallow — checks array membership or string substring, not deep-search into nested objects.
 
 ---
 

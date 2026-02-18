@@ -157,3 +157,4 @@ Runs automatically after every publish:
 2. Static analysis is synchronous (same tick) — assertions verify state, not timing.
 3. Seed Convex data for apps that depend on queries — headless has no backend.
 4. `--skip-check` bypasses verification — only for confirmed false positives.
+5. Shell scripts use `printf '%s\n'` (not `echo`) to pipe JSON — zsh's `echo` interprets `\n` escape sequences in strings, corrupting JSON with literal newlines.

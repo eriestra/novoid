@@ -34,12 +34,17 @@ const APP_SECURITY_HEADERS = {
 // CORS helper: restrict admin routes to same-origin or localhost
 function adminCorsHeaders(request: Request): Record<string, string> {
   const origin = request.headers.get("Origin") || "";
-  if (
-    origin.includes(".convex.site") ||
-    origin.includes("localhost") ||
-    origin.includes("127.0.0.1")
-  ) {
-    return { "Access-Control-Allow-Origin": origin };
+  try {
+    const hostname = new URL(origin).hostname;
+    if (
+      hostname.endsWith(".convex.site") ||
+      hostname === "localhost" ||
+      hostname === "127.0.0.1"
+    ) {
+      return { "Access-Control-Allow-Origin": origin };
+    }
+  } catch {
+    // Invalid origin URL — deny
   }
   return {};
 }
@@ -237,6 +242,7 @@ http.route({
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
+        "X-Content-Type-Options": "nosniff",
         "Access-Control-Allow-Origin": "*",
         "Cache-Control": "no-cache",
       },
@@ -288,25 +294,31 @@ http.route({
   }),
 });
 
-// GET /img/:name — serve image assets (stored as data URIs)
+// GET /img/:name — serve image assets (Convex storage with data-URI fallback)
 http.route({
   pathPrefix: "/img/",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const name = url.pathname.replace("/img/", "");
+
+    // Try Convex file storage first (CDN-backed)
+    const cdnUrl = await ctx.runQuery(api.files.getUrl, { name });
+    if (cdnUrl) {
+      return Response.redirect(cdnUrl, 302);
+    }
+
+    // Fallback: data-URI from assets table
     const asset = await ctx.runQuery(api.assets.get, { name });
     if (!asset || !asset.content.startsWith("data:")) {
       return new Response(`Image "${name}" not found`, { status: 404 });
     }
-    // Parse data URI: data:<contentType>;base64,<data>
     const match = asset.content.match(/^data:([^;]+);base64,([\s\S]+)$/);
     if (!match) {
       return new Response("Invalid image data", { status: 500 });
     }
     const contentType = match[1];
     const base64Data = match[2].replace(/\s/g, "");
-    // Decode base64 using Uint8Array
     const binStr = globalThis.atob(base64Data);
     const buffer = new Uint8Array(binStr.length);
     for (let i = 0; i < binStr.length; i++) {

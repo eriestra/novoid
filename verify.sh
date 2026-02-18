@@ -33,8 +33,8 @@ if [ -f "$NOUS" ] && command -v npx >/dev/null 2>&1; then
   NOUS_OUT=$(cd nous && npx tsx src/cli.ts "../$FILE" 2>/dev/null) && NOUS_OK=1 || NOUS_OK=0
 
   if [ $NOUS_OK -eq 1 ] && [ -n "$NOUS_OUT" ]; then
-    echo "$NOUS_OUT" > "$NOUS_JSON_FILE"
-    NOUS_REPORT=$(echo "$NOUS_OUT" | python3 -c "
+    printf '%s\n' "$NOUS_OUT" > "$NOUS_JSON_FILE"
+    NOUS_REPORT=$(printf '%s\n' "$NOUS_OUT" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
@@ -126,14 +126,14 @@ if [ -f "$BROWSER" ]; then
 
   BROWSER_OUT=$("$BROWSER" "$FILE" $SEED_ARGS -c 2>&1) && BROWSER_OK=1 || BROWSER_OK=0
 
-  echo "$BROWSER_OUT" > "$BROWSER_JSON_FILE"
+  printf '%s\n' "$BROWSER_OUT" > "$BROWSER_JSON_FILE"
 
   if [ $BROWSER_OK -eq 0 ]; then
     echo "│ browser ✗ failed to execute"
     echo "│          $BROWSER_OUT"
     FAILED=1
   else
-    BROWSER_REPORT=$(echo "$BROWSER_OUT" | python3 -c "
+    BROWSER_REPORT=$(printf '%s\n' "$BROWSER_OUT" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)

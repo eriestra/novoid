@@ -87,7 +87,7 @@ fi
 # Phase 2: MCP schema has expected signals/tools
 MCP_OUT=$(curl -s "$MCP_URL" 2>/dev/null)
 if [ -n "$MCP_OUT" ]; then
-  MCP_REPORT=$(echo "$MCP_OUT" | python3 -c "
+  MCP_REPORT=$(printf '%s\n' "$MCP_OUT" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
@@ -110,7 +110,7 @@ fi
 # Phase 3: Sentinel (runtime errors from real browsers)
 sleep 2
 SENTINEL_OUT=$(npx convex run errors:recent "{\"slug\":\"${SLUG}\",\"limit\":5}" 2>/dev/null)
-SENTINEL_COUNT=$(echo "$SENTINEL_OUT" | python3 -c "
+SENTINEL_COUNT=$(printf '%s\n' "$SENTINEL_OUT" | python3 -c "
 import sys, json
 try:
     d = json.load(sys.stdin)
@@ -122,7 +122,7 @@ if [ "$SENTINEL_COUNT" = "0" ]; then
   echo "│ sentinel ✓ no runtime errors"
 else
   echo "│ sentinel ✗ ${SENTINEL_COUNT} runtime errors"
-  echo "$SENTINEL_OUT" | python3 -c "
+  printf '%s\n' "$SENTINEL_OUT" | python3 -c "
 import sys, json
 try:
     for e in json.load(sys.stdin)[:3]:

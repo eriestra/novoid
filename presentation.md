@@ -46,27 +46,29 @@ All before writing a single line of application logic.
 
 ## Slide 3 — The AI Problem
 
-### AI agents face an even worse version.
+### AI agents can do all of this. They shouldn't have to.
 
-An LLM can reason about UI, generate HTML, and write business logic.
+An LLM can reason about UI, generate HTML, write business logic — and yes, it can run `npm install`, configure Webpack, push to Git, and wait for CI.
 
-But it cannot:
-- Run `npm install`
-- Configure Webpack
-- Push to a Git remote
-- Wait for a CI pipeline
+But every one of those steps is:
+- **Wasted tokens** — reasoning about infrastructure instead of the application
+- **Wasted time** — 30+ seconds of pipeline overhead per deploy
+- **A failure surface** — dependency conflicts, build errors, auth issues, environment drift
+- **Context pollution** — the agent's limited window fills with boilerplate instead of product logic
 
-The deployment stack was designed for humans at terminals — not for programmatic actors that think in text.
+The deployment stack is a tax on every iteration. The more iterations matter — and for agents, they matter enormously — the more that tax compounds.
 
 ---
 
 ## Slide 4 — The Thesis
 
-### One constraint. Zero compromise.
+### One environment. One constraint. Zero compromise.
 
 > The path from description to live application must be a single atomic operation.
 
 Write an HTML file. Run one command. The app is live — with a URL, an MCP endpoint, error telemetry, live reload, and a programmatic interface for other agents.
+
+There is no dev/prod split. No staging. No promotion workflow. One database, one `publish.sh`, one live URL. Agents don't manage deployment pipelines — friction is the enemy.
 
 **No build step. No npm. No Git push. No CI. No container.**
 
@@ -166,7 +168,9 @@ Novoid.render('#app', store, {
 
 The agent writes state + spec. The renderer owns everything else.
 
-**Section vocabulary:** metrics, table, cards, form, chart, stat, header, list, button, divider, empty.
+**Section vocabulary:** metrics, table, cards, form, chart, stat, header, row, list, divider, empty.
+
+**Three modes:** Render apps (pure declaration), hybrid apps (h() shell + render sections), and classic apps (imperative h() with full CSS control). Most apps use render. Landing pages with complex layouts use hybrid.
 
 ---
 
@@ -212,9 +216,69 @@ Dark mode: one attribute — `[data-theme="dark"]`
 
 ---
 
-## Slide 11 — The Numbers
+## Slide 11 — Motion Animations
+
+### Production-grade motion. Zero config.
+
+Built-in Motion.dev integration for scroll-triggered reveals, staggered entrances, parallax, and timeline sequences.
+
+```js
+const { animate, scroll, stagger, inView } = Motion;
+
+// Stagger cards on scroll
+inView('.cards', () => {
+  animate('.card', { opacity: [0, 1], y: [30, 0] },
+    { delay: stagger(0.08), duration: 0.4 });
+});
+
+// Parallax hero fade
+scroll(animate('.hero', { opacity: [1, 0] }),
+  { offset: ['start start', 'end start'] });
+```
+
+Animations are declarative, scroll-aware, and spring-based. No CSS keyframe soup. The landing page itself is a showcase — every section reveals on scroll.
+
+---
+
+## Slide 12 — The Data Layer: Convex
+
+### Real-time backend. Zero infrastructure.
+
+no∅ apps connect to Convex for reactive queries, mutations, and AI actions.
+
+```js
+const db = Novoid.createClient(CONVEX_URL);
+const { data, loading } = useQuery(db, 'tasks:list');
+const addTask = useMutation(db, 'tasks:add');
+const ask = useAI(db, 'ai:chat');
+```
+
+- **Reactive queries** — UI auto-updates when backend data changes
+- **Built-in auth** — session-based, no cookies, org-scoped
+- **AI helpers** — `useAI()` with streaming responses, history, and loading state
+- **One deployment** — the dev Convex instance *is* production
+
+Publishing is a Convex mutation. The database is the deployment target.
+
+---
+
+## Slide 13 — Math & Scientific Rendering
+
+### KaTeX built in. TeX notation, instant render.
+
+```js
+katex.render('E = mc^2', el, { displayMode: true });
+```
+
+No build step. No MathJax overhead. Direct KaTeX CDN integration with MathML visibility fixes for accessibility. Enables technical, scientific, and educational apps out of the box.
+
+---
+
+## Slide 14 — The Numbers
 
 ### 10 identical apps. no∅ vs Next.js. Every number measured.
+
+> *All measurements from the benchmark documented in the codebase. Real builds, real deployments, real numbers.*
 
 | Metric | no∅ | Next.js | Factor |
 |--------|-----|---------|--------|
@@ -227,7 +291,7 @@ Dark mode: one attribute — `[data-theme="dark"]`
 
 ---
 
-## Slide 12 — Per-App Deployment Size
+## Slide 15 — Per-App Deployment Size
 
 | App | no∅ (HTML) | Next.js (per-route cost*) |
 |-----|-----------|------------------------|
@@ -246,7 +310,7 @@ novoid: storage scales with app complexity (1.1-3.3 KB). Next.js: 573 KB shared 
 
 ---
 
-## Slide 13 — The Verification Pipeline
+## Slide 16 — The Verification Pipeline
 
 ### Three-phase proof before anything goes live.
 
@@ -263,7 +327,7 @@ All three phases complete in a single `publish.sh` call (~7.6 seconds).
 
 ---
 
-## Slide 14 — Testing: 170x Faster, Zero Setup
+## Slide 17 — Testing: 170x Faster, Zero Setup
 
 ### novoid tests state directly. Playwright scrapes the DOM.
 
@@ -281,7 +345,7 @@ All three phases complete in a single `publish.sh` call (~7.6 seconds).
 
 ---
 
-## Slide 15 — MCP: Every App is an API
+## Slide 18 — MCP: Every App is an API
 
 ### Content negotiation built in.
 
@@ -300,7 +364,7 @@ Agents can discover, read, test, and control any novoid app without a single lin
 
 ---
 
-## Slide 16 — The Developer Experience
+## Slide 19 — The Developer Experience
 
 ### From idea to live URL
 
@@ -321,7 +385,7 @@ No `package.json`. No `node_modules`. No `.env`. No `Dockerfile`. No GitHub Acti
 
 ---
 
-## Slide 17 — The Agent Experience
+## Slide 20 — The Agent Experience
 
 ### AI agents are first-class citizens.
 
@@ -337,7 +401,7 @@ Multi-agent collaboration is built in — agents can claim fragments, edit concu
 
 ---
 
-## Slide 18 — Skill-Led Reasoning
+## Slide 21 — Skill-Led Reasoning
 
 ### Skills are the source of truth.
 
@@ -345,12 +409,18 @@ novoid is built around **codified skills** — compressed, always-in-context kno
 
 ```
 skills/
-  novoid-core.md         — signals, computed, effect, batch, h(), createStore
-  novoid-render.md       — declarative UI: sections, $expressions, formats, views
-  novoid-css.md          — nv-* classes, --nv-* variables, theming, dark mode
-  novoid-publishing.md   — publish.sh, verify.sh, build.sh, MCP endpoints
+  novoid-core.md         — signals, computed, effect, batch, h(), createStore, mount
+  novoid-render.md       — declarative UI: sections, $expressions, formats, views, panels
+  novoid-css.md          — nv-* classes, --nv-* variables, theming, dark mode, animations
+  novoid-publishing.md   — publish.sh, verify.sh, build.sh, MCP endpoints, test specs
   novoid-verification.md — Nous static analysis, headless execution, test harness
   novoid-agents.md       — personas, memory, multi-channel, inline apps
+  novoid-convex.md       — Convex client, reactive queries, mutations, AI helper
+  novoid-motion.md       — Motion.dev: animate, scroll, stagger, timeline, inView
+  novoid-math.md         — KaTeX integration, TeX notation, MathML visibility
+  novoid-improve.md      — feature expansion checklist, consistency rules
+
+certified/               — 5 Convex-specific skills (schema, functions, realtime, agents, best practices)
 ```
 
 **When skills and pre-training agree, you're on the right path. When they diverge, skills win.**
@@ -359,7 +429,7 @@ Skills are not documentation. They are the codified knowledge that makes agents 
 
 ---
 
-## Slide 19 — What This Enables
+## Slide 22 — What This Enables
 
 ### Applications that build themselves.
 
@@ -373,7 +443,7 @@ Skills are not documentation. They are the codified knowledge that makes agents 
 
 ---
 
-## Slide 20 — Closing
+## Slide 23 — Closing
 
 # no∅
 

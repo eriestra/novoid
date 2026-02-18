@@ -5,6 +5,41 @@ const DOM_POLYFILL: &str = include_str!("../js/dom-polyfill.js");
 const CONVEX_MOCK: &str = include_str!("../js/convex-mock.js");
 const OBSERVER: &str = include_str!("../js/observer.js");
 
+/// Escape raw control characters inside JSON string values.
+/// QuickJS's JSON.stringify escapes them, but the rquickjs bridge
+/// can lose the escaping when extracting JS strings to Rust.
+pub fn sanitize_json(s: &str) -> String {
+    let bytes = s.as_bytes();
+    // Fast path: no control characters → return as-is
+    if !bytes.iter().any(|&b| b < 0x20) {
+        return s.to_string();
+    }
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut in_string = false;
+    let mut i = 0;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if b == b'\\' && in_string && i + 1 < bytes.len() {
+            out.push(b);
+            i += 1;
+            out.push(bytes[i]);
+            i += 1;
+            continue;
+        }
+        if b == b'"' {
+            in_string = !in_string;
+        }
+        if in_string && b < 0x20 {
+            let esc = format!("\\u{:04x}", b);
+            out.extend_from_slice(esc.as_bytes());
+        } else {
+            out.push(b);
+        }
+        i += 1;
+    }
+    String::from_utf8(out).unwrap_or_else(|_| s.to_string())
+}
+
 /// QuickJS runtime wrapper for executing no∅ apps
 pub struct NovoidRuntime {
     #[allow(dead_code)]

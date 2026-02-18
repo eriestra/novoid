@@ -225,7 +225,8 @@ fn execute_call(rt: &NovoidRuntime, idx: usize, step: &TestStep) -> StepResult {
 
     match rt.eval_string(&call_js) {
         Ok(result_json) => {
-            let call_obj: Value = serde_json::from_str(&result_json).unwrap_or_default();
+            let sanitized = crate::runtime::sanitize_json(&result_json);
+            let call_obj: Value = serde_json::from_str(&sanitized).unwrap_or_default();
             if let Some(false) = call_obj.get("ok").and_then(|v| v.as_bool()) {
                 let err = call_obj.get("error").and_then(|v| v.as_str()).unwrap_or("unknown");
                 return StepResult {
@@ -336,7 +337,8 @@ fn read_resource_fn(rt: &NovoidRuntime, name: &str) -> Result<Value, String> {
             if json_str == "null" || json_str.is_empty() {
                 Err(format!("Resource '{}' not found", name))
             } else {
-                serde_json::from_str(&json_str)
+                let sanitized = crate::runtime::sanitize_json(&json_str);
+                serde_json::from_str(&sanitized)
                     .map_err(|e| format!("Failed to parse resource '{}': {e}", name))
             }
         }

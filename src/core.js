@@ -222,10 +222,16 @@ const Novoid = (() => {
           if (typeof v !== 'string') return v;
           const temp = document.createElement('div');
           temp.innerHTML = v;
-          temp.querySelectorAll('script,iframe,object,embed,form').forEach(n => n.remove());
+          temp.querySelectorAll('script,iframe,object,embed,form,math,annotation-xml').forEach(n => n.remove());
+          temp.querySelectorAll('svg').forEach(svg => {
+            svg.querySelectorAll('foreignObject,script,set,animate,animateTransform').forEach(n => n.remove());
+          });
           temp.querySelectorAll('*').forEach(n => {
             for (const attr of [...n.attributes]) {
-              if (attr.name.startsWith('on') || (attr.name === 'href' && attr.value.trimStart().startsWith('javascript:'))) {
+              const name = attr.name.toLowerCase();
+              const val = attr.value.trimStart().toLowerCase();
+              if (name.startsWith('on') || name === 'srcdoc' ||
+                  ((name === 'href' || name === 'xlink:href' || name === 'action' || name === 'formaction' || name === 'data') && val.startsWith('javascript:'))) {
                 n.removeAttribute(attr.name);
               }
             }

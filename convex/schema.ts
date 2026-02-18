@@ -142,6 +142,12 @@ export default defineSchema({
     .index("by_host", ["host"])
     .index("by_slug", ["slug"]),
 
+  files: defineTable({
+    name: v.string(),
+    storageId: v.id("_storage"),
+    contentType: v.string(),
+  }).index("by_name", ["name"]),
+
   jobs: defineTable({
     prompt: v.string(),
     slug: v.optional(v.string()),

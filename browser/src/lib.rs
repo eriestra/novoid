@@ -268,7 +268,8 @@ pub fn browse_and_call(
     );
 
     let call_result = rt.call_action(&action_js)?;
-    let call_obj: serde_json::Value = serde_json::from_str(&call_result).unwrap_or_default();
+    let sanitized_result = runtime::sanitize_json(&call_result);
+    let call_obj: serde_json::Value = serde_json::from_str(&sanitized_result).unwrap_or_default();
     if let Some(false) = call_obj.get("ok").and_then(|v| v.as_bool()) {
         let err_msg = call_obj.get("error").and_then(|v| v.as_str()).unwrap_or("unknown error");
         return Err(format!("Action '{}' failed: {}", action_name, err_msg));

@@ -155,8 +155,9 @@ pub fn synthesize(
     uncaught_json: Option<&str>,
     convex_json: Option<&str>,
 ) -> Result<BrowseSchema, String> {
+    let sanitized = crate::runtime::sanitize_json(observed_json);
     let observed: ObservedData =
-        serde_json::from_str(observed_json).map_err(|e| format!("Failed to parse observed data: {e}"))?;
+        serde_json::from_str(&sanitized).map_err(|e| format!("Failed to parse observed data: {e}"))?;
 
     // Build state from signals and stores
     let mut state = serde_json::Map::new();
