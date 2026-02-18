@@ -141,6 +141,8 @@ const Novoid = (() => {
       actions: {},
     };
 
+    store.select = (key) => computed(() => getState()[key]);
+
     for (const [key, action] of Object.entries(actions)) {
       store.actions[key] = (...args) => {
         const partial = action(getState(), ...args);

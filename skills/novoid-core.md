@@ -148,6 +148,7 @@ const store = Novoid.createStore(
 
 store.get();              // read full state (signal getter)
 store.set({ count: 5 });  // replace entire state
+store.select('count');     // → computed getter tracking only this key
 store.actions.inc();       // call action
 store.actions.setName('New');
 store.subscribe(fn);       // listen to changes → unsubscribe fn
@@ -227,6 +228,15 @@ Schema keys per field: `initial`, `required`, `minLength`, `maxLength`, `pattern
 7. **Auto-merge in stores:** Actions return partial state. Framework merges via `Object.assign({}, current, partial)`.
 8. **Testable apps use createStore:** Store actions → MCP tools → testable. DOM onclick handlers are not testable.
 9. **Always generate `.test.json`** alongside every app for automated E2E on publish.
+10. **Avoid full-store tracking in match/when/list:** `store.get()` is a single signal — reading it inside `match`, `when`, or `list` subscribes to *every* state change. Use `store.select(key)` to extract specific keys:
+    ```js
+    // BAD — re-evaluates on every store change (causes focus loss in inputs)
+    Novoid.match(() => store.get().mode, { ... })
+
+    // GOOD — only re-evaluates when mode actually changes
+    var mode = store.select('mode');
+    Novoid.match(mode, { ... })
+    ```
 
 ## Test spec format
 
@@ -247,3 +257,5 @@ Schema keys per field: `initial`, `required`, `minLength`, `maxLength`, `pattern
 | `push` | `query`, `data`, `then?` | Simulate Convex update |
 
 Assertions: `eq` (deep), `length`, `contains`, `matches`. Resource names are store state keys directly — no `store_0.` prefix.
+
+**`contains` is shallow.** For arrays, checks `arr.includes(needle)` — does NOT deep-search into nested objects. For strings, checks `str.includes(needle)`. To test nested data, read a specific key path instead of the top-level array.
