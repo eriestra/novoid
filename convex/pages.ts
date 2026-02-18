@@ -69,6 +69,23 @@ export const version = query({
   },
 });
 
+export const setIframeOrigins = mutation({
+  args: {
+    slug: v.string(),
+    origins: v.array(v.string()),
+    secret: v.string(),
+  },
+  handler: async (ctx, { slug, origins, secret }) => {
+    await verifySecret(ctx, secret);
+    const page = await ctx.db
+      .query("pages")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .first();
+    if (!page) throw new Error(`Page "${slug}" not found`);
+    await ctx.db.patch(page._id, { iframeOrigins: origins });
+  },
+});
+
 export const get = query({
   args: { slug: v.string() },
   handler: async (ctx, { slug }) => {

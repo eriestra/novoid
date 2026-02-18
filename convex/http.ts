@@ -208,12 +208,22 @@ http.route({
       });
     }
 
+    // Build CSP with per-page iframe origins
+    const appHeaders = { ...APP_SECURITY_HEADERS };
+    if (page.iframeOrigins && page.iframeOrigins.length > 0) {
+      const csp = appHeaders["Content-Security-Policy"].replace(
+        /frame-ancestors[^;]*/,
+        "frame-ancestors 'self' https://eriestra.github.io " + page.iframeOrigins.join(" ")
+      );
+      appHeaders["Content-Security-Policy"] = csp;
+    }
+
     return new Response(html, {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Access-Control-Allow-Origin": "*",
-        ...APP_SECURITY_HEADERS,
+        ...appHeaders,
         "Cache-Control": "no-cache",
         "Vary": "Accept",
       },

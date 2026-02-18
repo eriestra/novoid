@@ -8,6 +8,7 @@ export default defineSchema({
     updatedAt: v.number(),
     browserSchema: v.optional(v.string()), // novoid-browser JSON output
     nousReport: v.optional(v.string()),    // nous proof JSON output
+    iframeOrigins: v.optional(v.array(v.string())), // allowed parent origins for framing
   }).index("by_slug", ["slug"]),
 
   assets: defineTable({

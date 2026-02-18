@@ -4,6 +4,7 @@ package-lock.json
 .env.local
 convex/_generated/
 
+dist/dist
 # Apps live in Convex, not git
 src/app/
 .nex-opened
