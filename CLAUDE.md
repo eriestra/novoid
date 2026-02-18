@@ -54,6 +54,9 @@ On first command that needs credentials or dependencies:
 1. Load credentials: `PUBLISH_SECRET=$(grep '^PUBLISH_SECRET=' .env.local | cut -d= -f2)`
 2. If no `node_modules/`, run `npm install` in background
 3. If no `.env.local`, tell user to run setup from README.md
+4. If no `dist/` or `src/js` symlink, run `sh build.sh` (creates minified assets + symlinks)
+5. If no `nous/node_modules/`, run `cd nous && npm install` (Nous static analyzer)
+6. If no `browser/target/debug/novoid-browser`, run `cd browser && cargo build` (Qed headless verifier — requires Rust)
 
 ## Workflow
 

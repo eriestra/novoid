@@ -80,6 +80,23 @@ PUBLISH_SECRET=pick-a-secret
 
 Visit your platform at `https://<deployment>.convex.site/platform`.
 
+### Verification pipeline (optional but recommended)
+
+The full publish pipeline includes Nous (static analysis) and Qed (headless execution). Without these, `publish.sh` still works but skips verification phases.
+
+```sh
+# Build framework assets (creates dist/ and src/js, src/css symlinks)
+sh build.sh
+
+# Nous — static verification (TypeScript)
+cd nous && npm install && cd ..
+
+# Qed — headless verifier + MCP test harness (Rust, requires cargo)
+cd browser && cargo build && cd ..
+```
+
+After this, `publish.sh` runs all three verification phases automatically.
+
 ### Build and publish
 
 ```sh
