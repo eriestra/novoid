@@ -23,8 +23,8 @@ FAILED=0
 VERIFY_ID="${NOVOID_VERIFY_ID:-$$}"
 NOUS_JSON_FILE="/tmp/novoid-nous-${VERIFY_ID}.json"
 BROWSER_JSON_FILE="/tmp/novoid-browser-${VERIFY_ID}.json"
-echo "" > "$NOUS_JSON_FILE"
-echo "" > "$BROWSER_JSON_FILE"
+printf '' > "$NOUS_JSON_FILE"
+printf '' > "$BROWSER_JSON_FILE"
 
 echo "┌─ verify ───────────────────────────────────────────┐"
 

@@ -916,7 +916,7 @@ http.route({
       return new Response("Invalid slug", { status: 400 });
     }
     const page = await ctx.runQuery(api.pages.get, { slug });
-    if (!page?.browserSchema) {
+    if (!page?.browserSchema?.trim()) {
       return new Response(JSON.stringify({
         slug,
         error: "No schema available. App may not have been published with verification.",
@@ -925,7 +925,18 @@ http.route({
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       });
     }
-    const schema = JSON.parse(page.browserSchema);
+    let schema;
+    try {
+      schema = JSON.parse(page.browserSchema);
+    } catch {
+      return new Response(JSON.stringify({
+        slug,
+        error: "Stored schema is invalid JSON. Re-publish with novoid-browser built.",
+      }), {
+        status: 502,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
     return new Response(JSON.stringify({
       slug,
       mcpEndpoint: `${url.origin}/mcp/${slug}`,
