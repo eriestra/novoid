@@ -129,6 +129,26 @@ if (SITE_URL) {
 console.log(`  ✦ capabilities: ${CAPABILITIES.join(", ")}`);
 console.log(`  ✦ waiting for jobs...\n`);
 
+// ── Orphan Cleanup ──
+(async function cleanupOrphans() {
+  try {
+    const jobs = await client.query("nex:streamJobs");
+    const orphans = (jobs || []).filter(j => j.status === "building" || j.status === "claimed");
+    if (orphans.length > 0) {
+      for (const j of orphans) {
+        await client.mutation("nex:completeJob", {
+          jobId: j._id,
+          result: "Stale — worker restarted",
+          secret: SECRET,
+        });
+      }
+      console.log(`  ✦ cleaned up ${orphans.length} orphaned job(s)`);
+    }
+  } catch (e) {
+    console.log(`  ⚠ orphan cleanup failed: ${e.message}`);
+  }
+})();
+
 // ── Agent Registration ──
 async function registerSelf() {
   try {
@@ -177,6 +197,7 @@ async function gracefulShutdown() {
   process.exit(0);
 }
 process.on("SIGINT", gracefulShutdown);
+process.on("SIGTERM", gracefulShutdown);
 process.on("SIGTERM", gracefulShutdown);
 
 // ── Signal Polling ──
@@ -620,8 +641,8 @@ async function handleChat(job) {
   // ── Check for approval responses (YES/NO text from Telegram) ──
   if (payload.channel === "telegram") {
     const lower = (text || "").toLowerCase().trim();
-    const isApproval = /^(yes|approve|go|do it|ok|y|si|sí)$/i.test(lower);
-    const isDenial = /^(no|skip|nah|nope|n|deny|cancel)$/i.test(lower);
+    const isApproval = /^(yes|approve|go|go ahead|do it|ok|y|si|sí|sure|let'?s go|proceed|adelante)$/i.test(lower);
+    const isDenial = /^(no|skip|nah|nope|n|deny|cancel|stop|hold|wait|not now)$/i.test(lower);
 
     if (isApproval || isDenial) {
       const handled = await handleApprovalResponse(payload.replyTo, orgId, isApproval, job);
@@ -798,18 +819,21 @@ async function handleChat(job) {
   const fullPrompt = promptParts.join("\n");
 
   // 4. Spawn claude (interruptible — polls for new messages while running)
-  let response = await askClaudeInterruptible(fullPrompt, job._id, {
-    trackAsActive: true,
-    jobType: "chat",
-    conversationId: convId,
-    orgId,
-    checkInterval: 3000,
-    imagePaths,
-  });
+  let response;
+  try {
+    response = await askClaudeInterruptible(fullPrompt, job._id, {
+      trackAsActive: true,
+      jobType: "chat",
+      conversationId: convId,
+      orgId,
+      checkInterval: 3000,
+      imagePaths,
+    });
+  } finally {
+    // Clean up temp images even if interrupted/killed
+    for (const p of imagePaths) { try { fs.unlinkSync(p); } catch {} }
+  }
   console.log(`  → claude finished`);
-
-  // Clean up temp images
-  for (const p of imagePaths) { try { fs.unlinkSync(p); } catch {} }
 
   // 4. Write assistant message (detect inline app blocks)
   // Strip math duplicate lines from response before storing
@@ -823,7 +847,7 @@ async function handleChat(job) {
       // Patch KaTeX to use mathml-only output (no CSS dependency, no duplicates)
       var mathCssFix = '<style>.katex-html{display:none!important;}.katex-mathml{display:block!important;position:static!important;clip:auto!important;width:auto!important;height:auto!important;overflow:visible!important;}</style>' +
         '<' + 'script>document.addEventListener("DOMContentLoaded",function(){if(window.katex){var orig=katex.render;katex.render=function(t,e,o){o=o||{};o.output="mathml";return orig.call(katex,t,e,o);};}});</' + 'script>';
-      var resizeSnippet = '<' + 'script>new ResizeObserver(function(){parent.postMessage({type:"nex-app-resize",height:document.body.scrollHeight},"*")}).observe(document.body);</' + 'script>';
+      var resizeSnippet = '<' + 'script>new ResizeObserver(function(){var cv=document.querySelector("canvas");var h=cv?Math.max(cv.height,cv.offsetHeight,300):document.body.scrollHeight;parent.postMessage({type:"nex-app-resize",height:h},"*")}).observe(document.body);</' + 'script>';
       var injected = mathCssFix + resizeSnippet;
       if (appHtml.indexOf('</body>') !== -1) {
         appHtml = appHtml.replace('</body>', injected + '</body>');
@@ -1234,29 +1258,66 @@ async function handleHeartbeat(job) {
             capabilities.push(
               `## Telegram (already configured — chat ${cfg.chatId})`,
               `An active Telegram channel exists. Do NOT create a new one.`,
-              `To send a message through it, write a Node.js script to /tmp/nex-tg.mjs and run it:`,
-              "```",
-              `import { ConvexHttpClient } from "convex/browser";`,
-              `const c = new ConvexHttpClient("${CONVEX_URL}");`,
-              `await c.mutation("nex:createJob", {`,
-              `  orgId: "${pipelineOrgId}",`,
-              `  type: "channel",`,
-              `  payload: JSON.stringify({ channelType: "telegram", channelId: "${ch._id}", text: "YOUR_MESSAGE_HERE" }),`,
-              `  secret: "${SECRET}"`,
-              `});`,
-              "```",
-              `Replace YOUR_MESSAGE_HERE with the actual message text. Then run: node /tmp/nex-tg.mjs`
+              `To send a Telegram message, run from the project root:`,
+              `  node nex-telegram.mjs "Your message text here"`,
+              `This queues a message through the existing channel. Keep the message concise and readable.`
             );
           }
         }
       }
     } catch {}
 
-    let context = "";
+    // Support pipeline resume — pick up from a previous approval gate
+    const startStep = payload._pipelineStep || 0;
+    let context = payload._pipelineContext || "";
     const results = [];
-    for (let i = 0; i < items.length; i++) {
+
+    const approvalPattern = /\b(approv|confirm|permission|authorize|green.?light)\b/i;
+    const complexPattern = /\b(implement|build|generate|create|refactor|deploy|code|develop|telegram|send|notify|message)\b/i;
+
+    for (let i = startStep; i < items.length; i++) {
       const step = items[i];
-      console.log(`    → step ${i + 1}/${items.length}: ${step.text}`);
+      const isApprovalGate = approvalPattern.test(step.text) && i < items.length - 1;
+      console.log(`    → step ${i + 1}/${items.length}: ${step.text}${isApprovalGate ? " [approval gate]" : ""}`);
+
+      // If this is an approval gate, queue the approval and pause the pipeline
+      if (isApprovalGate) {
+        // Build a summary from context so far for the approval message
+        const proposal = context
+          ? `🫀 Nex heartbeat pipeline — step ${i + 1}/${items.length}:\n\n${step.text}\n\n📋 Context:\n${context}`
+          : `🫀 Nex heartbeat pipeline — step ${i + 1}/${items.length}:\n\n${step.text}`;
+
+        // Store pipeline state for resume on approval
+        const pipelineState = {
+          checklist: rawChecklist,
+          _pipelineStep: i + 1,
+          _pipelineContext: (context + `\n\n### Step ${i + 1}: ${step.text}\nUser approved this step via Telegram.`).slice(-3000),
+          _pipelineResume: true,
+        };
+
+        // Queue approval — when approved, handleApprovalResponse creates a follow-up job
+        await queueApproval(pipelineOrgId, "heartbeat-pipeline", proposal + "\n\n__PIPELINE_RESUME__:" + JSON.stringify(pipelineState));
+        console.log(`    ⏸ pipeline paused at step ${i + 1} — waiting for approval`);
+
+        response = results.map((r, ri) => `**Step ${ri + 1}:** ${r.step}\n${r.result}`).join("\n\n");
+        response += `\n\n⏸ Paused at step ${i + 1} — awaiting approval via Telegram.`;
+
+        // Complete this job — pipeline will resume from a new job after approval
+        await client.mutation("nex:updateHeartbeat", {
+          orgId: pipelineOrgId,
+          lastResult: response.slice(0, 1000),
+          lastRunAt: Date.now(),
+          secret: SECRET,
+        });
+        await client.mutation("nex:completeJob", {
+          jobId: job._id,
+          result: response.slice(0, 2000),
+          secret: SECRET,
+        });
+        return; // Exit — pipeline continues after approval
+      }
+
+      // Normal step execution
       const parts = [
         `You are Nex performing step ${i + 1} of ${items.length} in a heartbeat pipeline.`,
       ];
@@ -1272,15 +1333,14 @@ async function handleHeartbeat(job) {
       } else {
         parts.push("", "Execute this final step. If the overall pipeline succeeded, include HEARTBEAT_OK in your response.");
       }
-      // Use sonnet for conversational steps, opus for complex ones (build, implement, generate, telegram)
-      const complexPattern = /\b(implement|build|generate|create|refactor|deploy|code|develop|telegram|send|notify|message)\b/i;
       const stepModel = complexPattern.test(step.text) ? "claude-opus-4-6" : "claude-sonnet-4-6";
       const stepResult = await askClaude(parts.join("\n"), job._id, { model: stepModel });
       console.log(`      ${stepResult.includes("HEARTBEAT_OK") ? "✓" : "→"} ${stepResult.slice(0, 60)}`);
-      results.push({ step: step.text, result: stepResult });
-      context += `\n\n### Step ${i + 1}: ${step.text}\n${stepResult}`;
+      results.push({ step: step.text, result: stepResult.slice(0, 2000) });
+      context += `\n\n### Step ${i + 1}: ${step.text}\n${stepResult.slice(0, 1000)}`;
+      if (context.length > 8000) context = context.slice(-6000);
     }
-    response = results.map((r, i) => `**Step ${i + 1}:** ${r.step}\n${r.result}`).join("\n\n");
+    response = results.map((r, i) => `**Step ${i + 1 + startStep}:** ${r.step}\n${r.result}`).join("\n\n");
   } else {
     // Proactive or legacy plain-text — single prompt
     const checklist = items.length > 0
@@ -1410,7 +1470,8 @@ async function handleChannel(job) {
                 try { fs.unlinkSync(tmpWav); } catch {}
               }
               const oggBuffer = fs.existsSync(tmpOgg) ? fs.readFileSync(tmpOgg) : null;
-              try { fs.unlinkSync(tmpWav); fs.unlinkSync(tmpOgg); } catch {}
+              try { fs.unlinkSync(tmpWav); } catch {}
+              try { fs.unlinkSync(tmpOgg); } catch {}
 
               if (oggBuffer) {
                 const boundary = "----NexVoice" + Date.now();
@@ -1880,9 +1941,12 @@ function askClaude(prompt, jobId, opts) {
     let lastResult = "";
     let lastProgress = "";
     let progressQueue = Promise.resolve();
+    const MAX_BUFFER = 512 * 1024; // 512KB cap
+    const MAX_STDERR = 64 * 1024;  // 64KB cap
 
     proc.stdout.on("data", (chunk) => {
       buffer += chunk;
+      if (buffer.length > MAX_BUFFER) buffer = buffer.slice(-MAX_BUFFER);
       const lines = buffer.split("\n");
       buffer = lines.pop(); // keep incomplete line in buffer
 
@@ -1921,23 +1985,35 @@ function askClaude(prompt, jobId, opts) {
       }
     });
 
-    proc.stderr.on("data", (d) => { stderr += d; });
+    proc.stderr.on("data", (d) => {
+      stderr += d;
+      if (stderr.length > MAX_STDERR) stderr = stderr.slice(-MAX_STDERR);
+    });
 
-    proc.on("close", (code) => {
-      // Clear active proc if this was the tracked one
+    function cleanup() {
+      proc.stdout.removeAllListeners();
+      proc.stderr.removeAllListeners();
+      proc.removeAllListeners();
       if (activeProc && activeProc.jobId === jobId) {
         activeProc = null;
       }
+      buffer = "";
+      stderr = "";
+      progressQueue = null;
+    }
+
+    proc.on("close", (code) => {
+      const result = lastResult;
+      const err = stderr.trim();
+      cleanup();
       if (code !== 0) {
-        return reject(new Error(stderr.trim() || "Claude exited with code " + code));
+        return reject(new Error(err || "Claude exited with code " + code));
       }
-      resolve(lastResult);
+      resolve(result);
     });
 
     proc.on("error", (e) => {
-      if (activeProc && activeProc.jobId === jobId) {
-        activeProc = null;
-      }
+      cleanup();
       reject(e);
     });
   });
@@ -1960,10 +2036,11 @@ async function askClaudeInterruptible(prompt, jobId, opts) {
 
     // Check for new pending chat jobs (interrupts)
     try {
-      const jobs = await client.query("nex:pendingJobs");
+      let jobs = await client.query("nex:pendingJobs");
       if (!jobs) continue;
 
-      for (const job of jobs) {
+      for (let ji = 0; ji < jobs.length; ji++) {
+        const job = jobs[ji];
         if (job.type !== "chat") continue;
 
         let payload;
@@ -1985,7 +2062,6 @@ async function askClaudeInterruptible(prompt, jobId, opts) {
           } catch (e) {
             await client.mutation("nex:failJob", { jobId: job._id, result: e.message || String(e), secret: SECRET }).catch(() => {});
           }
-          // Don't break — main job keeps running
         } else {
           console.log(`    🛑 interruptible: tier 2 interrupt — killing claude`);
           try {
@@ -1993,11 +2069,11 @@ async function askClaudeInterruptible(prompt, jobId, opts) {
           } catch (e) {
             await client.mutation("nex:failJob", { jobId: job._id, result: e.message || String(e), secret: SECRET }).catch(() => {});
           }
-          // activeProc was killed — the claudePromise will reject/resolve
           done = true;
           break;
         }
       }
+      jobs = null; // release query results
     } catch {
       // Silent — will retry next interval
     }
@@ -2153,6 +2229,7 @@ async function queueApproval(orgId, subtype, prompt) {
         await flushApprovalBatch();
       } catch (e) {
         console.log(`    batch flush error: ${e.message}`);
+        pendingBatch = null; // clear on failure to prevent leak
       }
     }, APPROVAL_BATCH_WINDOW_MS);
   }
@@ -2169,7 +2246,7 @@ async function flushApprovalBatch() {
 
   if (isSingle) {
     const item = batch.items[0];
-    messageText = `🔔 Proactive [${item.subtype}] found something:\n\n${item.prompt.slice(0, 800)}`;
+    messageText = `🔔 Proactive [${item.subtype}] found something:\n\n${toTelegramFormat(item.prompt).slice(0, 800)}`;
   } else {
     // Batched: list all findings
     const lines = batch.items.map((item, i) =>
@@ -2244,6 +2321,24 @@ async function handleApprovalResponse(chatId, orgId, isApproval, job) {
   if (isApproval) {
     // Create follow-up jobs for each approved item
     for (const approval of approvals) {
+      // Check if this is a pipeline resume
+      const pipelineMatch = approval.prompt && approval.prompt.match(/__PIPELINE_RESUME__:(.+)$/s);
+      if (pipelineMatch) {
+        try {
+          const pipelineState = JSON.parse(pipelineMatch[1]);
+          console.log(`    ▶ resuming heartbeat pipeline from step ${pipelineState._pipelineStep + 1}`);
+          await client.mutation("nex:createJob", {
+            orgId: approval.orgId || "default",
+            type: "heartbeat",
+            payload: JSON.stringify(pipelineState),
+            secret: SECRET,
+          });
+          continue;
+        } catch(e) {
+          console.log(`    ⚠ pipeline resume parse failed: ${e.message}`);
+        }
+      }
+
       const followUpPrompt = [
         `You are Nex. A proactive ${approval.subtype} check found this:`,
         approval.prompt.slice(0, 1000),
@@ -2404,7 +2499,28 @@ async function cleanupExpiredApprovals() {
 }
 
 // Send heartbeat alert to all active channels
+// Convert markdown to Telegram-friendly plain text
+function toTelegramFormat(text) {
+  return text
+    // Tables → lined items: extract cell contents
+    .replace(/\|[^\n]*\|/g, function(row) {
+      const cells = row.split('|').map(c => c.trim()).filter(Boolean);
+      if (cells.every(c => /^[-:]+$/.test(c))) return ''; // separator row
+      return cells.join(' · ');
+    })
+    // Headers → bold with emoji
+    .replace(/^### (.+)$/gm, '📦 $1')
+    .replace(/^## (.+)$/gm, '📋 $1')
+    .replace(/^# (.+)$/gm, '📋 $1')
+    // **bold** → stays (Telegram Markdown supports it)
+    // `code` → stays
+    // Clean up empty lines from removed separator rows
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 async function sendHeartbeatAlert(channels, orgId, response) {
+  const formatted = toTelegramFormat(response);
   for (const ch of channels) {
     if (ch.status !== "active") continue;
     await client.mutation("nex:createJob", {
@@ -2413,7 +2529,7 @@ async function sendHeartbeatAlert(channels, orgId, response) {
       payload: JSON.stringify({
         channelType: ch.type,
         channelId: ch._id,
-        text: `⚠ Heartbeat Alert:\n${response.slice(0, 3000)}`,
+        text: `⚠ Heartbeat Alert:\n${formatted.slice(0, 3000)}`,
       }),
       secret: SECRET,
     });
