@@ -19,7 +19,7 @@ Why: no∅ is built for agents. Agents don't manage deployment pipelines, promot
 |novoid-css.md          — nv-* classes, --nv-* variables, components, layout, theming, dark mode, animations
 |novoid-publishing.md   — publish.sh, verify.sh, url.sh, build.sh, seed.sh, MCP endpoints, test specs, sentinel errors
 |novoid-verification.md — Nous static analysis, novoid-browser headless execution, MCP test harness
-|novoid-agents.md       — Nex, Vox, personas, memory, multi-channel, inline apps
+|novoid-agents.md       — Nex (replaces OpenClaw), Vox (vibe-coded app builder), personas, memory, multi-channel, inline apps
 |novoid-math.md         — KaTeX integration, TeX notation, MathML visibility fix
 |novoid-convex.md       — Convex client, reactive queries, mutations, actions, AI helper
 |novoid-motion.md       — Motion.dev: animate, scroll, stagger, timeline, inView, spring

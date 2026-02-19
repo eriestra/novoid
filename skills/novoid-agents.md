@@ -2,6 +2,8 @@
 
 Codified knowledge for the no∅ agent system — Nex, Vox, personas, memory, multi-channel, inline apps.
 
+Nex is the primary user-facing agent, replacing OpenClaw as the main interaction layer. It handles multi-channel chat (web + Telegram), memory, personas, inline app generation, and autonomous heartbeat pipelines. Vox is a proposal-based app builder for vibe-coded development — describe what you want in natural language and Vox generates, verifies, and publishes a full novoid app.
+
 ## Nex Architecture
 
 `nex-watch.js` — local worker that polls Convex for jobs, spawns Claude CLI to handle them.
@@ -92,6 +94,67 @@ Classify intent → Pick persona → Load config → Execute → Tag memory with
 
 ### Built-in Personas
 `builder`, `architect`, `devops`, `analyst`, `mentor`, `certifier`
+
+---
+
+## Heartbeat Pipeline
+
+Proactive autonomous operation — Nex wakes on schedule to execute a structured checklist.
+
+### Data Format
+Stored in `nex_heartbeat.checklist` as JSON string:
+```json
+[
+  { "id": "a1b2", "text": "Check memory for pending work", "enabled": true, "order": 0 },
+  { "id": "c3d4", "text": "Ask for approval via Telegram", "enabled": true, "order": 1 }
+]
+```
+Legacy plain-text checklists auto-convert on load.
+
+### Pipeline Execution
+Steps run sequentially — each step's output feeds as context to the next:
+```
+Step 1 → result₁ → Step 2 (with context: result₁) → result₂ → Step 3 (with context: result₁ + result₂)
+```
+
+### Approval Gates
+Steps containing approval keywords (`approve`, `confirm`, `permission`, `authorize`, `green light`) are detected as **approval gates**. When hit:
+1. Pipeline **pauses** and saves state (step index + accumulated context)
+2. Sends approval request to Telegram via `queueApproval` with inline keyboard
+3. Current job completes with "⏸ Paused — awaiting approval"
+4. When user approves via Telegram callback → new heartbeat job resumes pipeline from next step with full context
+5. When user denies → pipeline stays paused (no resume job created)
+
+Pipeline state is serialized as `__PIPELINE_RESUME__:{json}` at the end of the approval prompt. The approval callback handler detects this marker and creates a heartbeat resume job instead of a generic chat follow-up.
+
+### Model Routing
+- **Sonnet 4.6** — default for conversational steps (check, look, pick, review)
+- **Opus 4.6** — auto-selected when step text matches: `implement|build|generate|create|refactor|deploy|code|develop|telegram|send|notify|message`
+
+### Capabilities Injection
+Before execution, the pipeline queries active channels and injects capability instructions:
+- If Telegram is configured, steps get: `node nex-telegram.mjs "message"`
+- No new channels are created — existing active channels are reused
+
+### Telegram Helper
+`nex-telegram.mjs` — pre-built script to send messages through the active Telegram channel:
+```sh
+node nex-telegram.mjs "Your message here"
+```
+Reads `.env.local` for credentials, queries active channels, queues a channel job.
+
+### Telegram Formatting
+`toTelegramFormat()` converts markdown to Telegram-friendly text before sending:
+- Tables → `cell · cell · cell` inline format
+- `###` headers → 📦 prefix, `##`/`#` → 📋 prefix
+- Strips table separator rows
+- Keeps `**bold**` and `` `code` `` (Telegram supports these)
+
+### UI (HeartbeatView in nex.html)
+- Structured item list with checkbox toggle, up/down reorder, delete
+- Auto-saves on every mutation (add, toggle, delete, reorder) — no Save button
+- Add item input with Enter key support and disabled + button when empty
+- Recent Runs list shows which checklist item each job was for
 
 ---
 
