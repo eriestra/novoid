@@ -544,6 +544,194 @@ http.route({
   }),
 });
 
+// ─── Nex: Webhook endpoints for channel integrations ────────
+
+// POST /nex/telegram — Telegram webhook receiver
+http.route({
+  path: "/nex/telegram",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const body = await request.json();
+      const message = body.message || body.edited_message || body.callback_query?.message;
+      if (!message) {
+        return new Response("ok", { status: 200 });
+      }
+
+      const chatId = String(message.chat?.id || "");
+      const text = body.callback_query?.data || message.text || message.caption || "";
+      const fromUser = message.from?.first_name || message.from?.username || "User";
+
+      // Extract image file ID if present
+      const photos = message.photo;
+      const imageFileId = photos && photos.length > 0 ? photos[photos.length - 1].file_id : undefined;
+
+      // Extract voice/audio file ID
+      const voiceFileId = message.voice?.file_id || message.audio?.file_id;
+
+      // Voice/audio messages → "voice" job type
+      if (voiceFileId) {
+        await ctx.runMutation(api.nex.createWebhookJob, {
+          orgId: "default",
+          type: "voice",
+          payload: JSON.stringify({
+            fileId: voiceFileId,
+            channel: "telegram",
+            replyTo: chatId,
+            messageId: message.message_id,
+            fromUser,
+            mimeType: message.voice?.mime_type || message.audio?.mime_type || "audio/ogg",
+          }),
+        });
+        return new Response("ok", { status: 200 });
+      }
+
+      // Callback queries
+      if (body.callback_query) {
+        await ctx.runMutation(api.nex.createWebhookJob, {
+          orgId: "default",
+          type: "chat",
+          payload: JSON.stringify({
+            text: "__callback_query__",
+            chatId,
+            replyTo: chatId,
+            fromUser,
+            channel: "telegram",
+            messageId: message.message_id,
+            callbackQuery: {
+              id: body.callback_query.id,
+              data: body.callback_query.data,
+              chatId,
+              messageId: message.message_id,
+              messageText: message.text || "",
+            },
+          }),
+        });
+        return new Response("ok", { status: 200 });
+      }
+
+      // Text/image messages → "chat" job type
+      const payload: Record<string, unknown> = {
+        text,
+        chatId,
+        replyTo: chatId,
+        fromUser,
+        channel: "telegram",
+        messageId: message.message_id,
+      };
+      if (imageFileId) payload.imageFileId = imageFileId;
+
+      await ctx.runMutation(api.nex.createWebhookJob, {
+        orgId: "default",
+        type: "chat",
+        payload: JSON.stringify(payload),
+      });
+
+      return new Response("ok", { status: 200 });
+    } catch (e) {
+      console.error("Telegram webhook error:", e);
+      return new Response("ok", { status: 200 }); // Always 200 to avoid Telegram retries
+    }
+  }),
+});
+
+// POST /nex/slack — Slack events receiver
+http.route({
+  path: "/nex/slack",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+
+    // Slack URL verification challenge
+    if (body.type === "url_verification") {
+      return new Response(JSON.stringify({ challenge: body.challenge }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Event callback
+    if (body.type === "event_callback" && body.event) {
+      const event = body.event;
+      if (event.type === "message" && !event.bot_id && event.text) {
+        await ctx.runMutation(api.nex.createWebhookJob, {
+          orgId: "default",
+          type: "chat",
+          payload: JSON.stringify({
+            text: event.text,
+            chatId: event.channel,
+            replyTo: event.channel,
+            fromUser: event.user,
+            channel: "slack",
+            threadTs: event.thread_ts || event.ts,
+          }),
+        });
+      }
+    }
+
+    return new Response("ok", { status: 200 });
+  }),
+});
+
+// POST /nex/discord — Discord interactions receiver
+http.route({
+  path: "/nex/discord",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+
+    // Discord ping verification
+    if (body.type === 1) {
+      return new Response(JSON.stringify({ type: 1 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    // Message interaction
+    if (body.type === 2 || (body.data && body.data.content)) {
+      const content = body.data?.options?.[0]?.value || body.data?.content || "";
+      const channelId = body.channel_id || body.channel?.id;
+      await ctx.runMutation(api.nex.createWebhookJob, {
+        orgId: "default",
+        type: "chat",
+        payload: JSON.stringify({
+          text: content,
+          chatId: channelId,
+          replyTo: channelId,
+          fromUser: body.member?.user?.username || "User",
+          channel: "discord",
+        }),
+      });
+    }
+
+    return new Response(JSON.stringify({ type: 4, data: { content: "Processing..." } }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
+});
+
+// GET /nex/status — Worker status query
+http.route({
+  path: "/nex/status",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const agents = await ctx.runQuery(api.nex.activeAgents, { orgId: "default" });
+    return new Response(JSON.stringify({
+      agents: agents || [],
+      timestamp: Date.now(),
+    }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache",
+      },
+    });
+  }),
+});
+
 // GET /collab/:slug — JSON status for multi-agent coordination
 http.route({
   pathPrefix: "/collab/",

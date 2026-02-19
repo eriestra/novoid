@@ -165,4 +165,216 @@ export default defineSchema({
     .index("by_status_created", ["status", "createdAt"])
     .index("by_slug", ["slug"]),
 
+  // ─── Nex: Autonomous Agent ───────────────────────────────
+
+  nex_memory: defineTable({
+    orgId: v.string(),
+    slug: v.optional(v.string()),
+    conversationId: v.optional(v.string()),  // source conversation for crosstalk scoping
+    type: v.string(),                     // "short" | "long" | "app" | "conversation"
+    content: v.string(),
+    embedding: v.array(v.float64()),      // 1536-dim (text-embedding-3-small)
+    metadata: v.optional(v.object({
+      source: v.optional(v.string()),
+      importance: v.optional(v.float64()),
+      tags: v.optional(v.array(v.string())),
+    })),
+    createdAt: v.number(),
+    expiresAt: v.optional(v.number()),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_org_type", ["orgId", "type"])
+    .index("by_org_slug", ["orgId", "slug"])
+    .index("by_org_conversation", ["orgId", "conversationId"])
+    .searchIndex("by_content", {
+      searchField: "content",
+      filterFields: ["orgId", "type", "slug", "conversationId"],
+    })
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 1536,
+      filterFields: ["orgId", "type", "slug", "conversationId"],
+    }),
+
+  nex_jobs: defineTable({
+    orgId: v.string(),
+    type: v.string(),                     // "chat" | "channel" | "canvas" | "heartbeat" | "memorize" | "recall"
+    payload: v.string(),                  // JSON-encoded payload
+    status: v.string(),                   // "pending" | "claimed" | "building" | "done" | "error" | "interrupted"
+    agentId: v.optional(v.string()),
+    result: v.optional(v.string()),
+    conversationId: v.optional(v.id("nex_conversations")),
+    interruptedBy: v.optional(v.string()),  // message that caused the interruption
+    interruptedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_status_created", ["status", "createdAt"])
+    .index("by_org", ["orgId"])
+    .index("by_conversation", ["conversationId"]),
+
+  nex_conversations: defineTable({
+    orgId: v.string(),
+    title: v.string(),
+    crosstalk: v.optional(v.float64()),   // 0.0 (focused) to 1.0 (creative), default 0.5
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_org_updated", ["orgId", "updatedAt"]),
+
+  nex_messages: defineTable({
+    conversationId: v.id("nex_conversations"),
+    role: v.string(),                     // "user" | "assistant" | "system"
+    content: v.string(),
+    appHtml: v.optional(v.string()),      // full no∅ HTML for inline app messages
+    type: v.optional(v.string()),         // "text" | "app" — defaults to "text"
+    memoryContext: v.optional(v.string()), // JSON: recalled memories used for this response
+    images: v.optional(v.array(v.string())), // data URLs for attached images
+    createdAt: v.number(),
+  })
+    .index("by_conversation", ["conversationId"])
+    .index("by_conversation_time", ["conversationId", "createdAt"]),
+
+  nex_heartbeat: defineTable({
+    orgId: v.string(),
+    enabled: v.boolean(),
+    intervalMs: v.number(),              // default: 1800000 (30 min)
+    activeHours: v.optional(v.object({
+      start: v.string(),                 // "09:00"
+      end: v.string(),                   // "22:00"
+      timezone: v.string(),              // "America/New_York"
+    })),
+    checklist: v.string(),               // markdown checklist
+    lastRunAt: v.optional(v.number()),
+    lastResult: v.optional(v.string()),  // "HEARTBEAT_OK" or alert text
+    rotationState: v.optional(v.string()), // JSON: which checks ran last
+  })
+    .index("by_org", ["orgId"]),
+
+  nex_channels: defineTable({
+    orgId: v.string(),
+    type: v.string(),                    // "slack" | "telegram" | "discord" | "webhook" | "email"
+    name: v.string(),
+    config: v.string(),                  // JSON-encoded config (secrets inside)
+    status: v.string(),                  // "active" | "inactive"
+    lastMessageAt: v.optional(v.number()),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_org_type", ["orgId", "type"]),
+
+  nex_canvas: defineTable({
+    orgId: v.string(),
+    slug: v.string(),
+    title: v.string(),
+    description: v.string(),
+    origin: v.string(),                 // "nex-direct" | "vox-delegated" | "inline-promoted"
+    voxJobId: v.optional(v.id("jobs")),
+    conversationId: v.optional(v.id("nex_conversations")),
+    pinned: v.boolean(),
+    selfTool: v.boolean(),
+    tags: v.optional(v.array(v.string())),
+    lastUsedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_org_slug", ["orgId", "slug"])
+    .index("by_org_pinned", ["orgId", "pinned"]),
+
+  nex_agents: defineTable({
+    agentId: v.string(),
+    orgId: v.string(),
+    status: v.string(),               // "idle" | "busy" | "offline"
+    capabilities: v.array(v.string()),// ["chat", "build", "research", "review"]
+    currentJobId: v.optional(v.id("nex_jobs")),
+    lastHeartbeat: v.number(),
+    metadata: v.optional(v.object({
+      model: v.optional(v.string()),
+      specialization: v.optional(v.string()),
+    })),
+    startedAt: v.number(),
+  })
+    .index("by_agent", ["agentId"])
+    .index("by_org_status", ["orgId", "status"]),
+
+  nex_signals: defineTable({
+    orgId: v.string(),
+    fromAgent: v.string(),
+    toAgent: v.optional(v.string()),
+    conversationId: v.optional(v.id("nex_conversations")),
+    type: v.string(),                 // "request" | "response" | "notify" | "delegate" | "cancel"
+    payload: v.string(),              // JSON-encoded signal data
+    status: v.string(),               // "pending" | "read" | "expired"
+    createdAt: v.number(),
+    expiresAt: v.optional(v.number()),
+  })
+    .index("by_recipient", ["toAgent", "status"])
+    .index("by_conversation", ["conversationId"])
+    .index("by_org", ["orgId"]),
+
+  nex_approvals: defineTable({
+    orgId: v.string(),
+    subtype: v.string(),              // "tidy" | "sentinel" | "review" | "followup"
+    prompt: v.string(),               // what was found
+    description: v.string(),          // short summary
+    chatId: v.string(),               // Telegram chat ID
+    messageId: v.optional(v.number()), // Telegram message ID (for editing inline keyboard)
+    status: v.string(),               // "pending" | "approved" | "denied" | "expired" | "batched"
+    batchId: v.optional(v.string()),  // groups multiple approvals into one message
+    createdAt: v.number(),
+    expiresAt: v.number(),
+    resolvedAt: v.optional(v.number()),
+  })
+    .index("by_org_status", ["orgId", "status"])
+    .index("by_org_chatId", ["orgId", "chatId"])
+    .index("by_batch", ["batchId"]),
+
+  nex_tool_corpus: defineTable({
+    toolId: v.string(),
+    name: v.string(),
+    description: v.string(),
+    api: v.string(),         // "convex" | "http" | "openrouter"
+    spec: v.string(),        // JSON: ref, parameters, returns
+    embedding: v.array(v.float64()),
+    orgId: v.string(),
+    enabled: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_tool", ["toolId"])
+    .index("by_org", ["orgId"])
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 1536,
+      filterFields: ["orgId", "enabled"],
+    }),
+
+  nex_browse_jobs: defineTable({
+    orgId: v.string(),
+    slug: v.string(),
+    status: v.string(),            // "pending" | "done" | "error"
+    result: v.optional(v.string()), // BrowseSchema JSON
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_org_status", ["orgId", "status"]),
+
+  nex_skills: defineTable({
+    orgId: v.string(),
+    name: v.string(),
+    description: v.string(),
+    command: v.string(),                 // slash command trigger (e.g., "/weather")
+    type: v.string(),                    // "builtin" | "learned" | "certified"
+    handler: v.string(),                 // job payload template (JSON)
+    enabled: v.boolean(),
+    metadata: v.optional(v.object({
+      certificationId: v.optional(v.string()),
+      certifiedAt: v.optional(v.number()),
+      score: v.optional(v.float64()),
+      source: v.optional(v.string()),
+    })),
+    createdAt: v.number(),
+  })
+    .index("by_org", ["orgId"])
+    .index("by_org_command", ["orgId", "command"]),
+
 });
