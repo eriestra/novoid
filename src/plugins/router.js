@@ -76,13 +76,19 @@
       }
     }
 
-    window.addEventListener('hashchange', () => {
+    const _onHashChange = () => {
       setRoute(window.location.hash.slice(1) || '/');
-    });
+    };
+    window.addEventListener('hashchange', _onHashChange);
 
-    effect(renderRoute);
+    const disposeRoute = effect(renderRoute);
 
-    return { navigate, currentRoute };
+    function destroy() {
+      window.removeEventListener('hashchange', _onHashChange);
+      disposeRoute();
+    }
+
+    return { navigate, currentRoute, destroy };
   }
 
   function link(text, path, className = '') {

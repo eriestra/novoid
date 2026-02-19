@@ -4,7 +4,7 @@
  * Requires: core.js loaded first (window.Novoid)
  */
 ((N) => {
-  const h = N.h, effect = N.effect, when = N.when, mount = N.mount, batch = N.batch;
+  const h = N.h, effect = N.effect, when = N.when, mount = N.mount, batch = N.batch, _disposeTree = N._disposeTree, _trackDisposer = N._trackDisposer;
 
   // ── Expression Engine ───────────────────────────────
   // Resolves $-prefixed reactive expressions against context
@@ -418,12 +418,12 @@
     children.push(tableEl);
 
     // Use effect to rebuild table body reactively
-    effect(function() {
+    var _tableDispose = effect(function() {
       var rows = reactive(store, spec.source, ctx)();
       if (!Array.isArray(rows)) rows = [];
 
-      // Clear
-      while (tableEl.firstChild) tableEl.removeChild(tableEl.firstChild);
+      // Dispose child trees before clearing
+      while (tableEl.firstChild) { _disposeTree(tableEl.firstChild); tableEl.removeChild(tableEl.firstChild); }
 
       if (rows.length === 0 && spec.empty) {
         tableEl.appendChild(
@@ -495,7 +495,9 @@
       tableEl.appendChild(table);
     });
 
-    return mergeStyle(h('div', { class: 'nv-card', style: 'overflow:hidden' }, children), spec);
+    var _tableEl = mergeStyle(h('div', { class: 'nv-card', style: 'overflow:hidden' }, children), spec);
+    _trackDisposer(_tableEl, _tableDispose);
+    return _tableEl;
   }
 
   function renderCards(spec, store, ctx) {
@@ -520,11 +522,11 @@
     var body = h('div', { style: 'padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.75rem' });
     children.push(body);
 
-    effect(function() {
+    var _cardsDispose = effect(function() {
       var items = reactive(store, spec.source, ctx)();
       if (!Array.isArray(items)) items = [];
 
-      while (body.firstChild) body.removeChild(body.firstChild);
+      while (body.firstChild) { _disposeTree(body.firstChild); body.removeChild(body.firstChild); }
 
       if (items.length === 0 && spec.empty) {
         body.appendChild(h('div', { style: 'padding:1rem;text-align:center;color:var(--nv-text-muted)' }, spec.empty));
@@ -631,7 +633,9 @@
       });
     });
 
-    return mergeStyle(h('div', { class: 'nv-card', style: 'overflow:hidden' }, children), spec);
+    var _cardsEl = mergeStyle(h('div', { class: 'nv-card', style: 'overflow:hidden' }, children), spec);
+    _trackDisposer(_cardsEl, _cardsDispose);
+    return _cardsEl;
   }
 
   function renderHeader(spec, store, ctx) {
@@ -869,9 +873,9 @@
     // Handle conditional: { when: expr, section: [...] }
     if (spec.when !== undefined) {
       var container = h('div', {});
-      effect(function() {
+      var _whenDispose = effect(function() {
         var show = reactive(store, spec.when, ctx)();
-        while (container.firstChild) container.removeChild(container.firstChild);
+        while (container.firstChild) { _disposeTree(container.firstChild); container.removeChild(container.firstChild); }
         if (show && spec.section) {
           spec.section.forEach(function(s) {
             var el = renderSection(s, store, ctx);
@@ -879,6 +883,7 @@
           });
         }
       });
+      _trackDisposer(container, _whenDispose);
       return container;
     }
 
@@ -957,8 +962,6 @@
 
     // If views are defined, set up navigation
     if (spec.views) {
-      // Add __view and __viewParams to store if not present
-      var origGet = store.get;
       var viewState = { __view: spec.navigation && spec.navigation.default || Object.keys(spec.views)[0], __viewParams: {} };
 
       // Patch store to include view state
@@ -1028,7 +1031,7 @@
           var currentView = store.get().__view;
           var viewSpec = spec.views[currentView];
 
-          while (viewContainer.firstChild) viewContainer.removeChild(viewContainer.firstChild);
+          while (viewContainer.firstChild) { _disposeTree(viewContainer.firstChild); viewContainer.removeChild(viewContainer.firstChild); }
 
           if (viewSpec && viewSpec.sections) {
             var viewCtx = Object.assign({}, ctx);

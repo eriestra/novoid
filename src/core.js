@@ -38,9 +38,9 @@ const Novoid = (() => {
       if (Object.is(_value, resolved)) return;
       _value = resolved;
       if (_isBatching) {
-        _batchQueue.push(() => _subs.forEach(fn => fn()));
+        _batchQueue.push(() => [..._subs].forEach(fn => fn()));
       } else {
-        _subs.forEach(fn => fn());
+        [..._subs].forEach(fn => fn());
       }
     };
 
@@ -717,6 +717,8 @@ const Novoid = (() => {
     get _hasMounted() { return _hasMounted; },
     set _hasMounted(v) { _hasMounted = v; },
     _handleError,
+    _disposeTree,
+    _trackDisposer,
   };
 })();
 
