@@ -61,9 +61,29 @@ BROWSE_JS=$(json_file /tmp/browse-polyfills.js)
 npx convex run seed:seedAsset "{\"name\":\"browse-polyfills.js\",\"content\":$BROWSE_JS,\"contentType\":\"application/javascript\"}"
 rm -f /tmp/browse-polyfills.js
 
+# 6. Ecosystem apps (nex, vox, novoid) — deploy if missing
+echo "6/6 Deploying ecosystem apps (if missing)..."
+for eco_slug in novoid nex vox; do
+  EXISTS=$(npx convex run pages:get "{\"slug\":\"$eco_slug\"}" 2>/dev/null)
+  if [ "$EXISTS" = "null" ] || [ -z "$EXISTS" ]; then
+    FILE="src/app/${eco_slug}.html"
+    if [ -f "$FILE" ]; then
+      echo "  → publishing $eco_slug..."
+      sh publish.sh "$eco_slug" "$FILE" --force
+    else
+      echo "  ⚠ $FILE not found — skipping $eco_slug"
+    fi
+  else
+    echo "  ✓ $eco_slug already deployed"
+  fi
+done
+
 echo ""
 echo "Done! Your platform is live:"
 echo ""
+echo "  Landing:   $SITE_URL/app/novoid"
+echo "  Nex:       $SITE_URL/app/nex"
+echo "  Vox:       $SITE_URL/app/vox"
 echo "  Platform:  $SITE_URL/platform"
 echo "  Pages:     $SITE_URL/app/<slug>"
 echo "  CSS:       $SITE_URL/css/core.min.css"

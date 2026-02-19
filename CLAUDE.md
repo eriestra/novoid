@@ -57,6 +57,7 @@ On first command that needs credentials or dependencies:
 4. If no `dist/` or `src/js` symlink, run `sh build.sh` (creates minified assets + symlinks)
 5. If no `nous/node_modules/`, run `cd nous && npm install` (Nous static analyzer)
 6. If no `browser/target/debug/novoid-browser`, run `cd browser && cargo build` (Qed headless verifier — requires Rust)
+7. Ecosystem apps (nex, vox, novoid) are auto-deployed by `seed.sh` on first run. Protected slugs — cannot be deleted, require `--force` to republish.
 
 ## Workflow
 

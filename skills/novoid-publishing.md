@@ -205,3 +205,5 @@ npx convex run collab:compose '{"slug":"<slug>","secret":"'$PUBLISH_SECRET'"}'
 3. **Credentials from `.env.local`.** Load before auth-gated operations.
 4. **`--skip-check` is for false positives only.** Not for skipping verification because it's slow.
 5. **Source → build → seed → publish.** When editing framework source, follow the full pipeline.
+6. **Locked slugs:** `nex`, `vox`, `novoid`, `platform` require `--force` to republish. Cannot be deleted via canvas.
+7. **Ecosystem autodeploy:** `seed.sh` auto-publishes nex, vox, novoid on first run if they don't exist in the pages table.
