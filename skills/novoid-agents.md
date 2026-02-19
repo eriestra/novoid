@@ -30,6 +30,16 @@ Vox is a canvas capability of Nex — generates and publishes no∅ apps from na
 - Same job lifecycle as Nex
 - Output: full no∅ HTML apps
 
+### Unified Canvas
+
+All generated apps appear in the same canvas regardless of origin (Nex chat, Vox voice, inline-promoted). No split by generator — `origin` is metadata, not a filter boundary.
+
+### Canvas Deletion
+
+All canvas apps are deletable — both canvas-only entries and published pages. Deleting removes the `nex_canvas` record AND the published page from the `pages` table.
+
+**Protected slugs:** `nex`, `vox`, `novoid` cannot be deleted (mutation rejects). These are also locked in `publish.sh` (require `--force` to republish).
+
 ---
 
 ## Inline Apps

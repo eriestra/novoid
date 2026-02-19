@@ -947,11 +947,33 @@ export const updateCanvasItem = mutation({
 
 export const removeCanvasItem = mutation({
   args: {
-    itemId: v.id("nex_canvas"),
+    itemId: v.optional(v.id("nex_canvas")),
+    slug: v.optional(v.string()),
     secret: v.string(),
   },
-  handler: async (ctx, { itemId, secret }) => {
+  handler: async (ctx, { itemId, slug, secret }) => {
     await verifySecret(ctx, secret);
-    await ctx.db.delete(itemId);
+    const PROTECTED_SLUGS = ["nex", "vox", "novoid"];
+    let pageSlug = slug;
+    if (itemId) {
+      const item = await ctx.db.get(itemId);
+      if (item) {
+        pageSlug = pageSlug || item.slug;
+        if (PROTECTED_SLUGS.includes(item.slug)) {
+          throw new Error(`Cannot delete protected app: ${item.slug}`);
+        }
+        await ctx.db.delete(itemId);
+      }
+    }
+    if (pageSlug) {
+      if (PROTECTED_SLUGS.includes(pageSlug)) {
+        throw new Error(`Cannot delete protected app: ${pageSlug}`);
+      }
+      const page = await ctx.db
+        .query("pages")
+        .withIndex("by_slug", (q: any) => q.eq("slug", pageSlug))
+        .first();
+      if (page) await ctx.db.delete(page._id);
+    }
   },
 });
