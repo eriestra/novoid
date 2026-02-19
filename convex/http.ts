@@ -177,8 +177,8 @@ http.route({
     // Cache-bust framework asset URLs so browser always gets latest
     const bustParam = `_cb=${page.updatedAt || Date.now()}`;
     let html = page.html
-      .replace(/(\.\.\/js\/novoid\.min\.js)(\?[^"']*)?/g, `$1?${bustParam}`)
-      .replace(/(\.\.\/css\/novoid\.min\.css)(\?[^"']*)?/g, `$1?${bustParam}`);
+      .replace(/(\.\.\/js\/[a-z]+\.min\.js)(\?[^"']*)?/g, `$1?${bustParam}`)
+      .replace(/(\.\.\/css\/[a-z]+\.min\.css)(\?[^"']*)?/g, `$1?${bustParam}`);
     // Inject error capture + live-reload snippets before </head> or at start of HTML
     const origin = url.origin;
     const convexCloudUrl = origin.replace(".convex.site", ".convex.cloud");
@@ -1210,8 +1210,8 @@ http.route({
     // Cache-bust framework assets
     const bustParam = `_cb=${page.updatedAt || Date.now()}`;
     html = html
-      .replace(/(\/js\/novoid\.min\.js)(\?[^"']*)?/g, `$1?${bustParam}`)
-      .replace(/(\/css\/novoid\.min\.css)(\?[^"']*)?/g, `$1?${bustParam}`);
+      .replace(/(\/js\/[a-z]+\.min\.js)(\?[^"']*)?/g, `$1?${bustParam}`)
+      .replace(/(\/css\/[a-z]+\.min\.css)(\?[^"']*)?/g, `$1?${bustParam}`);
 
     // Inject error capture
     const origin = url.origin;
