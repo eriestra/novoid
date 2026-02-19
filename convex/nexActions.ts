@@ -380,11 +380,11 @@ export const createHeartbeatJobs = internalMutation({
       const lastRun = config.lastRunAt || 0;
       if (now - lastRun < config.intervalMs) continue;
 
-      // Create heartbeat job
+      // Create single heartbeat job with full checklist
       await ctx.db.insert("nex_jobs", {
         orgId: config.orgId,
         type: "heartbeat",
-        payload: JSON.stringify({ checklist: config.checklist }),
+        payload: JSON.stringify({ checklist: config.checklist || "" }),
         status: "pending",
         createdAt: now,
         updatedAt: now,

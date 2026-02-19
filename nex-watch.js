@@ -335,7 +335,7 @@ async function checkHeartbeat() {
 
     console.log(`  ♥ heartbeat triggered (interval: ${interval / 1000}s)`);
 
-    // Create heartbeat job
+    // Create single heartbeat job with full checklist
     await client.mutation("nex:createJob", {
       orgId: "default",
       type: "heartbeat",
@@ -1204,20 +1204,100 @@ async function handleHeartbeat(job) {
 
   const isProactive = !!payload.proactive;
   const subtype = payload.subtype || "scheduled";
-  const checklist = payload.checklist || "## Task Review\n- Check memory for pending work";
-
-  const prompt = isProactive
-    ? checklist // proactive tasks already have a full prompt
-    : [
-        "You are Nex performing a heartbeat check. Review the following checklist and perform each check.",
-        "If everything is fine, respond with HEARTBEAT_OK.",
-        "If something needs attention, describe what needs attention concisely.",
-        "",
-        checklist,
-      ].join("\n");
+  const rawChecklist = payload.checklist || "## Task Review\n- Check memory for pending work";
 
   const label = isProactive ? `♻ proactive:${subtype}` : "♥ heartbeat";
-  const response = await askClaude(prompt, job._id);
+  let response;
+
+  // Parse structured checklist for pipeline execution
+  let items = [];
+  try {
+    const parsed = JSON.parse(rawChecklist);
+    if (Array.isArray(parsed) && parsed.length && parsed[0].id) {
+      items = parsed.filter(it => it.enabled);
+    }
+  } catch(e) {}
+
+  if (!isProactive && items.length > 0) {
+    // Pipeline: execute steps sequentially, feeding each result to the next
+    const pipelineOrgId = job.orgId || "default";
+
+    // Build capabilities context — tell Claude what it can do
+    let capabilities = [];
+    try {
+      const channels = await client.query("nex:channels", { orgId: pipelineOrgId });
+      for (const ch of channels) {
+        if (ch.status !== "active") continue;
+        if (ch.type === "telegram") {
+          let cfg = {}; try { cfg = JSON.parse(ch.config); } catch {}
+          if (cfg.chatId) {
+            capabilities.push(
+              `## Telegram (already configured — chat ${cfg.chatId})`,
+              `An active Telegram channel exists. Do NOT create a new one.`,
+              `To send a message through it, write a Node.js script to /tmp/nex-tg.mjs and run it:`,
+              "```",
+              `import { ConvexHttpClient } from "convex/browser";`,
+              `const c = new ConvexHttpClient("${CONVEX_URL}");`,
+              `await c.mutation("nex:createJob", {`,
+              `  orgId: "${pipelineOrgId}",`,
+              `  type: "channel",`,
+              `  payload: JSON.stringify({ channelType: "telegram", channelId: "${ch._id}", text: "YOUR_MESSAGE_HERE" }),`,
+              `  secret: "${SECRET}"`,
+              `});`,
+              "```",
+              `Replace YOUR_MESSAGE_HERE with the actual message text. Then run: node /tmp/nex-tg.mjs`
+            );
+          }
+        }
+      }
+    } catch {}
+
+    let context = "";
+    const results = [];
+    for (let i = 0; i < items.length; i++) {
+      const step = items[i];
+      console.log(`    → step ${i + 1}/${items.length}: ${step.text}`);
+      const parts = [
+        `You are Nex performing step ${i + 1} of ${items.length} in a heartbeat pipeline.`,
+      ];
+      if (capabilities.length > 0) {
+        parts.push("", ...capabilities);
+      }
+      parts.push("", `## Current step`, step.text);
+      if (context) {
+        parts.push("", "## Context from previous steps", context);
+      }
+      if (i < items.length - 1) {
+        parts.push("", "Execute this step. Your output will be passed as context to the next step.");
+      } else {
+        parts.push("", "Execute this final step. If the overall pipeline succeeded, include HEARTBEAT_OK in your response.");
+      }
+      // Use sonnet for conversational steps, opus for complex ones (build, implement, generate, telegram)
+      const complexPattern = /\b(implement|build|generate|create|refactor|deploy|code|develop|telegram|send|notify|message)\b/i;
+      const stepModel = complexPattern.test(step.text) ? "claude-opus-4-6" : "claude-sonnet-4-6";
+      const stepResult = await askClaude(parts.join("\n"), job._id, { model: stepModel });
+      console.log(`      ${stepResult.includes("HEARTBEAT_OK") ? "✓" : "→"} ${stepResult.slice(0, 60)}`);
+      results.push({ step: step.text, result: stepResult });
+      context += `\n\n### Step ${i + 1}: ${step.text}\n${stepResult}`;
+    }
+    response = results.map((r, i) => `**Step ${i + 1}:** ${r.step}\n${r.result}`).join("\n\n");
+  } else {
+    // Proactive or legacy plain-text — single prompt
+    const checklist = items.length > 0
+      ? items.map(it => '- ' + it.text).join('\n')
+      : rawChecklist;
+    const prompt = isProactive
+      ? checklist
+      : [
+          "You are Nex performing a heartbeat task. Execute the following instruction:",
+          "",
+          checklist,
+          "",
+          "If completed successfully or nothing needs attention, respond with exactly HEARTBEAT_OK.",
+          "If something needs attention, describe what needs attention concisely.",
+        ].join("\n");
+    response = await askClaude(prompt, job._id);
+  }
   console.log(`  ${label} result: ${response.slice(0, 80)}`);
 
   // Update heartbeat config with result
@@ -1745,8 +1825,9 @@ async function handleInterrupt(job, activeContext) {
 
 // ── Claude Code (full agent mode with streaming progress) ──
 function askClaude(prompt, jobId, opts) {
-  const { trackAsActive, jobType, conversationId, orgId, imagePaths } = opts || {};
-  console.log(`    calling claude...`);
+  const { trackAsActive, jobType, conversationId, orgId, imagePaths, model } = opts || {};
+  const modelLabel = model || "opus";
+  console.log(`    calling claude (${modelLabel})...`);
 
   // EAGER activeProc — set BEFORE spawn so concurrent poll cycles see it immediately
   // This prevents the race where two jobs from the same poll batch both see activeProc=null
@@ -1769,6 +1850,9 @@ function askClaude(prompt, jobId, opts) {
       "--dangerously-skip-permissions",
       "--output-format", "stream-json",
     ];
+    if (model) {
+      args.push("--model", model);
+    }
     // Append image file references to prompt (Claude Code reads them via Read tool)
     let fullPrompt = prompt;
     if (imagePaths && imagePaths.length > 0) {
@@ -2329,7 +2413,7 @@ async function sendHeartbeatAlert(channels, orgId, response) {
       payload: JSON.stringify({
         channelType: ch.type,
         channelId: ch._id,
-        text: `⚠ Heartbeat Alert:\n${response.slice(0, 500)}`,
+        text: `⚠ Heartbeat Alert:\n${response.slice(0, 3000)}`,
       }),
       secret: SECRET,
     });
