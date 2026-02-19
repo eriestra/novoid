@@ -11,6 +11,7 @@ const Novoid = (() => {
   const _effects = [];
   const _components = new Map();
   const _errorHandlers = [];
+  const _nodeDisposers = new WeakMap();
   let _activeEffect = null;
   let _batchQueue = [];
   let _isBatching = false;
@@ -25,7 +26,10 @@ const Novoid = (() => {
     const id = Symbol('signal');
 
     const getter = () => {
-      if (_activeEffect) _subs.add(_activeEffect);
+      if (_activeEffect) {
+        _subs.add(_activeEffect);
+        if (_activeEffect._trackedSubs) _activeEffect._trackedSubs.push(_subs);
+      }
       return _value;
     };
 
@@ -61,6 +65,12 @@ const Novoid = (() => {
     let prevDeps;
 
     const execute = () => {
+      // Unsubscribe from old signals before re-running
+      if (execute._trackedSubs) {
+        for (const subSet of execute._trackedSubs) subSet.delete(execute);
+      }
+      execute._trackedSubs = [];
+
       if (deps) {
         const newDeps = deps();
         if (prevDeps && newDeps.every((d, i) => Object.is(d, prevDeps[i]))) return;
@@ -77,14 +87,34 @@ const Novoid = (() => {
       _activeEffect = prev;
     };
 
+    execute._trackedSubs = [];
     execute();
     _effects.push(execute);
 
     return () => {
       if (cleanup) cleanup();
+      // Unsubscribe from all signals
+      if (execute._trackedSubs) {
+        for (const subSet of execute._trackedSubs) subSet.delete(execute);
+        execute._trackedSubs = null;
+      }
       const idx = _effects.indexOf(execute);
       if (idx > -1) _effects.splice(idx, 1);
     };
+  }
+
+  function _trackDisposer(node, disposeFn) {
+    let arr = _nodeDisposers.get(node);
+    if (!arr) { arr = []; _nodeDisposers.set(node, arr); }
+    arr.push(disposeFn);
+  }
+
+  function _disposeTree(node) {
+    const disposers = _nodeDisposers.get(node);
+    if (disposers) { disposers.forEach(d => d()); _nodeDisposers.delete(node); }
+    if (node.childNodes) {
+      for (let i = 0; i < node.childNodes.length; i++) _disposeTree(node.childNodes[i]);
+    }
   }
 
   // ─── 4. BATCH ──────────────────────────────────────────
@@ -206,12 +236,12 @@ const Novoid = (() => {
         value.current = el;
       } else if (key === 'className' || key === 'class') {
         if (typeof value === 'function') {
-          effect(() => { el.className = value(); });
+          _trackDisposer(el, effect(() => { el.className = value(); }));
         } else {
           el.className = value;
         }
       } else if (key === 'style' && typeof value === 'function') {
-        effect(() => { const v = value(); if (typeof v === 'string') { el.style.cssText = v; } else { Object.assign(el.style, v); } });
+        _trackDisposer(el, effect(() => { const v = value(); if (typeof v === 'string') { el.style.cssText = v; } else { Object.assign(el.style, v); } }));
       } else if (key === 'style' && typeof value === 'object') {
         Object.assign(el.style, value);
       } else if (key.startsWith('on')) {
@@ -239,29 +269,29 @@ const Novoid = (() => {
           return temp.innerHTML;
         };
         if (typeof value === 'function') {
-          effect(() => { el.innerHTML = _sanitize(value()); });
+          _trackDisposer(el, effect(() => { el.innerHTML = _sanitize(value()); }));
         } else {
           el.innerHTML = _sanitize(value);
         }
       } else if (key === 'show') {
-        effect(() => {
+        _trackDisposer(el, effect(() => {
           const visible = typeof value === 'function' ? value() : value;
           el.style.display = visible ? '' : 'none';
-        });
+        }));
       } else if (key === 'bind') {
         const [getter, setter] = value;
         el.value = getter();
-        effect(() => { const v = getter(); if (el.value !== v) el.value = v; });
+        _trackDisposer(el, effect(() => { const v = getter(); if (el.value !== v) el.value = v; }));
         el.addEventListener('input', (e) => setter(e.target.value));
       } else if (key === 'disabled' || key === 'checked' || key === 'readonly' || key === 'required' || key === 'hidden' || key === 'selected' || key === 'multiple' || key === 'autofocus' || key === 'open') {
         if (typeof value === 'function') {
-          effect(() => { const v = value(); el[key] = !!v; });
+          _trackDisposer(el, effect(() => { const v = value(); el[key] = !!v; }));
         } else {
           el[key] = !!value;
         }
       } else {
         if (typeof value === 'function' && key !== 'onclick') {
-          effect(() => { el.setAttribute(key, value()); });
+          _trackDisposer(el, effect(() => { el.setAttribute(key, value()); }));
         } else {
           el.setAttribute(key, value);
         }
@@ -294,7 +324,7 @@ const Novoid = (() => {
           const focusPos = focusTag ? focused.selectionStart : null;
           innerDisposers.forEach(d => d());
           innerDisposers = [];
-          current.forEach(n => n.remove());
+          current.forEach(n => { _disposeTree(n); n.remove(); });
           current = [];
           if (result == null || result === false) {
             _restoreFocus(focused, focusId, focusName, focusTag, focusValue, focusPos);
@@ -318,7 +348,7 @@ const Novoid = (() => {
                 const f2Name = f2Focused?.getAttribute?.('name');
                 const f2Val = f2Tag ? f2Focused.value : null;
                 const f2Pos = f2Tag ? f2Focused.selectionStart : null;
-                innerCurrent.forEach(x => x.remove());
+                innerCurrent.forEach(x => { _disposeTree(x); x.remove(); });
                 innerCurrent = [];
                 if (r == null || r === false) {
                   _restoreFocus(f2Focused, f2Id, f2Name, f2Tag, f2Val, f2Pos);
@@ -333,7 +363,7 @@ const Novoid = (() => {
                 });
                 if (inner.parentNode) inner.parentNode.insertBefore(f2Frag, inner.nextSibling);
                 _restoreFocus(f2Focused, f2Id, f2Name, f2Tag, f2Val, f2Pos);
-                return () => { innerCurrent.forEach(x => x.remove()); innerCurrent = []; };
+                return () => { innerCurrent.forEach(x => { _disposeTree(x); x.remove(); }); innerCurrent = []; };
               });
               innerDisposers.push(dispose);
             } else {
@@ -367,7 +397,7 @@ const Novoid = (() => {
       for (const key of currentKeys) {
         if (!newKeySet.has(key)) {
           const node = nodeMap.get(key);
-          if (node) node.remove();
+          if (node) { _disposeTree(node); node.remove(); }
           nodeMap.delete(key);
           dataMap.delete(key);
         }
@@ -386,6 +416,7 @@ const Novoid = (() => {
           const node = renderFn(item, i);
           node.dataset.nvKey = key;
           if (oldNode && oldNode.parentNode) {
+            _disposeTree(oldNode);
             oldNode.parentNode.replaceChild(node, oldNode);
           }
           nodeMap.set(key, node);
