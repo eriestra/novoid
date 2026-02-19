@@ -18,7 +18,7 @@ Codified knowledge lives in `skills/`. Each skill replaces reading multiple sour
 |novoid-css.md         — design system: variables, utilities, 25 component groups
 |novoid-publishing.md  — publish pipeline: verify → publish → post-publish E2E
 |novoid-verification.md — verification: Nous static + Qed headless + MCP test specs
-|novoid-agents.md      — agent system: Nex, Vox, personas, memory, multi-channel
+|novoid-agents.md      — Nex (replaces OpenClaw), Vox (vibe-coded app builder), personas, memory, multi-channel, inline apps
 |novoid-math.md        — KaTeX integration, TeX notation, MathML visibility
 |novoid-improve.md     — meta-skill: feature expansion checklist, consistency rules
 ```
@@ -129,6 +129,15 @@ Every published app with a browser schema automatically gets an MCP interface:
 GET  /mcp/:slug   → JSON manifest (tools, resources, state)
 POST /mcp/:slug   → MCP JSON-RPC (Streamable HTTP transport)
 ```
+
+## Agent Ecosystem
+
+no∅ ships two first-party agents that demonstrate the platform's full capabilities:
+
+- **Nex** — Multi-channel AI agent (web + Telegram) with hybrid RAG memory, persona system, inline app generation, heartbeat pipeline with approval gates, and the surgeon concurrency model. Chat with it — it remembers, builds, and publishes. Worker: `nex-watch.js`.
+- **Vox** — Voice/text-driven app builder. Describe what you want, Vox generates a full novoid app, runs it through 4-phase verification, and publishes it live. Proposal-based: review before it ships.
+
+Both are novoid apps themselves — same reactive core, same Convex platform, same publish pipeline. Self-hosting agents that build self-hosting apps.
 
 ## Agent SEO
 

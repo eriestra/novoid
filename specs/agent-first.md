@@ -41,14 +41,15 @@ Novoid is **the framework AI agents use to build web apps**. Not a visual builde
 - `AGENTS.md` — model-agnostic agent instructions
 - `spec.md` — API reference (<300 lines)
 
-## What We're Dropping
+## Agent Ecosystem (Retained)
 
-| Dropped | Reason |
+Nex and Vox are now first-party ecosystem products — they stay in the repo as proof that the framework works for agents.
+
+| Component | Role |
 |---|---|
-| Vox (`vox-watch.js`, `src/app/vox.test.json`) | Voice builder — orthogonal to agent-first story |
-| Nex (`nex-watch.js`, `convex/nex.ts`, `convex/nexCloud.ts`, `convex/nexMemory.ts`) | Autonomous agent runtime — separate concern, can live in its own repo |
-| Nex schema tables (`nex_*`) | All nex-related Convex tables |
-| Nex specs (`specs/nex*.md`) | All nex architecture docs |
+| Nex (`nex-watch.js`, `convex/nex.ts`, `convex/nexCloud.ts`, `convex/nexMemory.ts`) | Primary user-facing AI agent — multi-channel chat, memory, personas, inline apps |
+| Vox (`src/app/vox.html`) | Voice/text-driven app builder — vibe-coded development |
+| Nex schema tables (`nex_*`) | Agent memory, heartbeat, channels |
 | Nex HTTP routes | `/nex/*` routes in `http.ts` |
 
 ## Three Pillars
@@ -135,10 +136,10 @@ novoid-browser --test src/app/todo.test.json src/app/todo.html
 │   ├── plugins/       ← router, convex, auth, toast
 │   └── app/           ← generated apps
 ├── dist/              ← minified output
-├── convex/            ← Convex backend (no nex tables)
+├── convex/            ← Convex backend (includes nex agent tables)
 ├── browser/           ← novoid-browser (headless + MCP test harness)
 ├── nous/              ← Nous static analysis
-└── specs/             ← architecture specs (no nex specs)
+└── specs/             ← architecture specs
 ```
 
 ## Success Metrics
@@ -150,10 +151,6 @@ novoid-browser --test src/app/todo.test.json src/app/todo.html
 
 ## Next Steps
 
-1. Remove vox/nex files from this branch
-2. Clean nex tables from `convex/schema.ts`
-3. Clean nex routes from `convex/http.ts`
-4. Update CLAUDE.md — remove Vox/Nex sections, sharpen agent-first narrative
-5. Update AGENTS.md — same cleanup
-6. Build a showcase app that demonstrates the MCP testing loop
-7. Write a proper README.md focused on the agent-first story
+1. Build showcase apps that demonstrate the MCP testing loop
+2. Continue sharpening the agent-first narrative in CLAUDE.md and AGENTS.md
+3. Expand Nex/Vox as ecosystem proof points
