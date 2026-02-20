@@ -8,16 +8,55 @@
  */
 const Novoid = (() => {
   // ─── Internal State ────────────────────────────────────
-  const _effects = [];
   const _components = new Map();
   const _errorHandlers = [];
-  const _nodeDisposers = new WeakMap();
+  const _ownerNodes = new WeakMap();
+  let _currentOwner = null;
   let _activeEffect = null;
   let _batchQueue = [];
   let _isBatching = false;
+  let _notifying = false;
+  let _pendingNotifications = [];
   let _componentId = 0;
   let _mountCallbacks = [];
   let _hasMounted = false;
+
+  // ─── Ownership Primitives ────────────────────────────
+  function _createOwner() {
+    const owner = { owned: [], cleanups: [], owner: _currentOwner };
+    if (_currentOwner) _currentOwner.owned.push(owner);
+    return owner;
+  }
+
+  function _disposeOwner(owner) {
+    if (!owner) return;
+    // Dispose children LIFO
+    for (let i = owner.owned.length - 1; i >= 0; i--) _disposeOwner(owner.owned[i]);
+    owner.owned.length = 0;
+    // Run cleanups LIFO
+    for (let i = owner.cleanups.length - 1; i >= 0; i--) owner.cleanups[i]();
+    owner.cleanups.length = 0;
+    // Detach from parent
+    if (owner.owner) {
+      const idx = owner.owner.owned.indexOf(owner);
+      if (idx > -1) owner.owner.owned.splice(idx, 1);
+    }
+  }
+
+  function createRoot(fn) {
+    const owner = _createOwner();
+    const prev = _currentOwner;
+    _currentOwner = owner;
+    try {
+      return fn(() => _disposeOwner(owner));
+    } finally {
+      _currentOwner = prev;
+    }
+  }
+
+  function onCleanup(fn) {
+    if (_currentOwner) _currentOwner.cleanups.push(fn);
+  }
 
   // ─── 1. SIGNAL ─────────────────────────────────────────
   function signal(initialValue, name) {
@@ -39,8 +78,22 @@ const Novoid = (() => {
       _value = resolved;
       if (_isBatching) {
         _batchQueue.push(() => [..._subs].forEach(fn => fn()));
+      } else if (_notifying) {
+        // Re-entrant: queue for after current notification pass
+        for (const fn of _subs) _pendingNotifications.push(fn);
       } else {
-        [..._subs].forEach(fn => fn());
+        _notifying = true;
+        try {
+          [..._subs].forEach(fn => fn());
+        } finally {
+          // Drain pending (deduplicated)
+          while (_pendingNotifications.length) {
+            const pending = [...new Set(_pendingNotifications)];
+            _pendingNotifications = [];
+            pending.forEach(fn => fn());
+          }
+          _notifying = false;
+        }
       }
     };
 
@@ -55,7 +108,12 @@ const Novoid = (() => {
   // ─── 2. COMPUTED ───────────────────────────────────────
   function computed(fn) {
     const [get, set] = signal(undefined);
-    effect(() => { set(fn()); });
+    let _isRunning = false;
+    effect(() => {
+      if (_isRunning) { console.warn('Novoid: circular computed detected'); return; }
+      _isRunning = true;
+      try { set(fn()); } finally { _isRunning = false; }
+    });
     return get;
   }
 
@@ -63,6 +121,7 @@ const Novoid = (() => {
   function effect(fn, deps) {
     let cleanup;
     let prevDeps;
+    const owner = _createOwner();
 
     const execute = () => {
       // Unsubscribe from old signals before re-running
@@ -77,6 +136,13 @@ const Novoid = (() => {
         prevDeps = newDeps;
       }
       if (cleanup) cleanup();
+      // Dispose child owners before re-running
+      for (let i = owner.owned.length - 1; i >= 0; i--) _disposeOwner(owner.owned[i]);
+      owner.owned.length = 0;
+      owner.cleanups.length = 0;
+
+      const prevOwner = _currentOwner;
+      _currentOwner = owner;
       const prev = _activeEffect;
       _activeEffect = execute;
       try {
@@ -85,11 +151,11 @@ const Novoid = (() => {
         _handleError(e);
       }
       _activeEffect = prev;
+      _currentOwner = prevOwner;
     };
 
     execute._trackedSubs = [];
     execute();
-    _effects.push(execute);
 
     return () => {
       if (cleanup) cleanup();
@@ -98,20 +164,19 @@ const Novoid = (() => {
         for (const subSet of execute._trackedSubs) subSet.delete(execute);
         execute._trackedSubs = null;
       }
-      const idx = _effects.indexOf(execute);
-      if (idx > -1) _effects.splice(idx, 1);
+      _disposeOwner(owner);
     };
   }
 
   function _trackDisposer(node, disposeFn) {
-    let arr = _nodeDisposers.get(node);
-    if (!arr) { arr = []; _nodeDisposers.set(node, arr); }
+    let arr = _ownerNodes.get(node);
+    if (!arr) { arr = []; _ownerNodes.set(node, arr); }
     arr.push(disposeFn);
   }
 
   function _disposeTree(node) {
-    const disposers = _nodeDisposers.get(node);
-    if (disposers) { disposers.forEach(d => d()); _nodeDisposers.delete(node); }
+    const disposers = _ownerNodes.get(node);
+    if (disposers) { disposers.forEach(d => d()); _ownerNodes.delete(node); }
     if (node.childNodes) {
       for (let i = 0; i < node.childNodes.length; i++) _disposeTree(node.childNodes[i]);
     }
@@ -247,6 +312,7 @@ const Novoid = (() => {
       } else if (key.startsWith('on')) {
         const event = key.slice(2).toLowerCase();
         el.addEventListener(event, value);
+        if (_currentOwner) onCleanup(() => el.removeEventListener(event, value));
       } else if (key === 'html') {
         const _sanitize = (v) => {
           if (typeof v !== 'string') return v;
@@ -282,7 +348,9 @@ const Novoid = (() => {
         const [getter, setter] = value;
         el.value = getter();
         _trackDisposer(el, effect(() => { const v = getter(); if (el.value !== v) el.value = v; }));
-        el.addEventListener('input', (e) => setter(e.target.value));
+        const _bindHandler = (e) => setter(e.target.value);
+        el.addEventListener('input', _bindHandler);
+        if (_currentOwner) onCleanup(() => el.removeEventListener('input', _bindHandler));
       } else if (key === 'disabled' || key === 'checked' || key === 'readonly' || key === 'required' || key === 'hidden' || key === 'selected' || key === 'multiple' || key === 'autofocus' || key === 'open') {
         if (typeof value === 'function') {
           _trackDisposer(el, effect(() => { const v = value(); el[key] = !!v; }));
@@ -476,6 +544,7 @@ const Novoid = (() => {
     }
 
     container.appendChild(wrapper);
+    if (_currentOwner) onCleanup(() => wrapper.remove());
     return () => wrapper.remove();
   }
 
@@ -674,9 +743,14 @@ const Novoid = (() => {
   function mount(selector, appFn) {
     const root = typeof selector === 'string' ? document.querySelector(selector) : selector;
     if (!root) { console.error(`Novoid: Mount target "${selector}" not found`); return; }
+    // Dispose previous mount
+    if (root._nvDispose) { root._nvDispose(); }
     root.innerHTML = '';
-    const content = appFn();
-    if (content instanceof Node) root.appendChild(content);
+    createRoot((dispose) => {
+      root._nvDispose = dispose;
+      const content = appFn();
+      if (content instanceof Node) root.appendChild(content);
+    });
     _hasMounted = true;
     // Run mount callbacks after layout settles (no setTimeout needed by user)
     requestAnimationFrame(() => {
@@ -694,7 +768,7 @@ const Novoid = (() => {
     component, h,
     list, when, match, template,
     portal, errorBoundary, suspense,
-    onMount,
+    onMount, createRoot, onCleanup,
     transition,
     bus,
     createForm,
@@ -702,7 +776,7 @@ const Novoid = (() => {
     onError,
     mount,
     // Expose internals for plugins
-    _effects, _components, _errorHandlers,
+    _components, _errorHandlers,
     _appendChildren,
     get _activeEffect() { return _activeEffect; },
     set _activeEffect(v) { _activeEffect = v; },
@@ -727,7 +801,7 @@ Novoid.__introspect = function() {
   const signals = [];
   const stores = [];
   const components = [...Novoid._components.keys()];
-  return { signals, stores, components, effects: Novoid._effects.length };
+  return { signals, stores, components };
 };
 
 if (typeof window !== 'undefined') window.Novoid = Novoid;

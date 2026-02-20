@@ -179,6 +179,33 @@ If called after mount has already happened, runs via `queueMicrotask`.
 
 ---
 
+## createRoot(fn) → result
+
+```js
+const result = Novoid.createRoot((dispose) => {
+  // effects created here become children of this root
+  Novoid.effect(() => { ... });
+  // dispose() tears down all children + cleanups
+  return someValue;
+});
+```
+
+Creates an ownership scope. All effects/computeds created inside `fn` become children of this root. Calling `dispose()` cascades disposal to all descendants.
+
+## onCleanup(fn)
+
+```js
+Novoid.effect(() => {
+  const handler = () => { ... };
+  el.addEventListener('click', handler);
+  Novoid.onCleanup(() => el.removeEventListener('click', handler));
+});
+```
+
+Registers a cleanup function on the current ownership scope. Runs when the scope is disposed or re-executed. No-op if called outside any scope.
+
+---
+
 ## Other APIs
 
 | API | Signature | Purpose |
@@ -228,15 +255,22 @@ Schema keys per field: `initial`, `required`, `minLength`, `maxLength`, `pattern
 7. **Auto-merge in stores:** Actions return partial state. Framework merges via `Object.assign({}, current, partial)`.
 8. **Testable apps use createStore:** Store actions → MCP tools → testable. DOM onclick handlers are not testable.
 9. **Always generate `.test.json`** alongside every app for automated E2E on publish.
-10. **Avoid full-store tracking in match/when/list:** `store.get()` is a single signal — reading it inside `match`, `when`, or `list` subscribes to *every* state change. Use `store.select(key)` to extract specific keys:
+10. **Avoid full-store tracking in match/when/list/effect:** `store.get()` is a single signal — reading it inside `match`, `when`, `list`, or `effect` subscribes to *every* state change. Use `store.select(key)` to extract specific keys:
     ```js
     // BAD — re-evaluates on every store change (causes focus loss in inputs)
     Novoid.match(() => store.get().mode, { ... })
+    Novoid.list(el, () => store.get().items, ...)  // re-renders ALL items on ANY change
+    Novoid.effect(() => { var s = store.get(); ... })  // fires on every change
 
-    // GOOD — only re-evaluates when mode actually changes
+    // GOOD — only re-evaluates when the specific key changes
     var mode = store.select('mode');
     Novoid.match(mode, { ... })
+    var items = store.select('items');
+    Novoid.list(el, items, ...)  // re-renders only when items key changes
+    var focusGen = store.select('_focusGen');
+    Novoid.effect(() => { var gen = focusGen(); ... })  // fires only when _focusGen changes
     ```
+11. **Contenteditable + list() requires in-place mutation:** When blocks use `contenteditable`, the `updateContent` store action must mutate the block object in-place (don't clone) and must NOT return a `blocks` key. This prevents `list()` from re-rendering (and destroying) the active contenteditable. Structural actions (split, merge, add, remove, convert) should clone and return a new `blocks` array to trigger proper re-renders.
 
 ## Test spec format
 

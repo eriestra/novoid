@@ -4,7 +4,7 @@
  * Requires: core.js loaded first (window.Novoid)
  */
 ((N) => {
-  const h = N.h, effect = N.effect, when = N.when, mount = N.mount, batch = N.batch, _disposeTree = N._disposeTree, _trackDisposer = N._trackDisposer;
+  const h = N.h, effect = N.effect, when = N.when, mount = N.mount, batch = N.batch, _disposeTree = N._disposeTree;
 
   // ── Expression Engine ───────────────────────────────
   // Resolves $-prefixed reactive expressions against context
@@ -496,7 +496,6 @@
     });
 
     var _tableEl = mergeStyle(h('div', { class: 'nv-card', style: 'overflow:hidden' }, children), spec);
-    _trackDisposer(_tableEl, _tableDispose);
     return _tableEl;
   }
 
@@ -634,7 +633,6 @@
     });
 
     var _cardsEl = mergeStyle(h('div', { class: 'nv-card', style: 'overflow:hidden' }, children), spec);
-    _trackDisposer(_cardsEl, _cardsDispose);
     return _cardsEl;
   }
 
@@ -883,7 +881,6 @@
           });
         }
       });
-      _trackDisposer(container, _whenDispose);
       return container;
     }
 
