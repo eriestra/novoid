@@ -5,7 +5,7 @@ import { verifySecret } from "./lib";
 
 // ─── OpenRouter app identity (shows in logs) ─────────────
 const OR_APP_HEADERS = {
-  "HTTP-Referer": "https://novoid.dev",
+  "HTTP-Referer": "https://eriestra.github.io/novoid/",
   "X-Title": "novoid-nex",
 };
 

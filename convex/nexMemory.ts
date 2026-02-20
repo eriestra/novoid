@@ -21,7 +21,7 @@ async function getEmbedding(apiKey: string, text: string): Promise<number[]> {
     headers: {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://novoid.dev",
+      "HTTP-Referer": "https://eriestra.github.io/novoid/",
       "X-Title": "novoid-nex",
     },
     body: JSON.stringify({

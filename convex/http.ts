@@ -1052,18 +1052,20 @@ function schemaToMcpTools(schema: any): any[] {
   const tools: any[] = [];
   const seen = new Set<string>();
 
-  // Store actions (client-side only)
+  // Store actions (executable server-side when docId + writeToken provided)
   if (schema.actions) {
     for (const action of schema.actions) {
       seen.add(action.name);
       tools.push({
         name: action.name,
-        description: `Client store action: ${action.name} on ${action.source}`,
+        description: `Store action: ${action.name} on ${action.source}. Pass docId + writeToken to execute server-side, or omit for schema info.`,
         inputSchema: {
           type: "object",
-          properties: { args: { type: "string", description: "JSON-encoded arguments" } },
+          properties: {
+            args: { type: "string", description: "JSON-encoded arguments (include docId and writeToken for server-side execution)" },
+          },
         },
-        annotations: { readOnlyHint: true },
+        annotations: { readOnlyHint: false },
       });
     }
   }
@@ -1250,9 +1252,33 @@ http.route({
           return new Response(jsonrpcErr(-32602, "No schema available"), { status: 200, headers });
         }
 
-        // Client-side store action (read-only schema return)
+        // Store action — execute server-side if docId + writeToken provided
         const storeAction = schema.actions?.find((a: any) => a.name === toolName);
         if (storeAction) {
+          const args = typeof toolArgs.args === "string" ? JSON.parse(toolArgs.args) : toolArgs.args || toolArgs;
+
+          // If docId + writeToken provided, execute server-side via documents:applyAction
+          if (args.docId && args.writeToken) {
+            try {
+              const { docId, writeToken, ...actionArgs } = args;
+              const result = await ctx.runMutation(api.documents.applyAction, {
+                docId,
+                writeToken,
+                actionName: toolName,
+                actionArgs,
+              });
+              return new Response(jsonrpc({
+                content: [{ type: "text", text: JSON.stringify({ action: toolName, result }) }],
+              }), { status: 200, headers });
+            } catch (e: any) {
+              return new Response(jsonrpc({
+                content: [{ type: "text", text: JSON.stringify({ action: toolName, error: e.message }) }],
+                isError: true,
+              }), { status: 200, headers });
+            }
+          }
+
+          // No docId — return schema info (existing behavior)
           return new Response(jsonrpc({
             content: [{
               type: "text",
@@ -1260,7 +1286,7 @@ http.route({
                 action: storeAction.name,
                 source: storeAction.source,
                 currentState: schema.state?.[storeAction.source] ?? null,
-                note: "Client-side store action. Requires browser to execute.",
+                note: "Client-side store action. Pass docId + writeToken in args to execute server-side.",
               }),
             }],
           }), { status: 200, headers });
