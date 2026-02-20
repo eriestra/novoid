@@ -15,6 +15,7 @@ src/js
 
 # Rust build artifacts
 browser/target/
+cdp/target/
 
 # SvelteKit generated
 nous/.svelte-kit/

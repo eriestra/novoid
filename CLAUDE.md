@@ -23,6 +23,7 @@ Why: no∅ is built for agents. Agents don't manage deployment pipelines, promot
 |novoid-math.md         — KaTeX integration, TeX notation, MathML visibility fix
 |novoid-convex.md       — Convex client, reactive queries, mutations, actions, AI helper
 |novoid-motion.md       — Motion.dev: animate, scroll, stagger, timeline, inView, spring
+|novoid-cdp.md          — CDP browser control: browse, scrape, screenshot, Nex skills, Convex actions
 |novoid-improve.md      — feature expansion checklist, consistency rules, agent SEO
 ```
 
@@ -42,7 +43,8 @@ Why: no∅ is built for agents. Agents don't manage deployment pipelines, promot
 |src/core.css           — CSS variables and utilities (skills/novoid-css.md is the codified reference)
 |src/components.css     — CSS component classes (skills/novoid-css.md is the codified reference)
 |convex/schema.ts       — DB tables (pages, assets, keys, plans, errors, fragments, users, sessions, orgs, orgMemberships, orgInvitations, notes, domains, jobs)
-|convex/http.ts         — HTTP routes (/app/:slug, /mcp/:slug, /platform, /css, /js)
+|convex/http.ts         — HTTP routes (/app/:slug, /mcp/:slug, /cdp/*, /platform, /css, /js)
+|convex/cdp.ts          — CDP Convex actions: browse, screenshot, script (Node.js runtime)
 ```
 
 Skills are the codified knowledge. Source files are the implementation. Read skills first. Read source only when editing framework internals.

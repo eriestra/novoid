@@ -1598,6 +1598,22 @@ async function handleChannel(job) {
 
 // ── Skill Handlers (Phase 3) ──
 
+// Run novoid-cdp binary and return stdout
+async function runCdp(args) {
+  const { execFile } = require("child_process");
+  const { promisify } = require("util");
+  const execFileAsync = promisify(execFile);
+  const bin = path.resolve(__dirname, "cdp", "target", "debug", "novoid-cdp");
+  if (!fs.existsSync(bin)) {
+    throw new Error("novoid-cdp not built. Run: cd cdp && cargo build");
+  }
+  const { stdout } = await execFileAsync(bin, args, {
+    timeout: 30000,
+    maxBuffer: 5 * 1024 * 1024,
+  });
+  return stdout;
+}
+
 async function handleSkill(job) {
   let payload;
   try {
@@ -1632,12 +1648,63 @@ async function handleSkill(job) {
     }
     case "/browse": {
       const url = args || payload.url || "";
-      const response = await askClaude(
-        `Fetch and inspect this URL using WebFetch, summarize the content: ${url}`, job._id
-      );
-      const result = response.slice(0, 2000);
-      await client.mutation("nex:completeJob", { jobId: job._id, result, secret: SECRET });
-      return result;
+      const extract = payload.extract || "text";
+      try {
+        const cdpResult = await runCdp(["--headless", "-c", "--snap", url]);
+        const parsed = JSON.parse(cdpResult);
+        // Summarize via Claude with the CDP snap data
+        const response = await askClaude(
+          `Here is a real browser snapshot of ${url}:\n\n${JSON.stringify(parsed, null, 2)}\n\nSummarize the page content concisely.`, job._id
+        );
+        const result = response.slice(0, 2000);
+        await client.mutation("nex:completeJob", { jobId: job._id, result, secret: SECRET });
+        return result;
+      } catch (e) {
+        // Fallback to WebFetch if CDP unavailable
+        console.log(`    CDP browse failed, falling back to WebFetch: ${e.message}`);
+        const response = await askClaude(
+          `Fetch and inspect this URL using WebFetch, summarize the content: ${url}`, job._id
+        );
+        const result = response.slice(0, 2000);
+        await client.mutation("nex:completeJob", { jobId: job._id, result, secret: SECRET });
+        return result;
+      }
+    }
+    case "/screenshot": {
+      const url = args || payload.url || "";
+      try {
+        const tmpPath = `/tmp/nex-screenshot-${Date.now()}.png`;
+        await runCdp(["--headless", url, "--screenshot", tmpPath]);
+        const result = `Screenshot saved to ${tmpPath}`;
+        await client.mutation("nex:completeJob", { jobId: job._id, result, secret: SECRET });
+        return result;
+      } catch (e) {
+        const result = `Screenshot failed: ${e.message}`;
+        await client.mutation("nex:completeJob", { jobId: job._id, result, secret: SECRET });
+        return result;
+      }
+    }
+    case "/scrape": {
+      const parts = (args || "").split(" ");
+      const url = parts[0] || payload.url || "";
+      const mode = parts[1] || payload.extract || "tables";
+      try {
+        const cdpResult = await runCdp(["--headless", "-c", "--extract", mode, url]);
+        const parsed = JSON.parse(cdpResult);
+        // Find the extract step result
+        const extractStep = (parsed.steps || []).find((s) => s.command === "extract");
+        const data = extractStep?.value || parsed;
+        const response = await askClaude(
+          `Here is structured data extracted from ${url} (mode: ${mode}):\n\n${JSON.stringify(data, null, 2)}\n\nSummarize or format this data.`, job._id
+        );
+        const result = response.slice(0, 2000);
+        await client.mutation("nex:completeJob", { jobId: job._id, result, secret: SECRET });
+        return result;
+      } catch (e) {
+        const result = `Scrape failed: ${e.message}`;
+        await client.mutation("nex:completeJob", { jobId: job._id, result, secret: SECRET });
+        return result;
+      }
     }
     case "/send": {
       const parts = (args || "").split(" ");

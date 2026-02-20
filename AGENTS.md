@@ -20,6 +20,7 @@ Codified knowledge lives in `skills/`. Each skill replaces reading multiple sour
 |novoid-verification.md — verification: Nous static + Qed headless + MCP test specs
 |novoid-agents.md      — Nex (replaces OpenClaw), Vox (vibe-coded app builder), personas, memory, multi-channel, inline apps
 |novoid-math.md        — KaTeX integration, TeX notation, MathML visibility
+|novoid-cdp.md         — CDP browser control: browse, scrape, screenshot, Nex skills
 |novoid-improve.md     — meta-skill: feature expansion checklist, consistency rules
 ```
 

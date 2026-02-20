@@ -808,6 +808,231 @@ http.route({
   }),
 });
 
+// ─── Documents: Block editor persistence ─────────────────
+
+// GET /docs/:docId — load a document
+http.route({
+  pathPrefix: "/docs/",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const docId = url.pathname.replace("/docs/", "");
+    if (!docId) {
+      return new Response("Missing docId", { status: 400 });
+    }
+    const doc = await ctx.runQuery(api.documents.load, { docId });
+    if (!doc) {
+      return new Response(JSON.stringify({ error: "not_found" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+    return new Response(JSON.stringify(doc), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache",
+      },
+    });
+  }),
+});
+
+// POST /docs/:docId — save a document (write-token auth)
+http.route({
+  pathPrefix: "/docs/",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const docId = url.pathname.replace("/docs/", "");
+    if (!docId) {
+      return new Response("Missing docId", { status: 400 });
+    }
+    try {
+      const body = await request.json();
+      if (!body.writeToken) {
+        return new Response(JSON.stringify({ error: "writeToken required" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        });
+      }
+      await ctx.runMutation(api.documents.save, {
+        docId,
+        writeToken: body.writeToken,
+        title: body.title || "",
+        icon: body.icon || "📝",
+        blocks: body.blocks || "[]",
+        customBlocks: body.customBlocks,
+      });
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "save failed" }), {
+        status: 403,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+  }),
+});
+
+// OPTIONS /docs/:docId — CORS preflight
+http.route({
+  pathPrefix: "/docs/",
+  method: "OPTIONS",
+  handler: httpAction(async () => {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
+  }),
+});
+
+// GET /docs — list all documents
+http.route({
+  path: "/docs",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const docs = await ctx.runQuery(api.documents.list);
+    return new Response(JSON.stringify(docs), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache",
+      },
+    });
+  }),
+});
+
+// ─── CDP: Browser automation endpoints ──────────────────────
+
+// GET /cdp/browse?url=<url>&extract=<mode>&snap=true — JSON snapshot (auth: Bearer PUBLISH_SECRET)
+http.route({
+  path: "/cdp/browse",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const targetUrl = url.searchParams.get("url");
+    if (!targetUrl) {
+      return new Response(JSON.stringify({ error: "url parameter required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+    const auth = request.headers.get("Authorization") || "";
+    if (!auth.startsWith("Bearer ")) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const secret = auth.slice(7);
+    const extract = url.searchParams.get("extract") || undefined;
+    const snap = url.searchParams.get("snap") === "true";
+
+    try {
+      const result = await ctx.runAction(api.cdp.browse, {
+        url: targetUrl,
+        extract,
+        snap,
+        secret,
+      });
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "CDP browse failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+  }),
+});
+
+// GET /cdp/screenshot?url=<url> — PNG screenshot (auth: Bearer PUBLISH_SECRET)
+http.route({
+  path: "/cdp/screenshot",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const targetUrl = url.searchParams.get("url");
+    if (!targetUrl) {
+      return new Response(JSON.stringify({ error: "url parameter required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+    const auth = request.headers.get("Authorization") || "";
+    if (!auth.startsWith("Bearer ")) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const secret = auth.slice(7);
+
+    try {
+      const result = await ctx.runAction(api.cdp.screenshot, {
+        url: targetUrl,
+        secret,
+      });
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "CDP screenshot failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+  }),
+});
+
+// POST /cdp/script — run a JSON command script (auth: Bearer PUBLISH_SECRET)
+http.route({
+  path: "/cdp/script",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const auth = request.headers.get("Authorization") || "";
+    if (!auth.startsWith("Bearer ")) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+    const secret = auth.slice(7);
+    const scriptJson = await request.text();
+
+    try {
+      const result = await ctx.runAction(api.cdp.script, { scriptJson, secret });
+      return new Response(JSON.stringify(result), {
+        status: 200,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "CDP script failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+  }),
+});
+
+// OPTIONS /cdp/* — CORS preflight
+http.route({
+  pathPrefix: "/cdp/",
+  method: "OPTIONS",
+  handler: httpAction(async () => {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+    });
+  }),
+});
+
 // ─── MCP: Model Context Protocol endpoint ─────────────────
 // Full MCP server per app. Auto-generated from BrowseSchema.
 // - Store actions → tools (schema only, client-side)

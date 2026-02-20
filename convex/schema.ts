@@ -167,6 +167,18 @@ export default defineSchema({
 
   // ─── Nex: Autonomous Agent ───────────────────────────────
 
+  documents: defineTable({
+    docId: v.string(),
+    writeToken: v.string(),     // SHA-256 hash of the write token
+    title: v.string(),
+    icon: v.string(),
+    blocks: v.string(),         // JSON-encoded block array
+    customBlocks: v.optional(v.string()), // JSON-encoded registerBlockType definitions
+    updatedAt: v.number(),
+  })
+    .index("by_docId", ["docId"])
+    .index("by_updated", ["updatedAt"]),
+
   nex_memory: defineTable({
     orgId: v.string(),
     slug: v.optional(v.string()),

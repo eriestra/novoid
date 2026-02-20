@@ -12,6 +12,7 @@ Every feature change touches multiple surfaces. Work through each applicable ite
 - [ ] `src/core.css` — CSS variables and utilities
 - [ ] `src/components.css` — CSS component classes
 - [ ] `convex/` — schema, functions, HTTP routes
+- [ ] `cdp/` — CDP browser automation (Rust crate)
 
 ### 2. Skills (codified knowledge — always in agent context)
 - [ ] `skills/novoid-core.md` — core API reference
@@ -21,6 +22,7 @@ Every feature change touches multiple surfaces. Work through each applicable ite
 - [ ] `skills/novoid-verification.md` — verification pipeline reference
 - [ ] `skills/novoid-agents.md` — agent system reference
 - [ ] `skills/novoid-math.md` — KaTeX integration reference
+- [ ] `skills/novoid-cdp.md` — CDP browser control reference
 - [ ] `skills/novoid-improve.md` — this file (if checklist itself changes)
 
 ### 3. Agent Configuration
