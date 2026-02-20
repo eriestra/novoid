@@ -6,25 +6,21 @@
 
 ## What Is no∅?
 
-no∅ (novoid) is an agent-first application platform. Not a frontend framework — a platform.
+no∅ (novoid) is an agent-first application platform. You write one HTML file and get a reactive UI, a real-time database, a live URL, an MCP endpoint, a verification pipeline, and E2E tests.
 
-A frontend framework gives you reactivity and components. no∅ gives you the reactivity, the database, the deployment, the testing, the agent API, and the live URL. You write one HTML file and get a running application with a backend and an agent interface.
-
-The platform includes:
+The platform covers the full stack:
 - **Reactive core** — signals, computed values, effects, stores
 - **Declarative render system** — typed sections (headers, tables, cards, forms, charts, stats) that map data to UI without manual DOM work
 - **CSS design system** — variables, components, layout utilities, dark mode, theming
 - **Convex backend** — real-time database, reactive queries, mutations, actions, file storage, crons, HTTP routes
 - **Publishing pipeline** — `publish.sh` deploys, verifies, and runs E2E tests in one command
 - **Verification pipeline** — static analysis (Nous), headless browser execution (novoid-browser), MCP test harness
-- **MCP endpoints** — every app automatically gets an agent-accessible API over Streamable HTTP. Every `createStore` becomes a set of tools that agents can call. This isn't an add-on — it's the default.
+- **MCP endpoints** — every app automatically gets an agent-accessible API over Streamable HTTP. Every `createStore` becomes a set of tools that agents can call.
 - **Agent infrastructure** — Nex (autonomous agent), Vox (vibe-coded app builder), personas, memory, multi-channel
 
-The platform assumes machines will use your app as much as humans do. The MCP surface is not bolted on after the fact — it's generated from the same store actions that drive the UI. There is no separate API layer to maintain.
+Apps are single `.html` files that load no∅ from a CDN. No bundler, no build step, no `node_modules`. The MCP surface is generated from the same store actions that drive the UI — there is no separate API layer. Describe it, it's live.
 
-Apps built with no∅ are single `.html` files that load the platform from a CDN. No bundler, no build step, no `node_modules`. Describe it, it's live.
-
-The block editor described in this paper is one application built on no∅ — not the platform itself. It is the most complex app built on no∅ to date, and it serves as a benchmark: if no∅ can handle a Notion-class document editor in a single file, it can handle your app.
+The block editor described in this paper is one application built on no∅. It is the most complex app built on the platform to date, and it serves as a benchmark: if no∅ can handle a Notion-class document editor in a single file, it can handle your app.
 
 ---
 
@@ -75,7 +71,7 @@ divider → horizontal rule
 
 A block editor is a document made of typed blocks: headings, paragraphs, code, images, tables, quotes, lists.
 
-The realization: **blocks and sections are the same abstraction**. A heading block is a header section. A data block is a table section. A quote block is a styled section. The render system already knew how to paint structured UI — it just needed to learn about cursors.
+**Blocks and sections are the same abstraction.** A heading block is a header section. A data block is a table section. A quote block is a styled section. The block editor extends the render system with cursor management and keyboard handling — the structured rendering was already there.
 
 ---
 
