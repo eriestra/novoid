@@ -164,8 +164,23 @@ async fn main() {
 }
 
 async fn run_commands(url: String, commands: Vec<Command>, cli: &Cli, output_mode: OutputMode) {
+    // Global timeout: per-command timeout × number of commands + 15s overhead for launch/cleanup
+    let global_timeout = std::time::Duration::from_millis(
+        cli.timeout * (commands.len() as u64).max(1) + 15000
+    );
+
+    match tokio::time::timeout(global_timeout, run_commands_inner(url, commands, cli, output_mode)).await {
+        Ok(()) => {}
+        Err(_) => {
+            eprintln!("Error: global timeout ({:.0}s) exceeded", global_timeout.as_secs_f64());
+            process::exit(1);
+        }
+    }
+}
+
+async fn run_commands_inner(url: String, commands: Vec<Command>, cli: &Cli, output_mode: OutputMode) {
     // Launch or attach browser
-    let (browser, mut handler) = match launcher::connect(cli.headless, cli.port).await {
+    let (browser, handler) = match launcher::connect(cli.headless, cli.port).await {
         Ok(b) => b,
         Err(e) => {
             eprintln!("Error launching browser: {e}");
@@ -173,14 +188,26 @@ async fn run_commands(url: String, commands: Vec<Command>, cli: &Cli, output_mod
         }
     };
 
-    // Spawn the handler task
-    let handle = tokio::spawn(async move { while handler.next().await.is_some() {} });
+    // Spawn the handler task — abort it on cleanup instead of waiting
+    let handle = tokio::spawn(async move {
+        let mut handler = handler;
+        while handler.next().await.is_some() {}
+    });
 
-    // Create a new page
-    let page = match session::new_page(&browser).await {
-        Ok(p) => p,
-        Err(e) => {
+    // Create a new page (timeout: 10s)
+    let page = match tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        session::new_page(&browser),
+    ).await {
+        Ok(Ok(p)) => p,
+        Ok(Err(e)) => {
             eprintln!("Error creating page: {e}");
+            handle.abort();
+            process::exit(1);
+        }
+        Err(_) => {
+            eprintln!("Error: timeout creating page (10s)");
+            handle.abort();
             process::exit(1);
         }
     };
@@ -191,6 +218,7 @@ async fn run_commands(url: String, commands: Vec<Command>, cli: &Cli, output_mod
         Ok(r) => r,
         Err(e) => {
             eprintln!("Error: {e}");
+            handle.abort();
             process::exit(1);
         }
     };
@@ -199,8 +227,9 @@ async fn run_commands(url: String, commands: Vec<Command>, cli: &Cli, output_mod
     // Output results
     transport::output(&url, &results, duration, output_mode);
 
-    // Clean up
+    // Clean up — abort handler instead of waiting for it
     drop(page);
     drop(browser);
+    handle.abort();
     let _ = handle.await;
 }
