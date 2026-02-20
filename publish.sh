@@ -18,7 +18,7 @@ if [ ! -f "$FILE" ]; then
 fi
 
 # ─── Locked slugs ─────────────────────────────────────────
-LOCKED_SLUGS="nex vox novoid platform"
+LOCKED_SLUGS="nex vox novoid bloox platform"
 for locked in $LOCKED_SLUGS; do
   if [ "$SLUG" = "$locked" ] && [ "$SKIP_CHECK" != "--force" ]; then
     echo "Error: slug '$SLUG' is locked. Use --force to overwrite."

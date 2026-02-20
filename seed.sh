@@ -63,7 +63,7 @@ rm -f /tmp/browse-polyfills.js
 
 # 6. Ecosystem apps (nex, vox, novoid) — deploy if missing
 echo "6/6 Deploying ecosystem apps (if missing)..."
-for eco_slug in novoid nex vox; do
+for eco_slug in novoid nex vox bloox; do
   EXISTS=$(npx convex run pages:get "{\"slug\":\"$eco_slug\"}" 2>/dev/null)
   if [ "$EXISTS" = "null" ] || [ -z "$EXISTS" ]; then
     FILE="src/app/${eco_slug}.html"
@@ -84,6 +84,7 @@ echo ""
 echo "  Landing:   $SITE_URL/app/novoid"
 echo "  Nex:       $SITE_URL/app/nex"
 echo "  Vox:       $SITE_URL/app/vox"
+echo "  Bloox:     $SITE_URL/app/bloox"
 echo "  Platform:  $SITE_URL/platform"
 echo "  Pages:     $SITE_URL/app/<slug>"
 echo "  CSS:       $SITE_URL/css/core.min.css"

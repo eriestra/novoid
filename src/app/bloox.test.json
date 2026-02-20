@@ -1,0 +1,161 @@
+{
+  "steps": [
+    { "action": "read", "resource": "blocks", "assert": { "length": 1 } },
+    { "action": "read", "resource": "doc", "assert": { "eq": { "title": "", "icon": "📝" } } },
+
+    { "action": "call", "tool": "setTitle", "args": { "title": "Test Document" },
+      "then": { "read": "doc", "assert": { "eq": { "title": "Test Document", "icon": "📝" } } } },
+    { "action": "call", "tool": "setIcon", "args": { "icon": "🚀" },
+      "then": { "read": "doc", "assert": { "eq": { "title": "Test Document", "icon": "🚀" } } } },
+
+    { "action": "call", "tool": "updateContent", "args": { "id": "b1", "content": "First paragraph", "offset": 15 } },
+
+    { "action": "call", "tool": "addBlock", "args": { "type": "paragraph", "content": "Second paragraph", "afterId": "b1" },
+      "then": { "read": "blocks", "assert": { "length": 2 } } },
+
+    { "action": "call", "tool": "splitBlock", "args": { "id": "b2", "offset": 6 },
+      "then": { "read": "blocks", "assert": { "length": 3 } } },
+
+    { "action": "call", "tool": "mergeBlocks", "args": { "id": "b3" },
+      "then": { "read": "blocks", "assert": { "length": 2 } } },
+
+    { "action": "call", "tool": "splitBlock", "args": { "id": "b1", "offset": 5 },
+      "then": { "read": "blocks", "assert": { "length": 3 } } },
+
+    { "action": "call", "tool": "mergeBlocks", "args": { "id": "b4" },
+      "then": { "read": "blocks", "assert": { "length": 2 } } },
+
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b1", "type": "heading", "meta": { "level": 1 } } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b1", "type": "heading", "meta": { "level": 2 } } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b1", "type": "heading", "meta": { "level": 3 } } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b1", "type": "paragraph" } },
+
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b2", "type": "bulletList" } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b2", "type": "numberedList" } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b2", "type": "todoList", "meta": { "checked": false } } },
+    { "action": "call", "tool": "toggleCheck", "args": { "id": "b2" } },
+    { "action": "call", "tool": "toggleCheck", "args": { "id": "b2" } },
+
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b2", "type": "quote" } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b2", "type": "callout", "meta": { "icon": "💡", "color": "blue" } } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b2", "type": "toggle" } },
+    { "action": "call", "tool": "toggleExpand", "args": { "id": "b2" } },
+    { "action": "call", "tool": "toggleExpand", "args": { "id": "b2" } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b2", "type": "code", "meta": { "language": "js" } } },
+    { "action": "call", "tool": "convertBlock", "args": { "id": "b2", "type": "paragraph" } },
+
+    { "action": "call", "tool": "addBlock", "args": { "type": "divider", "afterId": "b1" },
+      "then": { "read": "blocks", "assert": { "length": 3 } } },
+    { "action": "call", "tool": "removeBlock", "args": { "id": "b5" },
+      "then": { "read": "blocks", "assert": { "length": 2 } } },
+
+    { "action": "call", "tool": "toggleMark", "args": { "id": "b1", "type": "bold", "from": 0, "to": 5 } },
+    { "action": "call", "tool": "toggleMark", "args": { "id": "b1", "type": "italic", "from": 2, "to": 8 } },
+    { "action": "call", "tool": "toggleMark", "args": { "id": "b1", "type": "code", "from": 0, "to": 3 } },
+    { "action": "call", "tool": "toggleMark", "args": { "id": "b1", "type": "highlight", "from": 5, "to": 10 } },
+    { "action": "call", "tool": "toggleMark", "args": { "id": "b1", "type": "strikethrough", "from": 0, "to": 4 } },
+    { "action": "call", "tool": "toggleMark", "args": { "id": "b1", "type": "underline", "from": 6, "to": 12 } },
+    { "action": "call", "tool": "toggleMark", "args": { "id": "b1", "type": "link", "from": 0, "to": 5, "meta": { "href": "https://example.com" } } },
+    { "action": "call", "tool": "toggleMark", "args": { "id": "b1", "type": "bold", "from": 0, "to": 5 } },
+
+    { "action": "call", "tool": "indentBlock", "args": { "id": "b2" } },
+    { "action": "call", "tool": "indentBlock", "args": { "id": "b2" } },
+    { "action": "call", "tool": "indentBlock", "args": { "id": "b2" } },
+    { "action": "call", "tool": "indentBlock", "args": { "id": "b2" } },
+    { "action": "call", "tool": "outdentBlock", "args": { "id": "b2" } },
+    { "action": "call", "tool": "outdentBlock", "args": { "id": "b2" } },
+    { "action": "call", "tool": "outdentBlock", "args": { "id": "b2" } },
+    { "action": "call", "tool": "outdentBlock", "args": { "id": "b2" } },
+
+    { "action": "call", "tool": "duplicateBlock", "args": { "id": "b1" },
+      "then": { "read": "blocks", "assert": { "length": 3 } } },
+    { "action": "call", "tool": "removeBlock", "args": { "id": "b6" },
+      "then": { "read": "blocks", "assert": { "length": 2 } } },
+
+    { "action": "call", "tool": "moveBlock", "args": { "id": "b1", "direction": "down" } },
+    { "action": "call", "tool": "moveBlock", "args": { "id": "b1", "direction": "up" } },
+
+    { "action": "call", "tool": "addBlock", "args": { "type": "paragraph", "content": "Block A" } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "paragraph", "content": "Block B" } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "paragraph", "content": "Block C" },
+      "then": { "read": "blocks", "assert": { "length": 5 } } },
+    { "action": "call", "tool": "moveBlock", "args": { "id": "b9", "afterId": "b7" } },
+
+    { "action": "call", "tool": "selectBlocks", "args": { "ids": ["b1", "b2"] } },
+    { "action": "read", "resource": "selectedIds", "assert": { "length": 2 } },
+    { "action": "call", "tool": "clearSelection",
+      "then": { "read": "selectedIds", "assert": { "length": 0 } } },
+
+    { "action": "call", "tool": "setFocus", "args": { "id": "b1", "offset": 3 } },
+    { "action": "read", "resource": "focusId", "assert": { "eq": "b1" } },
+    { "action": "read", "resource": "focusOffset", "assert": { "eq": 3 } },
+
+    { "action": "call", "tool": "openSlash", "args": { "blockId": "b1", "x": 100, "y": 200 } },
+    { "action": "read", "resource": "slashMenu", "assert": { "eq": { "active": true, "blockId": "b1", "query": "", "x": 100, "y": 200, "idx": 0 } } },
+    { "action": "call", "tool": "filterSlash", "args": { "query": "head" } },
+    { "action": "call", "tool": "closeSlash" },
+    { "action": "read", "resource": "slashMenu", "assert": { "eq": { "active": false, "blockId": null, "query": "", "x": 0, "y": 0, "idx": 0 } } },
+
+    { "action": "call", "tool": "setBlockMeta", "args": { "id": "b1", "meta": { "custom": true } } },
+
+    { "action": "call", "tool": "addBlock", "args": { "type": "heading", "content": "Heading", "meta": { "level": 1 } } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "bulletList", "content": "Bullet" } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "numberedList", "content": "Numbered" } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "todoList", "content": "Todo", "meta": { "checked": false } } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "quote", "content": "Quote" } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "callout", "content": "Callout", "meta": { "icon": "⚠️", "color": "yellow" } } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "toggle", "content": "Toggle" } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "divider" } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "code", "content": "console.log(1)", "meta": { "language": "js" } } },
+    { "action": "call", "tool": "addBlock", "args": { "type": "paragraph", "content": "Last" },
+      "then": { "read": "blocks", "assert": { "length": 15 } } },
+
+    { "action": "call", "tool": "undo",
+      "then": { "read": "blocks", "assert": { "length": 14 } } },
+    { "action": "call", "tool": "undo",
+      "then": { "read": "blocks", "assert": { "length": 13 } } },
+    { "action": "call", "tool": "redo",
+      "then": { "read": "blocks", "assert": { "length": 14 } } },
+    { "action": "call", "tool": "redo",
+      "then": { "read": "blocks", "assert": { "length": 15 } } },
+
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "redo" },
+    { "action": "call", "tool": "redo" },
+    { "action": "call", "tool": "redo" },
+    { "action": "call", "tool": "redo" },
+    { "action": "call", "tool": "redo" },
+
+    { "action": "call", "tool": "splitBlock", "args": { "id": "b1", "offset": 3 } },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "redo" },
+    { "action": "call", "tool": "undo" },
+
+    { "action": "call", "tool": "updateContent", "args": { "id": "b1", "content": "SplitMe", "offset": 7 } },
+    { "action": "call", "tool": "splitBlock", "args": { "id": "b1", "offset": 3 },
+      "then": { "read": "blocks", "assert": { "length": 16 } } },
+    { "action": "call", "tool": "addBlock", "args": { "afterId": "b1", "type": "paragraph" },
+      "then": { "read": "blocks", "assert": { "length": 17 } } },
+    { "action": "call", "tool": "addBlock", "args": { "afterId": "b1", "type": "paragraph" },
+      "then": { "read": "blocks", "assert": { "length": 18 } } },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "undo" },
+
+    { "action": "call", "tool": "updateContent", "args": { "id": "b1", "content": "Then the prhase", "offset": 15 } },
+    { "action": "call", "tool": "splitBlock", "args": { "id": "b1", "offset": 9 } },
+    { "action": "read", "resource": "focusOffset", "assert": { "eq": 0 } },
+    { "action": "read", "resource": "blocks", "assert": { "length": 16 } },
+    { "action": "call", "tool": "mergeWithNext", "args": { "id": "b1" } },
+    { "action": "read", "resource": "blocks", "assert": { "length": 15 } },
+    { "action": "read", "resource": "focusId", "assert": { "eq": "b1" } },
+    { "action": "read", "resource": "focusOffset", "assert": { "eq": 9 } },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "undo" },
+    { "action": "call", "tool": "undo" }
+  ]
+}

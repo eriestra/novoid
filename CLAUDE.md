@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-no∅ (novoid) — frictionless frontend framework. Describe it, it's live.
+no∅ (novoid) — agent-first application platform. Describe it, it's live.
 
 > Skill-led reasoning. Skills are the source of truth — codified, compressed, always in context. When skills and pre-training agree, you're on the right path. When they diverge, skills win.
 

@@ -1,0 +1,2178 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blocks — no∅</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+  <style>
+    :root {
+      --b-bg: #ffffff;
+      --b-bg-subtle: #f8f9fa;
+      --b-bg-muted: #f1f3f5;
+      --b-text: #1a1a2e;
+      --b-text-muted: #6b7280;
+      --b-text-subtle: #9ca3af;
+      --b-border: #e5e7eb;
+      --b-border-strong: #d1d5db;
+      --b-accent: #6366f1;
+      --b-accent-light: rgba(99, 102, 241, 0.08);
+      --b-accent-ring: rgba(99, 102, 241, 0.25);
+      --b-highlight: #fef9c3;
+      --b-callout-blue: #eff6ff;
+      --b-callout-blue-border: #bfdbfe;
+      --b-danger: #ef4444;
+      --b-code-bg: #1e1e2e;
+      --b-code-text: #cdd6f4;
+      --b-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      --b-shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      --b-radius: 8px;
+      --b-font-sans: 'DM Sans', -apple-system, sans-serif;
+      --b-font-display: 'Outfit', sans-serif;
+      --b-font-mono: 'JetBrains Mono', monospace;
+    }
+    [data-theme="dark"] {
+      --b-bg: #0f1117;
+      --b-bg-subtle: #1a1d27;
+      --b-bg-muted: #252833;
+      --b-text: #e4e5e9;
+      --b-text-muted: #9ca0ab;
+      --b-text-subtle: #5c6170;
+      --b-border: #2e3140;
+      --b-border-strong: #3d4155;
+      --b-accent: #818cf8;
+      --b-accent-light: rgba(129, 140, 248, 0.1);
+      --b-accent-ring: rgba(129, 140, 248, 0.3);
+      --b-highlight: rgba(253, 224, 71, 0.15);
+      --b-callout-blue: rgba(59, 130, 246, 0.1);
+      --b-callout-blue-border: rgba(59, 130, 246, 0.3);
+      --b-code-bg: #1a1d27;
+      --b-code-text: #cdd6f4;
+      --b-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --b-shadow-lg: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--b-font-sans); background: var(--b-bg); color: var(--b-text); line-height: 1.6; }
+    #app { display: contents; }
+
+    /* Editor layout */
+    .b-editor { max-width: 720px; margin: 0 auto; padding: 3rem 1.5rem 8rem; position: relative; }
+
+    /* Title */
+    .b-title {
+      font-family: var(--b-font-display); font-size: 2.5rem; font-weight: 700;
+      outline: none; border: none; width: 100%; margin-bottom: 0.25rem;
+      color: var(--b-text); line-height: 1.2; letter-spacing: -0.02em;
+    }
+    .b-title:empty::before { content: attr(data-placeholder); color: var(--b-text-subtle); }
+    .b-icon-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 2rem; height: 2rem; border-radius: 4px; border: none;
+      background: transparent; cursor: pointer; font-size: 1.2rem;
+      transition: background 0.15s; margin-bottom: 0.5rem;
+    }
+    .b-icon-btn:hover { background: var(--b-bg-muted); }
+
+    /* Block wrapper */
+    .b-block {
+      position: relative; display: flex; align-items: flex-start;
+      padding: 2px 0; border-radius: 4px; transition: background 0.1s;
+    }
+    .b-block:hover .b-handle { opacity: 1; }
+    .b-block-selected { background: var(--b-accent-light); }
+
+    /* Drag handle */
+    .b-handle {
+      position: absolute; left: -28px; top: 4px;
+      width: 20px; height: 20px; opacity: 0;
+      display: flex; align-items: center; justify-content: center;
+      cursor: grab; border-radius: 3px; color: var(--b-text-subtle);
+      font-size: 0.7rem; transition: opacity 0.15s; user-select: none;
+      border: none; background: transparent;
+    }
+    .b-handle:hover { background: var(--b-bg-muted); color: var(--b-text-muted); }
+    .b-handle:active { cursor: grabbing; }
+
+    /* Block content */
+    .b-content {
+      flex: 1; outline: none; min-height: 1.5em; padding: 3px 2px;
+      word-break: break-word; white-space: pre-wrap;
+    }
+    .b-content:empty::before {
+      content: attr(data-placeholder); color: var(--b-text-subtle);
+      pointer-events: none;
+    }
+
+    /* Headings */
+    .b-heading-1 { font-family: var(--b-font-display); font-size: 1.875rem; font-weight: 700; line-height: 1.2; margin-top: 1.5rem; letter-spacing: -0.02em; }
+    .b-heading-2 { font-family: var(--b-font-display); font-size: 1.5rem; font-weight: 600; line-height: 1.25; margin-top: 1.25rem; letter-spacing: -0.01em; }
+    .b-heading-3 { font-family: var(--b-font-display); font-size: 1.25rem; font-weight: 600; line-height: 1.3; margin-top: 1rem; }
+
+    /* Lists */
+    .b-numbered-marker {
+      position: absolute; left: 0; top: 3px; color: var(--b-text-muted);
+      font-size: 0.85em; min-width: 1.5rem; text-align: right; padding-right: 0.5rem;
+      line-height: 1.6;
+    }
+
+    /* Tight spacing: collapse padding between consecutive list items */
+    .b-block + .b-block { padding-top: 1px; }
+    .b-block[data-block-type="bulletList"] + .b-block[data-block-type="bulletList"],
+    .b-block[data-block-type="numberedList"] + .b-block[data-block-type="numberedList"],
+    .b-block[data-block-type="todoList"] + .b-block[data-block-type="todoList"] {
+      padding-top: 0; margin-top: -1px;
+    }
+
+    /* Todo */
+    .b-todo-wrap { display: flex; align-items: flex-start; gap: 0.5rem; }
+    .b-todo-check {
+      appearance: none; width: 18px; height: 18px; border: 2px solid var(--b-border-strong);
+      border-radius: 4px; cursor: pointer; flex-shrink: 0; margin-top: 4px;
+      position: relative; transition: all 0.15s; background: transparent;
+    }
+    .b-todo-check:checked {
+      background: var(--b-accent); border-color: var(--b-accent);
+    }
+    .b-todo-check:checked::after {
+      content: '✓'; position: absolute; top: -1px; left: 2px;
+      color: white; font-size: 12px; font-weight: 700;
+    }
+    .b-todo-checked { text-decoration: line-through; color: var(--b-text-muted); }
+
+    /* Quote */
+    .b-quote {
+      border-left: 3px solid var(--b-border-strong); padding-left: 1rem;
+      color: var(--b-text-muted); font-style: italic;
+    }
+
+    /* Callout */
+    .b-callout {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      background: var(--b-callout-blue); border: 1px solid var(--b-callout-blue-border);
+      border-radius: var(--b-radius); padding: 0.75rem 1rem;
+    }
+    .b-callout-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; }
+
+    /* Divider */
+    .b-divider { height: 1px; background: var(--b-border); margin: 0.75rem 0; width: 100%; }
+
+    /* Code block */
+    .b-code-block {
+      background: var(--b-code-bg); color: var(--b-code-text); border-radius: var(--b-radius);
+      padding: 1rem; font-family: var(--b-font-mono); font-size: 0.875rem;
+      line-height: 1.5; overflow-x: auto; white-space: pre-wrap; tab-size: 2;
+    }
+    .b-code-lang {
+      position: absolute; top: 0.5rem; right: 0.5rem; font-size: 0.7rem;
+      color: var(--b-text-subtle); background: var(--b-bg-muted); padding: 2px 8px;
+      border-radius: 4px; cursor: pointer; border: none; font-family: var(--b-font-mono);
+    }
+
+    /* Toggle */
+    .b-toggle-wrap { width: 100%; }
+    .b-toggle-header { display: flex; align-items: flex-start; gap: 0.25rem; cursor: pointer; }
+    .b-toggle-arrow {
+      width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: transform 0.15s; color: var(--b-text-muted);
+      border: none; background: transparent; cursor: pointer; margin-top: 2px;
+    }
+    .b-toggle-arrow-open { transform: rotate(90deg); }
+    .b-toggle-children { padding-left: 1.5rem; border-left: 1px solid var(--b-border); margin-left: 0.5rem; margin-top: 0.25rem; }
+
+    /* Indent */
+    .b-indent-1 { padding-left: 1.5rem; }
+    .b-indent-2 { padding-left: 3rem; }
+    .b-indent-3 { padding-left: 4.5rem; }
+
+    /* Drop indicators */
+    .b-drop-top { box-shadow: inset 0 2px 0 var(--b-accent); }
+    .b-drop-bottom { box-shadow: inset 0 -2px 0 var(--b-accent); }
+
+    /* Inline marks */
+    .b-mark-bold { font-weight: 700; }
+    .b-mark-italic { font-style: italic; }
+    .b-mark-underline { text-decoration: underline; }
+    .b-mark-strike { text-decoration: line-through; }
+    .b-mark-code {
+      font-family: var(--b-font-mono); font-size: 0.875em;
+      background: var(--b-bg-muted); padding: 0.15em 0.35em; border-radius: 4px;
+      color: var(--b-danger);
+    }
+    .b-mark-highlight { background: var(--b-highlight); padding: 0.05em 0; border-radius: 2px; }
+    .b-mark-link { color: var(--b-accent); text-decoration: underline; cursor: pointer; }
+
+    /* Slash menu */
+    .b-slash-menu {
+      position: fixed; z-index: 100; background: var(--b-bg);
+      border: 1px solid var(--b-border); border-radius: var(--b-radius);
+      box-shadow: var(--b-shadow-lg); width: 260px; max-height: 320px;
+      overflow-y: auto; padding: 0.25rem;
+    }
+    .b-slash-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer;
+      transition: background 0.1s; border: none; background: transparent;
+      width: 100%; text-align: left; font-family: var(--b-font-sans);
+      color: var(--b-text); font-size: 0.9rem;
+    }
+    .b-slash-item:hover, .b-slash-item-active { background: var(--b-accent-light); }
+    .b-slash-icon { width: 2rem; text-align: center; font-size: 1.1rem; }
+    .b-slash-label { font-weight: 500; }
+    .b-slash-desc { font-size: 0.75rem; color: var(--b-text-muted); }
+
+    /* Inline toolbar */
+    .b-toolbar {
+      position: fixed; z-index: 100; display: flex; align-items: center; gap: 1px;
+      background: var(--b-bg); border: 1px solid var(--b-border);
+      border-radius: var(--b-radius); box-shadow: var(--b-shadow-lg); padding: 0.2rem;
+    }
+    .b-toolbar-btn {
+      width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+      border: none; background: transparent; cursor: pointer; border-radius: 4px;
+      font-size: 0.85rem; font-weight: 600; color: var(--b-text-muted);
+      font-family: var(--b-font-sans); transition: all 0.1s;
+    }
+    .b-toolbar-btn:hover { background: var(--b-bg-muted); color: var(--b-text); }
+    .b-toolbar-btn-active { background: var(--b-accent-light); color: var(--b-accent); }
+    .b-toolbar-sep { width: 1px; height: 1.25rem; background: var(--b-border); margin: 0 0.15rem; }
+
+    /* Save status */
+    .b-save-status {
+      position: fixed; top: 1rem; right: 3.75rem; z-index: 50;
+      font-size: 0.75rem; color: var(--b-text-subtle); font-family: var(--b-font-sans);
+      display: flex; align-items: center; gap: 0.35rem; height: 2.25rem;
+    }
+    .b-save-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .b-save-saving { background: var(--b-accent); animation: b-pulse 1s infinite; }
+    .b-save-saved { background: #22c55e; }
+    .b-save-error { background: var(--b-danger); }
+    .b-save-readonly { background: var(--b-text-subtle); }
+    @keyframes b-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Dark mode toggle */
+    .b-theme-toggle {
+      position: fixed; top: 1rem; right: 1rem; z-index: 50;
+      width: 2.25rem; height: 2.25rem; border-radius: 50%; border: 1px solid var(--b-border);
+      background: var(--b-bg); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 1rem; transition: all 0.2s;
+    }
+    .b-theme-toggle:hover { background: var(--b-bg-muted); }
+
+    /* Block-select mode */
+    .b-block-focused { outline: 2px solid var(--b-accent); outline-offset: -1px; border-radius: 4px; }
+    .b-block-focused .b-handle { opacity: 1; }
+
+    /* Handle context menu */
+    .b-handle-menu {
+      position: absolute; left: -8px; top: 24px; z-index: 100;
+      background: var(--b-bg); border: 1px solid var(--b-border);
+      border-radius: var(--b-radius); box-shadow: var(--b-shadow-lg);
+      width: 180px; padding: 0.25rem; white-space: nowrap;
+    }
+    .b-handle-menu-item {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.4rem 0.75rem; border-radius: 6px; cursor: pointer;
+      border: none; background: transparent; width: 100%; text-align: left;
+      font-family: var(--b-font-sans); font-size: 0.85rem; color: var(--b-text);
+      transition: background 0.1s;
+    }
+    .b-handle-menu-item:hover { background: var(--b-accent-light); }
+    .b-handle-menu-danger { color: var(--b-danger); }
+    .b-handle-menu-danger:hover { background: rgba(239, 68, 68, 0.1); }
+    .b-handle-menu-sub { position: relative; }
+    .b-handle-submenu {
+      position: absolute; left: 100%; top: -0.25rem; z-index: 101;
+      background: var(--b-bg); border: 1px solid var(--b-border);
+      border-radius: var(--b-radius); box-shadow: var(--b-shadow-lg);
+      width: 160px; padding: 0.25rem; display: none;
+    }
+    .b-handle-menu-sub:hover .b-handle-submenu { display: block; }
+
+    /* Styled block (callout + css code pair) */
+    .b-styled-block { position: relative; }
+    .b-styled-block .b-callout { transition: all 0.3s ease; }
+    .b-styled-code-toggle {
+      position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2;
+      font-size: 0.65rem; color: var(--b-text-subtle); background: var(--b-bg-muted);
+      border: 1px solid var(--b-border); padding: 2px 8px; border-radius: 4px;
+      cursor: pointer; font-family: var(--b-font-mono); transition: all 0.15s;
+    }
+    .b-styled-code-toggle:hover { color: var(--b-text-muted); background: var(--b-bg-subtle); }
+    .b-styled-preview { border-radius: var(--b-radius); overflow: hidden; }
+
+    /* Selection */
+    ::selection { background: var(--b-accent-ring); }
+
+    /* Scrollbar */
+    .b-slash-menu::-webkit-scrollbar { width: 4px; }
+    .b-slash-menu::-webkit-scrollbar-thumb { background: var(--b-border-strong); border-radius: 4px; }
+
+    /* Placeholder for empty doc */
+    .b-empty-hint { color: var(--b-text-subtle); font-size: 0.95rem; padding: 3px 2px; cursor: text; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="../js/core.min.js"></script>
+  <script>
+  // ═══════════════════════════════════════════════════════════════════════
+  // BLOCKS — Notion-class block editor built as a novoid hybrid app.
+  //
+  // Architecture: pure h() (no render plugin). createStore for all state,
+  // making every operation agent-testable via MCP (24 tools, 3 resources).
+  //
+  // KEY LEARNINGS (contenteditable + reactive framework):
+  //
+  // 1. NEVER use store.get() inside list(), effect(), match(), or when().
+  //    store.get() is a single signal — it subscribes to EVERY state change.
+  //    Use store.select('key') to track only the key you need.
+  //    Violation causes: focus loss, DOM thrashing, broken interactivity.
+  //
+  // 2. Contenteditable + list() requires in-place mutation for typing.
+  //    updateContent mutates the block object directly and does NOT return
+  //    a `blocks` key. This prevents list() from re-rendering (destroying)
+  //    the active contenteditable. Structural actions (split, merge, add)
+  //    clone and return new arrays to trigger proper re-renders.
+  //
+  // 3. Focus restoration needs a generation counter (_focusGen).
+  //    Only structural actions bump it. The effect ONLY depends on focusGen
+  //    via store.select('_focusGen'). State reads (focusId, focusOffset)
+  //    happen inside requestAnimationFrame — outside the effect's tracking
+  //    scope — to avoid re-subscribing to the full store.
+  //
+  // 4. Overlays (slash menu, toolbar) must use reactive style with
+  //    display:none, NOT the show attribute or when(). The show attribute
+  //    sets display via an effect that may not run before first paint,
+  //    causing a flash at (0,0). when() creates/destroys DOM on toggle,
+  //    which can break click handlers due to timing. Reactive style with
+  //    display:none is synchronous and reliable.
+  //
+  // 5. Overlays need onMousedown: preventDefault to stop contenteditable
+  //    blur. Without it, clicking a menu item blurs the editor before the
+  //    click event fires, breaking the interaction.
+  //
+  // 6. Batch slash detection. When the user types '/', three store updates
+  //    fire (openSlash, filterSlash, updateContent). Without batch(), each
+  //    triggers a separate subscriber notification cycle. Wrap in batch()
+  //    for a single coalesced update.
+  //
+  // TRADEOFFS vs ProseMirror/Lexical/Tiptap:
+  // + 30 MCP tools, 4 resources (no other editor has agent-first programmatic access)
+  // + 2178 LOC, 0 dependencies, 0 build steps, instant deploy
+  // + 110 e2e tests via MCP harness
+  // - No IME/composition event handling (breaks CJK input)
+  // - Naive mark model (ranges, not ProseMirror's mathematical mark algebra)
+  // - No CRDT/OT for collaboration (would need Convex real-time wiring)
+  // - Contenteditable quirks require manual workarounds (see learnings 1-3)
+  // ═══════════════════════════════════════════════════════════════════════
+  (function() {
+    var N = Novoid;
+    var h = N.h, signal = N.signal, computed = N.computed, effect = N.effect, batch = N.batch, list = N.list, when = N.when;
+
+    // ── Helpers ──
+    var uid = (function() { var n = 0; return function() { return 'b' + (++n); }; })();
+    // After loading persisted blocks: dedup IDs + advance counter past existing ones
+    function syncUidCounter(blocks) {
+      var max = 0;
+      var seen = {};
+      blocks.forEach(function(b) {
+        // Dedup: if this ID was already used, assign a new one
+        if (seen[b.id]) {
+          max++;
+          b.id = 'b' + (max + 10000); // high range to avoid collisions
+        }
+        seen[b.id] = true;
+        var m = b.id && b.id.match(/^b(\d+)$/);
+        if (m) max = Math.max(max, parseInt(m[1], 10));
+      });
+      if (max > 0) uid = (function() { var n = max; return function() { return 'b' + (++n); }; })();
+    }
+
+    function makeBlock(type, content, meta) {
+      return { id: uid(), type: type || 'paragraph', content: content || '', marks: [], children: [], parent: null, indent: 0, meta: meta || {} };
+    }
+
+    function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+    // ── Slash command definitions ──
+    var SLASH_ITEMS = [
+      { type: 'paragraph',    icon: '¶', label: 'Text',           desc: 'Plain text block' },
+      { type: 'heading',      icon: 'H1', label: 'Heading 1',     desc: 'Large heading',      meta: { level: 1 } },
+      { type: 'heading',      icon: 'H2', label: 'Heading 2',     desc: 'Medium heading',     meta: { level: 2 } },
+      { type: 'heading',      icon: 'H3', label: 'Heading 3',     desc: 'Small heading',      meta: { level: 3 } },
+      { type: 'bulletList',   icon: '•',  label: 'Bullet List',    desc: 'Unordered list' },
+      { type: 'numberedList', icon: '1.',label: 'Numbered List',  desc: 'Ordered list' },
+      { type: 'todoList',     icon: '☐', label: 'To-do',          desc: 'Checkbox item',      meta: { checked: false } },
+      { type: 'quote',        icon: '"',  label: 'Quote',          desc: 'Block quote' },
+      { type: 'callout',      icon: '💡', label: 'Callout',       desc: 'Highlighted callout', meta: { icon: '💡', color: 'blue' } },
+      { type: 'toggle',       icon: '▸', label: 'Toggle',         desc: 'Collapsible content' },
+      { type: 'divider',      icon: '—', label: 'Divider',        desc: 'Horizontal rule' },
+      { type: 'code',         icon: '<>', label: 'Code',           desc: 'Code block',         meta: { language: 'js' } },
+    ];
+
+    // ── Enter behavior registry ──
+    var ENTER_BEHAVIOR = {
+      paragraph: 'split', heading: 'split', toggle: 'split',
+      bulletList: 'continue', numberedList: 'continue', todoList: 'continue',
+      quote: 'newline', callout: 'newline', code: 'newline', math: 'newline', mermaid: 'newline',
+      divider: 'none',
+    };
+
+    // ── Custom block type registry ──
+    var CUSTOM_BLOCKS = {};
+    var _styleSheet = null;
+
+    function registerBlockType(def) {
+      if (!def || !def.type) throw new Error('registerBlockType: type required');
+      CUSTOM_BLOCKS[def.type] = def;
+      // Slash menu
+      if (def.label !== false) {
+        SLASH_ITEMS.push({
+          type: def.type,
+          icon: def.icon || '▪',
+          label: def.label || def.type,
+          desc: def.desc || '',
+          meta: def.meta || {},
+        });
+      }
+      // Enter behavior
+      if (def.enter) ENTER_BEHAVIOR[def.type] = def.enter;
+      // CSS injection
+      if (def.css) {
+        if (!_styleSheet) {
+          var el = document.createElement('style');
+          el.id = 'b-custom-blocks';
+          document.head.appendChild(el);
+          _styleSheet = el.sheet;
+        }
+        // Support multiple rules
+        var rules = def.css.split('}').filter(function(r) { return r.trim(); });
+        rules.forEach(function(r) {
+          try { _styleSheet.insertRule(r.trim() + '}', _styleSheet.cssRules.length); } catch(e) {}
+        });
+      }
+    }
+
+    // ── Undo debounce ──
+    var undoTimer = null;
+    var lastSnapshotTime = 0;
+    function pushUndo(state, force) {
+      var now = Date.now();
+      if (!force && now - lastSnapshotTime < 300) {
+        clearTimeout(undoTimer);
+        undoTimer = setTimeout(function() { pushUndoNow(state); }, 300);
+        return state;
+      }
+      return pushUndoNow(state);
+    }
+    function pushUndoNow(state) {
+      lastSnapshotTime = Date.now();
+      var stack = state.undoStack.concat([clone(state.blocks)]);
+      if (stack.length > 100) stack = stack.slice(stack.length - 100);
+      return { undoStack: stack, redoStack: [] };
+    }
+
+    // ── Store ──
+    var store = N.createStore({
+      doc: { title: '', icon: '📝' },
+      blocks: [makeBlock('paragraph', '')],
+      mode: 'edit',
+      focusId: null,
+      focusOffset: 0,
+      selectedIds: [],
+      handleMenuBlockId: null,
+      slashMenu: { active: false, blockId: null, query: '', x: 0, y: 0, idx: 0 },
+      expandedToggles: {},
+      undoStack: [],
+      redoStack: [],
+      _focusGen: 0,
+    }, {
+      // ── Block CRUD ──
+      addBlock: function(state, opts) {
+        var type = (opts && opts.type) || 'paragraph';
+        var afterId = opts && opts.afterId;
+        var content = (opts && opts.content) || '';
+        var meta = (opts && opts.meta) || {};
+        var b = makeBlock(type, content, meta);
+        var blocks = clone(state.blocks);
+        if (afterId) {
+          var idx = blocks.findIndex(function(x) { return x.id === afterId; });
+          blocks.splice(idx + 1, 0, b);
+        } else {
+          blocks.push(b);
+        }
+        var u = pushUndoNow(state);
+        return { blocks: blocks, focusId: b.id, focusOffset: 0, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+      },
+
+      removeBlock: function(state, opts) {
+        var id = opts && opts.id;
+        if (state.blocks.length <= 1) return {};
+        var idx = state.blocks.findIndex(function(x) { return x.id === id; });
+        var blocks = state.blocks.filter(function(x) { return x.id !== id; });
+        // Focus previous block (natural for Backspace), fall back to next
+        var focusIdx = idx > 0 ? idx - 1 : 0;
+        var focusId = (blocks[focusIdx] || blocks[0]).id;
+        var u = pushUndoNow(state);
+        return { blocks: blocks, focusId: focusId, focusOffset: -1, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+      },
+
+      // LEARNING 2: Mutate in-place, do NOT return a `blocks` key.
+      // Returning cloned blocks would trigger list() to re-render the
+      // contenteditable, destroying focus and cursor position mid-keystroke.
+      updateContent: function(state, opts) {
+        var id = opts.id, content = opts.content, offset = opts.offset;
+        var b = state.blocks.find(function(x) { return x.id === id; });
+        if (!b) return {};
+        var oldLen = b.content.length;
+        b.content = content;
+        // Shift marks based on edit
+        if (b.marks.length && opts.editPos != null) {
+          var delta = content.length - oldLen;
+          b.marks = b.marks.map(function(m) {
+            var mc = Object.assign({}, m);
+            if (mc.from >= opts.editPos) mc.from = Math.max(0, mc.from + delta);
+            if (mc.to >= opts.editPos) mc.to = Math.max(mc.from, mc.to + delta);
+            return mc;
+          }).filter(function(m) { return m.from < m.to; });
+        }
+        var u = pushUndo(state, false);
+        // No `blocks` key — list() sees no change, skips re-render, focus preserved
+        return Object.assign({ focusId: id, focusOffset: offset != null ? offset : content.length }, u);
+      },
+
+      setBlockMeta: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var b = blocks.find(function(x) { return x.id === opts.id; });
+        if (!b) return {};
+        b.meta = Object.assign({}, b.meta, opts.meta);
+        return { blocks: blocks };
+      },
+
+      // ── Type conversion ──
+      convertBlock: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var b = blocks.find(function(x) { return x.id === opts.id; });
+        if (!b) return {};
+        var u = pushUndoNow(state);
+        b.type = opts.type;
+        if (opts.meta) b.meta = Object.assign({}, b.meta, opts.meta);
+        if (opts.content != null) b.content = opts.content;
+        return { blocks: blocks, undoStack: u.undoStack, redoStack: [] };
+      },
+
+      // ── Structure ──
+      splitBlock: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var idx = blocks.findIndex(function(x) { return x.id === opts.id; });
+        if (idx < 0) return {};
+        var b = blocks[idx];
+        var offset = opts.offset || 0;
+        var u = pushUndoNow(state);
+        var after = b.content.slice(offset);
+        b.content = b.content.slice(0, offset);
+        // Split marks
+        var leftMarks = [], rightMarks = [];
+        (b.marks || []).forEach(function(m) {
+          if (m.to <= offset) leftMarks.push(m);
+          else if (m.from >= offset) rightMarks.push({ type: m.type, from: m.from - offset, to: m.to - offset, meta: m.meta });
+          else {
+            leftMarks.push({ type: m.type, from: m.from, to: offset, meta: m.meta });
+            rightMarks.push({ type: m.type, from: 0, to: m.to - offset, meta: m.meta });
+          }
+        });
+        b.marks = leftMarks;
+        var newB = makeBlock('paragraph', after);
+        newB.marks = rightMarks;
+        newB.indent = b.indent;
+        blocks.splice(idx + 1, 0, newB);
+        return { blocks: blocks, focusId: newB.id, focusOffset: 0, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+      },
+
+      mergeBlocks: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var idx = blocks.findIndex(function(x) { return x.id === opts.id; });
+        if (idx <= 0) return {};
+        var u = pushUndoNow(state);
+        var prev = blocks[idx - 1];
+        var cur = blocks[idx];
+        if (prev.type === 'divider') {
+          blocks.splice(idx - 1, 1);
+          return { blocks: blocks, focusId: cur.id, focusOffset: 0, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+        }
+        var prevLen = prev.content.length;
+        prev.content += cur.content;
+        // Merge marks
+        var shifted = (cur.marks || []).map(function(m) { return { type: m.type, from: m.from + prevLen, to: m.to + prevLen, meta: m.meta }; });
+        prev.marks = (prev.marks || []).concat(shifted);
+        blocks.splice(idx, 1);
+        return { blocks: blocks, focusId: prev.id, focusOffset: prevLen, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+      },
+
+      indentBlock: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var b = blocks.find(function(x) { return x.id === opts.id; });
+        if (!b || b.indent >= 3) return {};
+        b.indent++;
+        return { blocks: blocks, focusId: opts.id, focusOffset: opts.offset != null ? opts.offset : -1, _focusGen: state._focusGen + 1 };
+      },
+
+      outdentBlock: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var b = blocks.find(function(x) { return x.id === opts.id; });
+        if (!b || b.indent <= 0) return {};
+        b.indent--;
+        return { blocks: blocks, focusId: opts.id, focusOffset: opts.offset != null ? opts.offset : -1, _focusGen: state._focusGen + 1 };
+      },
+
+      moveBlock: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var fromIdx = blocks.findIndex(function(x) { return x.id === opts.id; });
+        if (fromIdx < 0) return {};
+        var u = pushUndoNow(state);
+        var moved = blocks.splice(fromIdx, 1)[0];
+        if (opts.afterId) {
+          var toIdx = blocks.findIndex(function(x) { return x.id === opts.afterId; });
+          blocks.splice(toIdx + 1, 0, moved);
+        } else if (opts.direction === 'up' && fromIdx > 0) {
+          blocks.splice(fromIdx - 1, 0, moved);
+        } else if (opts.direction === 'down' && fromIdx < blocks.length) {
+          blocks.splice(fromIdx + 1, 0, moved);
+        } else {
+          blocks.splice(fromIdx, 0, moved);
+          return {};
+        }
+        return { blocks: blocks, undoStack: u.undoStack, redoStack: [] };
+      },
+
+      duplicateBlock: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var idx = blocks.findIndex(function(x) { return x.id === opts.id; });
+        if (idx < 0) return {};
+        var u = pushUndoNow(state);
+        var dup = clone(blocks[idx]);
+        dup.id = uid();
+        blocks.splice(idx + 1, 0, dup);
+        return { blocks: blocks, focusId: dup.id, focusOffset: dup.content.length, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+      },
+
+      // ── List continuation ──
+      continueList: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var idx = blocks.findIndex(function(x) { return x.id === opts.id; });
+        if (idx < 0) return {};
+        var b = blocks[idx];
+        var u = pushUndoNow(state);
+        // Empty item → convert to paragraph (exit list). If indented, outdent first.
+        if (!b.content.trim()) {
+          if (b.indent > 0) {
+            b.indent--;
+            return { blocks: blocks, undoStack: u.undoStack, redoStack: [] };
+          }
+          b.type = 'paragraph';
+          b.meta = {};
+          return { blocks: blocks, undoStack: u.undoStack, redoStack: [] };
+        }
+        // Split at cursor, new block inherits type + indent
+        var offset = opts.offset || 0;
+        var after = b.content.slice(offset);
+        b.content = b.content.slice(0, offset);
+        var leftMarks = [], rightMarks = [];
+        (b.marks || []).forEach(function(m) {
+          if (m.to <= offset) leftMarks.push(m);
+          else if (m.from >= offset) rightMarks.push({ type: m.type, from: m.from - offset, to: m.to - offset, meta: m.meta });
+          else {
+            leftMarks.push({ type: m.type, from: m.from, to: offset, meta: m.meta });
+            rightMarks.push({ type: m.type, from: 0, to: m.to - offset, meta: m.meta });
+          }
+        });
+        b.marks = leftMarks;
+        var newB = makeBlock(b.type, after, b.type === 'todoList' ? { checked: false } : Object.assign({}, b.meta));
+        newB.marks = rightMarks;
+        newB.indent = b.indent;
+        blocks.splice(idx + 1, 0, newB);
+        return { blocks: blocks, focusId: newB.id, focusOffset: 0, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+      },
+
+      // ── Forward-delete merge ──
+      mergeWithNext: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var idx = blocks.findIndex(function(x) { return x.id === opts.id; });
+        if (idx < 0 || idx >= blocks.length - 1) return {};
+        var u = pushUndoNow(state);
+        var cur = blocks[idx];
+        var next = blocks[idx + 1];
+        if (next.type === 'divider') {
+          blocks.splice(idx + 1, 1);
+          return { blocks: blocks, focusId: cur.id, focusOffset: cur.content.length, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+        }
+        var curLen = cur.content.length;
+        cur.content += next.content;
+        var shifted = (next.marks || []).map(function(m) { return { type: m.type, from: m.from + curLen, to: m.to + curLen, meta: m.meta }; });
+        cur.marks = (cur.marks || []).concat(shifted);
+        blocks.splice(idx + 1, 1);
+        return { blocks: blocks, focusId: cur.id, focusOffset: curLen, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+      },
+
+      // ── Remove selected blocks ──
+      removeSelectedBlocks: function(state) {
+        var ids = state.selectedIds;
+        if (!ids.length) return {};
+        var u = pushUndoNow(state);
+        var blocks = state.blocks.filter(function(x) { return ids.indexOf(x.id) < 0; });
+        if (!blocks.length) blocks = [makeBlock('paragraph', '')];
+        return { blocks: blocks, selectedIds: [], mode: 'edit', focusId: blocks[0].id, focusOffset: 0, undoStack: u.undoStack, redoStack: [], _focusGen: state._focusGen + 1 };
+      },
+
+      // ── Handle menu ──
+      openHandleMenu: function(state, opts) {
+        return { handleMenuBlockId: opts.id };
+      },
+
+      closeHandleMenu: function() {
+        return { handleMenuBlockId: null };
+      },
+
+      // ── Marks ──
+      toggleMark: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var b = blocks.find(function(x) { return x.id === opts.id; });
+        if (!b) return {};
+        var u = pushUndoNow(state);
+        var from = opts.from, to = opts.to, type = opts.type;
+        if (from == null || to == null || from === to) return {};
+        var meta = opts.meta || undefined;
+        // Check if mark already covers this range
+        var existing = b.marks.findIndex(function(m) { return m.type === type && m.from <= from && m.to >= to; });
+        if (existing >= 0) {
+          // Remove/split existing mark
+          var em = b.marks[existing];
+          b.marks.splice(existing, 1);
+          if (em.from < from) b.marks.push({ type: type, from: em.from, to: from, meta: em.meta });
+          if (em.to > to) b.marks.push({ type: type, from: to, to: em.to, meta: em.meta });
+        } else {
+          b.marks.push({ type: type, from: from, to: to, meta: meta });
+          // Merge overlapping marks of same type
+          b.marks = mergeSameTypeMarks(b.marks, type);
+        }
+        return { blocks: blocks, undoStack: u.undoStack, redoStack: [] };
+      },
+
+      // ── Selection ──
+      setFocus: function(state, opts) {
+        return { focusId: opts.id, focusOffset: opts.offset != null ? opts.offset : 0, _focusGen: state._focusGen + 1 };
+      },
+
+      selectBlocks: function(state, opts) {
+        return { selectedIds: opts.ids || [] };
+      },
+
+      clearSelection: function() {
+        return { selectedIds: [] };
+      },
+
+      // ── Slash menu ──
+      openSlash: function(state, opts) {
+        return { slashMenu: { active: true, blockId: opts.blockId, query: '', x: opts.x || 0, y: opts.y || 0, idx: 0 } };
+      },
+
+      closeSlash: function() {
+        return { slashMenu: { active: false, blockId: null, query: '', x: 0, y: 0, idx: 0 } };
+      },
+
+      filterSlash: function(state, opts) {
+        return { slashMenu: Object.assign({}, state.slashMenu, { query: opts.query || '', idx: 0 }) };
+      },
+
+      // ── Toggle ──
+      toggleExpand: function(state, opts) {
+        var exp = Object.assign({}, state.expandedToggles);
+        exp[opts.id] = !exp[opts.id];
+        return { expandedToggles: exp };
+      },
+
+      // ── Todo ──
+      toggleCheck: function(state, opts) {
+        var blocks = clone(state.blocks);
+        var b = blocks.find(function(x) { return x.id === opts.id; });
+        if (!b || b.type !== 'todoList') return {};
+        b.meta = Object.assign({}, b.meta, { checked: !b.meta.checked });
+        return { blocks: blocks };
+      },
+
+      // ── History ──
+      undo: function(state) {
+        if (!state.undoStack.length) return {};
+        var stack = state.undoStack.slice();
+        var blocks = stack.pop();
+        var redo = state.redoStack.concat([clone(state.blocks)]);
+        return { blocks: blocks, undoStack: stack, redoStack: redo };
+      },
+
+      redo: function(state) {
+        if (!state.redoStack.length) return {};
+        var stack = state.redoStack.slice();
+        var blocks = stack.pop();
+        var undo = state.undoStack.concat([clone(state.blocks)]);
+        return { blocks: blocks, undoStack: undo, redoStack: stack };
+      },
+
+      // ── Document ──
+      setTitle: function(state, opts) {
+        return { doc: Object.assign({}, state.doc, { title: opts.title }) };
+      },
+
+      setIcon: function(state, opts) {
+        return { doc: Object.assign({}, state.doc, { icon: opts.icon }) };
+      },
+
+      // ── Custom block registration (MCP-callable) ──
+      registerBlock: function(state, opts) {
+        registerBlockType(opts);
+        return {};
+      },
+    });
+
+    function mergeSameTypeMarks(marks, type) {
+      var ofType = marks.filter(function(m) { return m.type === type; }).sort(function(a, b) { return a.from - b.from; });
+      var other = marks.filter(function(m) { return m.type !== type; });
+      var merged = [];
+      ofType.forEach(function(m) {
+        var last = merged[merged.length - 1];
+        if (last && last.to >= m.from) {
+          last.to = Math.max(last.to, m.to);
+        } else {
+          merged.push(Object.assign({}, m));
+        }
+      });
+      return other.concat(merged);
+    }
+
+    // ── Mark rendering ──
+    function renderMarkedContent(content, marks) {
+      if (!marks || !marks.length) return [content];
+      // Build boundary points
+      var points = new Set([0, content.length]);
+      marks.forEach(function(m) { points.add(Math.max(0, m.from)); points.add(Math.min(content.length, m.to)); });
+      var sorted = Array.from(points).sort(function(a, b) { return a - b; });
+      var spans = [];
+      for (var i = 0; i < sorted.length - 1; i++) {
+        var from = sorted[i], to = sorted[i + 1];
+        var text = content.slice(from, to);
+        if (!text) continue;
+        var activeMarks = marks.filter(function(m) { return m.from <= from && m.to >= to; });
+        if (!activeMarks.length) {
+          spans.push(text);
+        } else {
+          var classes = [];
+          var isLink = false, href = '#';
+          activeMarks.forEach(function(m) {
+            if (m.type === 'bold') classes.push('b-mark-bold');
+            if (m.type === 'italic') classes.push('b-mark-italic');
+            if (m.type === 'underline') classes.push('b-mark-underline');
+            if (m.type === 'strikethrough') classes.push('b-mark-strike');
+            if (m.type === 'code') classes.push('b-mark-code');
+            if (m.type === 'highlight') classes.push('b-mark-highlight');
+            if (m.type === 'link') { classes.push('b-mark-link'); isLink = true; href = (m.meta && m.meta.href) || '#'; }
+          });
+          var attrs = { class: classes.join(' ') };
+          if (isLink) attrs.href = href;
+          spans.push(h(isLink ? 'a' : 'span', attrs, text));
+        }
+      }
+      return spans;
+    }
+
+    // ── Focus management ──
+    // LEARNING 3: Generation counter pattern for focus restoration.
+    // Only structural actions (split, merge, add, move, undo) bump _focusGen.
+    // The effect ONLY depends on focusGen via store.select — NOT store.get().
+    // State reads (focusId, focusOffset) are inside rAF, outside the effect's
+    // reactive scope, preventing the effect from subscribing to every change.
+    var focusGen = store.select('_focusGen');
+    var lastFocusGen = 0;
+    effect(function() {
+      var gen = focusGen();
+      if (gen === lastFocusGen) return;
+      lastFocusGen = gen;
+      // LEARNING 1: store.get() here is OUTSIDE the effect (inside rAF callback).
+      // Moving it inside the effect body would subscribe to every state change.
+      // Double rAF: first frame lets list() reconcile the DOM,
+      // second frame places the cursor on the updated content.
+      requestAnimationFrame(function() { requestAnimationFrame(function() {
+        var s = store.get();
+        var fid = s.focusId;
+        var foff = s.focusOffset;
+        if (!fid) return;
+        var el = document.querySelector('[data-block-id="' + fid + '"] .b-content');
+        if (!el) return;
+        el.focus();
+        if (foff < 0) {
+          setCursorEnd(el);
+        } else {
+          setCursorAt(el, foff);
+        }
+      }); });
+    });
+
+    function setCursorAt(el, offset) {
+      try {
+        var sel = window.getSelection();
+        var range = document.createRange();
+        var node = el.firstChild;
+        if (!node) { range.selectNodeContents(el); range.collapse(true); }
+        else {
+          // Walk text nodes
+          var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          var pos = 0;
+          var found = false;
+          while (walker.nextNode()) {
+            var tn = walker.currentNode;
+            if (pos + tn.length >= offset) {
+              range.setStart(tn, offset - pos);
+              range.collapse(true);
+              found = true;
+              break;
+            }
+            pos += tn.length;
+          }
+          if (!found) { range.selectNodeContents(el); range.collapse(false); }
+        }
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } catch(e) {}
+    }
+
+    function setCursorEnd(el) {
+      try {
+        var sel = window.getSelection();
+        var range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } catch(e) {}
+    }
+
+    function getCursorOffset(el) {
+      var sel = window.getSelection();
+      if (!sel.rangeCount) return 0;
+      var range = sel.getRangeAt(0);
+      var pre = range.cloneRange();
+      pre.selectNodeContents(el);
+      pre.setEnd(range.startContainer, range.startOffset);
+      return pre.toString().length;
+    }
+
+    function getSelectionRange(el) {
+      var sel = window.getSelection();
+      if (!sel.rangeCount) return null;
+      var range = sel.getRangeAt(0);
+      if (range.collapsed) return null;
+      var preStart = range.cloneRange();
+      preStart.selectNodeContents(el);
+      preStart.setEnd(range.startContainer, range.startOffset);
+      var from = preStart.toString().length;
+      var to = from + range.toString().length;
+      if (from === to) return null;
+      return { from: from, to: to };
+    }
+
+    // ── Markdown auto-convert ──
+    function checkMarkdownConvert(blockId, content) {
+      var patterns = [
+        { re: /^# $/, type: 'heading', meta: { level: 1 } },
+        { re: /^## $/, type: 'heading', meta: { level: 2 } },
+        { re: /^### $/, type: 'heading', meta: { level: 3 } },
+        { re: /^[-*] $/, type: 'bulletList' },
+        { re: /^1\. $/, type: 'numberedList' },
+        { re: /^\[\] $/, type: 'todoList', meta: { checked: false } },
+        { re: /^> $/, type: 'quote' },
+        { re: /^---$/, type: 'divider' },
+        { re: /^```$/, type: 'code', meta: { language: 'js' } },
+      ];
+      for (var i = 0; i < patterns.length; i++) {
+        if (patterns[i].re.test(content)) {
+          var newContent = patterns[i].type === 'divider' || patterns[i].type === 'code' ? '' : '';
+          batch(function() {
+            store.actions.convertBlock({ id: blockId, type: patterns[i].type, meta: patterns[i].meta || {}, content: newContent });
+          });
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // ── Get numbered list position ──
+    function getListNumber(blocks, idx) {
+      var count = 1;
+      for (var i = idx - 1; i >= 0; i--) {
+        if (blocks[i].type === 'numberedList' && blocks[i].indent === blocks[idx].indent) count++;
+        else break;
+      }
+      return count;
+    }
+
+    // ── Live CSS injection for callout+code pairs ──
+    var _injectedStyles = {};  // blockId → <style> element
+
+    function injectBlockCSS(blockId, css) {
+      var el = _injectedStyles[blockId];
+      if (!el) {
+        el = document.createElement('style');
+        el.setAttribute('data-block-css', blockId);
+        document.head.appendChild(el);
+        _injectedStyles[blockId] = el;
+      }
+      // Scope selectors to .b-styled-{blockId}, but skip inside @keyframes
+      var scope = '.b-styled-' + blockId;
+      var scoped = '';
+      var depth = 0;
+      var inAtBlock = 0; // depth at which an @keyframes started
+      var buf = '';
+      for (var ci = 0; ci < css.length; ci++) {
+        var ch = css[ci];
+        if (ch === '{') {
+          if (depth === 0 && !inAtBlock) {
+            var sel = buf.trim();
+            if (sel.charAt(0) === '@') {
+              // @keyframes, @media etc — don't scope the at-rule itself
+              if (/^@keyframes\b/i.test(sel) || /^@-webkit-keyframes\b/i.test(sel)) {
+                inAtBlock = 1;
+              }
+              scoped += buf + '{';
+            } else {
+              // Scope each selector
+              var parts = sel.split(',').map(function(s) { return s.trim() ? scope + ' ' + s.trim() : s; });
+              scoped += parts.join(', ') + ' {';
+            }
+          } else {
+            scoped += buf + '{';
+          }
+          buf = '';
+          depth++;
+        } else if (ch === '}') {
+          depth--;
+          scoped += buf + '}';
+          buf = '';
+          if (depth === 0) inAtBlock = 0;
+        } else {
+          buf += ch;
+        }
+      }
+      scoped += buf;
+      if (el.textContent !== scoped) el.textContent = scoped;
+    }
+
+    function removeBlockCSS(blockId) {
+      var el = _injectedStyles[blockId];
+      if (el) { el.remove(); delete _injectedStyles[blockId]; }
+    }
+
+    // Check if a block is a CSS code block paired with the previous callout
+    function isStyledPair(blocks, idx) {
+      if (idx <= 0) return false;
+      var cur = blocks[idx];
+      var prev = blocks[idx - 1];
+      return cur.type === 'code' && (cur.meta && cur.meta.language === 'css') && prev.type === 'callout';
+    }
+
+    function getNextCSSBlock(blocks, idx) {
+      if (idx >= blocks.length - 1) return null;
+      var next = blocks[idx + 1];
+      if (next.type === 'code' && next.meta && next.meta.language === 'css') return next;
+      return null;
+    }
+
+    // ── Render a single block ──
+    // LEARNING 1: Use store.select() for reactive attributes inside renderBlock.
+    // store.get() here would be fine (renderBlock is not inside an effect), but
+    // selectedIds/expandedToggles are used in reactive class/show attributes
+    // which ARE tracked — so select() ensures minimal re-evaluation.
+    var selectedSignal = store.select('selectedIds');
+    var expandedSignal = store.select('expandedToggles');
+    var modeSignal = store.select('mode');
+    function renderBlock(block, index) {
+      var wrapClass = function() {
+        var sel = selectedSignal();
+        var isSelected = sel.indexOf(block.id) >= 0;
+        var inSelectMode = modeSignal() === 'select';
+        var cls = 'b-block';
+        if (isSelected && inSelectMode && sel.length === 1) cls += ' b-block-focused';
+        else if (isSelected) cls += ' b-block-selected';
+        if (block.indent) cls += ' b-indent-' + block.indent;
+        return cls;
+      };
+
+      var handle = h('div', { style: 'position:relative' },
+        h('button', {
+          class: 'b-handle', draggable: true,
+          onDragstart: function(e) {
+            e.dataTransfer.setData('text/plain', block.id);
+            e.dataTransfer.effectAllowed = 'move';
+          },
+          onClick: function(e) {
+            e.stopPropagation();
+            var s = store.get();
+            store.set(Object.assign({}, s, { handleMenuBlockId: s.handleMenuBlockId === block.id ? null : block.id }));
+          },
+        }, '⠿'),
+        h('div', {
+          style: function() { return handleMenuSignal() === block.id ? '' : 'display:none'; },
+        }, renderHandleMenu(block.id))
+      );
+
+      var contentEl;
+
+      if (block.type === 'divider') {
+        contentEl = h('div', { class: 'b-divider' });
+      } else if (block.type === 'code') {
+        var codeEl = h('div', { style: 'position:relative;width:100%' },
+          h('div', {
+            class: 'b-code-block b-content', contenteditable: 'true', spellcheck: 'false',
+            'data-placeholder': 'Code...',
+            onInput: function(e) {
+              handleInput(block.id, e);
+              // Live-update CSS if this is a paired CSS block
+              if (block.meta && block.meta.language === 'css') {
+                var bs = store.get().blocks;
+                var idx = bs.findIndex(function(x) { return x.id === block.id; });
+                if (idx > 0 && bs[idx - 1].type === 'callout') {
+                  injectBlockCSS(bs[idx - 1].id, e.target.textContent || '');
+                }
+              }
+            },
+            onKeydown: handleBlockKeydown.bind(null, block.id),
+            onPaste: handlePaste.bind(null, block.id),
+          }, block.content),
+          h('span', { class: 'b-code-lang' }, (block.meta && block.meta.language) || 'js')
+        );
+
+        // Check pair status at render time (list() re-renders on structural changes)
+        var isPaired = (function() {
+          if (!block.meta || block.meta.language !== 'css') return false;
+          var bs = store.get().blocks;
+          var idx = bs.findIndex(function(x) { return x.id === block.id; });
+          return isStyledPair(bs, idx);
+        })();
+
+        if (isPaired) {
+          var showCode = signal(false, 'showCode_' + block.id);
+          contentEl = h('div', { style: 'width:100%' },
+            h('button', {
+              class: 'b-styled-code-toggle',
+              onClick: function() { showCode[1](function(v) { return !v; }); },
+            }, function() { return showCode[0]() ? '▾ css' : '▸ css'; }),
+            h('div', { show: showCode[0] }, codeEl)
+          );
+        } else {
+          contentEl = codeEl;
+        }
+      } else if (block.type === 'todoList') {
+        var checked = block.meta && block.meta.checked;
+        contentEl = h('div', { class: 'b-todo-wrap' },
+          h('input', {
+            type: 'checkbox', class: 'b-todo-check',
+            checked: !!checked,
+            onClick: function() { store.actions.toggleCheck({ id: block.id }); },
+          }),
+          h('div', {
+            class: 'b-content' + (checked ? ' b-todo-checked' : ''),
+            contenteditable: 'true',
+            'data-placeholder': 'To-do',
+            onInput: handleInput.bind(null, block.id),
+            onKeydown: handleBlockKeydown.bind(null, block.id),
+            onPaste: handlePaste.bind(null, block.id),
+            onMouseup: handleSelectionChange,
+            onKeyup: handleSelectionChange,
+          }, renderMarkedContent(block.content, block.marks))
+        );
+      } else if (block.type === 'callout') {
+        var calloutInner = h('div', { class: 'b-callout' },
+          h('span', { class: 'b-callout-icon' }, (block.meta && block.meta.icon) || '💡'),
+          h('div', {
+            class: 'b-content', contenteditable: 'true',
+            'data-placeholder': 'Callout...',
+            onInput: handleInput.bind(null, block.id),
+            onKeydown: handleBlockKeydown.bind(null, block.id),
+            onPaste: handlePaste.bind(null, block.id),
+            onMouseup: handleSelectionChange,
+            onKeyup: handleSelectionChange,
+          }, renderMarkedContent(block.content, block.marks))
+        );
+
+        // Check pair status at render time
+        var cssPartner = (function() {
+          var bs = store.get().blocks;
+          var idx = bs.findIndex(function(x) { return x.id === block.id; });
+          return getNextCSSBlock(bs, idx);
+        })();
+
+        if (cssPartner) {
+          injectBlockCSS(block.id, cssPartner.content);
+          contentEl = h('div', { class: 'b-styled-block b-styled-preview b-styled-' + block.id }, calloutInner);
+        } else {
+          removeBlockCSS(block.id);
+          contentEl = calloutInner;
+        }
+      } else if (block.type === 'toggle') {
+        contentEl = h('div', { class: 'b-toggle-wrap' },
+          h('div', { class: 'b-toggle-header' },
+            h('button', {
+              class: function() { return 'b-toggle-arrow' + (expandedSignal()[block.id] ? ' b-toggle-arrow-open' : ''); },
+              onClick: function() { store.actions.toggleExpand({ id: block.id }); },
+            }, '▶'),
+            h('div', {
+              class: 'b-content', contenteditable: 'true',
+              'data-placeholder': 'Toggle...',
+              onInput: handleInput.bind(null, block.id),
+              onKeydown: handleBlockKeydown.bind(null, block.id),
+              onPaste: handlePaste.bind(null, block.id),
+              onMouseup: handleSelectionChange,
+              onKeyup: handleSelectionChange,
+            }, renderMarkedContent(block.content, block.marks))
+          ),
+          h('div', { class: 'b-toggle-children', show: function() { return !!expandedSignal()[block.id]; } },
+            h('div', {
+              class: 'b-content', contenteditable: 'true',
+              'data-placeholder': 'Empty toggle. Click to add content.',
+              style: 'color: var(--b-text-subtle); min-height: 1.5em;',
+            })
+          )
+        );
+      } else if (CUSTOM_BLOCKS[block.type]) {
+        // Custom registered block type
+        var customDef = CUSTOM_BLOCKS[block.type];
+        var customContentEl = h('div', {
+          class: 'b-content', contenteditable: 'true',
+          'data-placeholder': customDef.label || block.type,
+          onInput: handleInput.bind(null, block.id),
+          onKeydown: handleBlockKeydown.bind(null, block.id),
+          onPaste: handlePaste.bind(null, block.id),
+          onMouseup: handleSelectionChange,
+          onKeyup: handleSelectionChange,
+        }, renderMarkedContent(block.content, block.marks));
+        contentEl = customDef.render
+          ? customDef.render(block, customContentEl)
+          : h('div', { class: 'b-custom-' + block.type }, customContentEl);
+      } else {
+        // paragraph, heading, bulletList, numberedList, quote
+        var cls = 'b-content';
+        var placeholder = "Type '/' for commands...";
+        if (block.type === 'heading') {
+          cls += ' b-heading-' + ((block.meta && block.meta.level) || 1);
+          placeholder = 'Heading ' + ((block.meta && block.meta.level) || 1);
+        } else if (block.type === 'quote') {
+          cls += ' b-quote';
+          placeholder = 'Quote';
+        } else if (block.type === 'bulletList') {
+          placeholder = 'List item';
+        } else if (block.type === 'numberedList') {
+          placeholder = 'List item';
+        }
+
+        if (block.type === 'numberedList') {
+          // Reactive marker: recomputes when blocks change
+          var blocksRef = store.select('blocks');
+          contentEl = h('div', { style: 'position:relative;padding-left:1.5rem;width:100%' },
+            h('span', { class: 'b-numbered-marker' }, function() {
+              var bs = blocksRef();
+              var idx = bs.findIndex(function(x) { return x.id === block.id; });
+              return idx >= 0 ? getListNumber(bs, idx) + '.' : '1.';
+            }),
+            h('div', {
+              class: cls, contenteditable: 'true',
+              'data-placeholder': placeholder,
+              onInput: handleInput.bind(null, block.id),
+              onKeydown: handleBlockKeydown.bind(null, block.id),
+              onPaste: handlePaste.bind(null, block.id),
+              onMouseup: handleSelectionChange,
+              onKeyup: handleSelectionChange,
+            }, renderMarkedContent(block.content, block.marks))
+          );
+        } else if (block.type === 'bulletList') {
+          contentEl = h('div', { style: 'position:relative;padding-left:1.5rem;width:100%' },
+            h('span', { class: 'b-numbered-marker' }, '•'),
+            h('div', {
+              class: cls, contenteditable: 'true',
+              'data-placeholder': placeholder,
+              onInput: handleInput.bind(null, block.id),
+              onKeydown: handleBlockKeydown.bind(null, block.id),
+              onPaste: handlePaste.bind(null, block.id),
+              onMouseup: handleSelectionChange,
+              onKeyup: handleSelectionChange,
+            }, renderMarkedContent(block.content, block.marks))
+          );
+        } else {
+          contentEl = h('div', {
+            class: cls, contenteditable: 'true',
+            'data-placeholder': placeholder,
+            onInput: handleInput.bind(null, block.id),
+            onKeydown: handleBlockKeydown.bind(null, block.id),
+            onPaste: handlePaste.bind(null, block.id),
+            onMouseup: handleSelectionChange,
+            onKeyup: handleSelectionChange,
+          }, renderMarkedContent(block.content, block.marks));
+        }
+      }
+
+      return h('div', {
+        class: wrapClass,
+        'data-block-id': block.id,
+        'data-block-type': block.type,
+        onMousedown: function(e) {
+          var s = store.get();
+          if (s.mode === 'select') {
+            // Exit select mode, let the click land on contenteditable
+            store.set(Object.assign({}, s, { mode: 'edit', selectedIds: [] }));
+          }
+        },
+        onDragover: function(e) {
+          e.preventDefault();
+          var rect = e.currentTarget.getBoundingClientRect();
+          var mid = rect.top + rect.height / 2;
+          e.currentTarget.classList.remove('b-drop-top', 'b-drop-bottom');
+          e.currentTarget.classList.add(e.clientY < mid ? 'b-drop-top' : 'b-drop-bottom');
+        },
+        onDragleave: function(e) {
+          e.currentTarget.classList.remove('b-drop-top', 'b-drop-bottom');
+        },
+        onDrop: function(e) {
+          e.preventDefault();
+          e.currentTarget.classList.remove('b-drop-top', 'b-drop-bottom');
+          var draggedId = e.dataTransfer.getData('text/plain');
+          if (!draggedId || draggedId === block.id) return;
+          var rect = e.currentTarget.getBoundingClientRect();
+          var mid = rect.top + rect.height / 2;
+          if (e.clientY < mid) {
+            // Insert before this block = after previous
+            var blocks = store.get().blocks;
+            var idx = blocks.findIndex(function(x) { return x.id === block.id; });
+            var afterId = idx > 0 ? blocks[idx - 1].id : null;
+            store.actions.moveBlock({ id: draggedId, afterId: afterId });
+          } else {
+            store.actions.moveBlock({ id: draggedId, afterId: block.id });
+          }
+        },
+      }, handle, contentEl);
+    }
+
+    // ── Input handler ──
+    function handleInput(blockId, e) {
+      var el = e.target;
+      var content = el.textContent || '';
+      var offset = getCursorOffset(el);
+
+      // LEARNING 6: Batch slash detection — three store updates (openSlash,
+      // filterSlash, updateContent) coalesced into one subscriber notification.
+      if (content.startsWith('/')) {
+        var rect = el.getBoundingClientRect();
+        batch(function() {
+          var s = store.get();
+          if (!s.slashMenu.active) {
+            store.actions.openSlash({ blockId: blockId, x: rect.left, y: rect.bottom + 4 });
+          }
+          store.actions.filterSlash({ query: content.slice(1) });
+          store.actions.updateContent({ id: blockId, content: content, offset: offset, editPos: offset });
+        });
+        return;
+      } else if (store.get().slashMenu.active) {
+        store.actions.closeSlash();
+      }
+
+      // Markdown auto-convert
+      if (checkMarkdownConvert(blockId, content)) return;
+
+      store.actions.updateContent({ id: blockId, content: content, offset: offset, editPos: offset });
+    }
+
+    // ── Selection change for toolbar ──
+    var toolbarState = signal({ active: false, x: 0, y: 0, blockId: null, from: 0, to: 0 }, 'toolbarState');
+
+    function handleSelectionChange() {
+      setTimeout(function() {
+        var sel = window.getSelection();
+        if (!sel.rangeCount || sel.isCollapsed) {
+          toolbarState[1]({ active: false, x: 0, y: 0, blockId: null, from: 0, to: 0 });
+          return;
+        }
+        var range = sel.getRangeAt(0);
+        var blockEl = range.startContainer.parentElement.closest('[data-block-id]');
+        if (!blockEl) return;
+        var contentEl = blockEl.querySelector('.b-content');
+        if (!contentEl) return;
+        var sr = getSelectionRange(contentEl);
+        if (!sr) { toolbarState[1]({ active: false, x: 0, y: 0, blockId: null, from: 0, to: 0 }); return; }
+        var rect = range.getBoundingClientRect();
+        toolbarState[1]({
+          active: true,
+          x: rect.left + rect.width / 2,
+          y: rect.top - 8,
+          blockId: blockEl.getAttribute('data-block-id'),
+          from: sr.from,
+          to: sr.to,
+        });
+      }, 10);
+    }
+
+    // ── Block keydown ──
+    function handleBlockKeydown(blockId, e) {
+      var s = store.get();
+      var meta = e.metaKey || e.ctrlKey;
+      var shift = e.shiftKey;
+
+      // Slash menu keyboard handling
+      if (s.slashMenu.active) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          var filtered = getFilteredSlash(s.slashMenu.query);
+          var newIdx = Math.min(s.slashMenu.idx + 1, filtered.length - 1);
+          store.set(Object.assign({}, s, { slashMenu: Object.assign({}, s.slashMenu, { idx: newIdx }) }));
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          var newIdx2 = Math.max(s.slashMenu.idx - 1, 0);
+          store.set(Object.assign({}, s, { slashMenu: Object.assign({}, s.slashMenu, { idx: newIdx2 }) }));
+          return;
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          var filtered2 = getFilteredSlash(s.slashMenu.query);
+          if (filtered2[s.slashMenu.idx]) executeSlash(filtered2[s.slashMenu.idx]);
+          return;
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          store.actions.closeSlash();
+          return;
+        }
+      }
+
+      // ── Mark shortcuts ──
+      if (meta && !shift) {
+        if (e.key === 'b') { e.preventDefault(); applyMarkShortcut(blockId, 'bold'); return; }
+        if (e.key === 'i') { e.preventDefault(); applyMarkShortcut(blockId, 'italic'); return; }
+        if (e.key === 'u') { e.preventDefault(); applyMarkShortcut(blockId, 'underline'); return; }
+        if (e.key === 'e') { e.preventDefault(); applyMarkShortcut(blockId, 'code'); return; }
+        if (e.key === 'k') {
+          e.preventDefault();
+          var href = prompt('Enter URL:');
+          if (href) applyMarkShortcut(blockId, 'link', { href: href });
+          return;
+        }
+        if (e.key === 'z') { e.preventDefault(); store.actions.undo(); return; }
+        if (e.key === 'd') { e.preventDefault(); store.actions.duplicateBlock({ id: blockId }); return; }
+      }
+      if (meta && shift) {
+        if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); store.actions.redo(); return; }
+        if (e.key === 's' || e.key === 'S') { e.preventDefault(); applyMarkShortcut(blockId, 'strikethrough'); return; }
+        if (e.key === 'h' || e.key === 'H') { e.preventDefault(); applyMarkShortcut(blockId, 'highlight'); return; }
+        if (e.key === 'ArrowUp') { e.preventDefault(); store.actions.moveBlock({ id: blockId, direction: 'up' }); return; }
+        if (e.key === 'ArrowDown') { e.preventDefault(); store.actions.moveBlock({ id: blockId, direction: 'down' }); return; }
+      }
+
+      // ── Cmd+Enter → always new paragraph below ──
+      if (e.key === 'Enter' && meta) {
+        e.preventDefault();
+        store.actions.addBlock({ afterId: blockId, type: 'paragraph' });
+        return;
+      }
+
+      // ── Enter (per-type routing) ──
+      if (e.key === 'Enter' && !shift && !meta) {
+        var block = s.blocks.find(function(x) { return x.id === blockId; });
+        var behavior = ENTER_BEHAVIOR[block ? block.type : 'paragraph'] || 'split';
+
+        if (behavior === 'split') {
+          e.preventDefault();
+          var el = e.target;
+          var offset = getCursorOffset(el);
+          // Heading: split creates paragraph (not another heading)
+          if (block.type === 'heading') {
+            var content = el.textContent || '';
+            if (offset >= content.length) {
+              // At end → just add paragraph below
+              store.actions.addBlock({ afterId: blockId, type: 'paragraph' });
+            } else {
+              // Mid-text → split, but new block becomes paragraph (splitBlock already does this)
+              store.actions.splitBlock({ id: blockId, offset: offset });
+            }
+            return;
+          }
+          store.actions.splitBlock({ id: blockId, offset: offset });
+          return;
+        }
+        if (behavior === 'continue') {
+          e.preventDefault();
+          var el = e.target;
+          var offset = getCursorOffset(el);
+          store.actions.continueList({ id: blockId, offset: offset });
+          return;
+        }
+        if (behavior === 'newline') {
+          // Allow browser default (\n in contenteditable).
+          // Double-Enter on empty trailing line → exit to new paragraph.
+          var el = e.target;
+          var content = el.textContent || '';
+          if (content.endsWith('\n\n') || content.endsWith('\n') && getCursorOffset(el) === content.length && !content.replace(/\n+$/, '').length) {
+            e.preventDefault();
+            // Trim trailing newlines from current block
+            var trimmed = content.replace(/\n+$/, '');
+            store.actions.updateContent({ id: blockId, content: trimmed, offset: trimmed.length });
+            store.actions.addBlock({ afterId: blockId, type: 'paragraph' });
+            return;
+          }
+          // Let browser insert \n
+          return;
+        }
+        if (behavior === 'none') {
+          e.preventDefault();
+          store.actions.addBlock({ afterId: blockId, type: 'paragraph' });
+          return;
+        }
+      }
+      if (e.key === 'Enter' && shift) {
+        // Allow browser default (soft break in contenteditable)
+        return;
+      }
+
+      // ── Backspace ──
+      if (e.key === 'Backspace' && !meta) {
+        var el2 = e.target;
+        var off = getCursorOffset(el2);
+        if (off === 0) {
+          e.preventDefault();
+          var block = s.blocks.find(function(x) { return x.id === blockId; });
+          var content2 = (el2.textContent || '');
+          // Empty typed block → convert to paragraph first (don't delete)
+          if (!content2 && block && block.type !== 'paragraph') {
+            store.actions.convertBlock({ id: blockId, type: 'paragraph', meta: {} });
+            return;
+          }
+          // Empty paragraph → remove it
+          if (!content2) {
+            store.actions.removeBlock({ id: blockId });
+            return;
+          }
+          // Non-empty typed block at pos 0 → convert to paragraph first
+          if (block && block.type !== 'paragraph') {
+            store.actions.convertBlock({ id: blockId, type: 'paragraph', meta: {} });
+          } else {
+            store.actions.mergeBlocks({ id: blockId });
+          }
+          return;
+        }
+      }
+
+      // ── Delete at end of block → merge with next ──
+      if (e.key === 'Delete' && !meta) {
+        var el5 = e.target;
+        var content5 = el5.textContent || '';
+        var off5 = getCursorOffset(el5);
+        if (off5 >= content5.length) {
+          e.preventDefault();
+          store.actions.mergeWithNext({ id: blockId });
+          return;
+        }
+      }
+
+      // ── Tab ──
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        var tabOff = getCursorOffset(e.target);
+        if (shift) store.actions.outdentBlock({ id: blockId, offset: tabOff });
+        else store.actions.indentBlock({ id: blockId, offset: tabOff });
+        return;
+      }
+
+      // ── Cmd+A → select all blocks ──
+      if (meta && e.key === 'a') {
+        e.preventDefault();
+        var allIds = s.blocks.map(function(b) { return b.id; });
+        store.set(Object.assign({}, s, { mode: 'select', selectedIds: allIds }));
+        e.target.blur();
+        return;
+      }
+
+      // ── Escape → enter block-select mode ──
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        toolbarState[1]({ active: false, x: 0, y: 0, blockId: null, from: 0, to: 0 });
+        store.set(Object.assign({}, store.get(), { mode: 'select', selectedIds: [blockId] }));
+        e.target.blur();
+        return;
+      }
+
+      // ── Arrow keys for block navigation ──
+      if (e.key === 'ArrowUp' && !meta && !shift) {
+        var el3 = e.target;
+        var off3 = getCursorOffset(el3);
+        if (off3 === 0) {
+          e.preventDefault();
+          var idx3 = s.blocks.findIndex(function(x) { return x.id === blockId; });
+          // Skip dividers going up
+          var prev3 = idx3 - 1;
+          while (prev3 >= 0 && s.blocks[prev3].type === 'divider') prev3--;
+          if (prev3 >= 0) {
+            store.actions.setFocus({ id: s.blocks[prev3].id, offset: -1 });
+          } else {
+            // At first block → focus title
+            var titleEl = document.querySelector('.b-title');
+            if (titleEl) { titleEl.focus(); setCursorEnd(titleEl); }
+          }
+        }
+      }
+      if (e.key === 'ArrowDown' && !meta && !shift) {
+        var el4 = e.target;
+        var content4 = el4.textContent || '';
+        var off4 = getCursorOffset(el4);
+        if (off4 >= content4.length) {
+          e.preventDefault();
+          var idx4 = s.blocks.findIndex(function(x) { return x.id === blockId; });
+          // Skip dividers going down
+          var next4 = idx4 + 1;
+          while (next4 < s.blocks.length && s.blocks[next4].type === 'divider') next4++;
+          if (next4 < s.blocks.length) store.actions.setFocus({ id: s.blocks[next4].id, offset: 0 });
+        }
+      }
+    }
+
+    function applyMarkShortcut(blockId, type, meta) {
+      var blockEl = document.querySelector('[data-block-id="' + blockId + '"]');
+      if (!blockEl) return;
+      var contentEl = blockEl.querySelector('.b-content');
+      if (!contentEl) return;
+      var sr = getSelectionRange(contentEl);
+      if (!sr) return;
+      store.actions.toggleMark({ id: blockId, type: type, from: sr.from, to: sr.to, meta: meta });
+    }
+
+    // ── Slash menu ──
+    function getFilteredSlash(query) {
+      if (!query) return SLASH_ITEMS;
+      var q = query.toLowerCase();
+      return SLASH_ITEMS.filter(function(item) {
+        return item.label.toLowerCase().indexOf(q) >= 0 || item.type.toLowerCase().indexOf(q) >= 0;
+      });
+    }
+
+    function executeSlash(item) {
+      var s = store.get();
+      var blockId = s.slashMenu.blockId;
+      batch(function() {
+        store.actions.closeSlash();
+        // Remove the slash from content
+        var block = store.get().blocks.find(function(x) { return x.id === blockId; });
+        if (block) {
+          var content = block.content.replace(/^\/.*/, '');
+          store.actions.updateContent({ id: blockId, content: content, offset: 0 });
+        }
+        store.actions.convertBlock({ id: blockId, type: item.type, meta: item.meta || {} });
+        // Autofocus the converted block so user can type immediately
+        store.actions.setFocus({ id: blockId, offset: 0 });
+      });
+    }
+
+    // ── Block-select mode handler (on editor container) ──
+    function handleEditorKeydown(e) {
+      var s = store.get();
+      if (s.mode !== 'select') return;
+      var ids = s.selectedIds;
+      if (!ids.length) return;
+
+      var meta = e.metaKey || e.ctrlKey;
+
+      // Enter → back to edit mode
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var fid = ids[ids.length - 1];
+        store.set(Object.assign({}, s, { mode: 'edit', selectedIds: [], focusId: fid, focusOffset: -1, _focusGen: s._focusGen + 1 }));
+        return;
+      }
+
+      // Escape → clear selection, back to edit
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        store.set(Object.assign({}, s, { mode: 'edit', selectedIds: [] }));
+        return;
+      }
+
+      // Arrow navigation
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        var anchor = ids[0];
+        var anchorIdx = s.blocks.findIndex(function(x) { return x.id === anchor; });
+        var last = ids[ids.length - 1];
+        var lastIdx = s.blocks.findIndex(function(x) { return x.id === last; });
+        var nextIdx;
+        if (e.shiftKey) {
+          // Extend selection
+          nextIdx = e.key === 'ArrowUp' ? Math.max(0, lastIdx - 1) : Math.min(s.blocks.length - 1, lastIdx + 1);
+          var from = Math.min(anchorIdx, nextIdx), to = Math.max(anchorIdx, nextIdx);
+          var newIds = [];
+          for (var i = from; i <= to; i++) newIds.push(s.blocks[i].id);
+          store.set(Object.assign({}, s, { selectedIds: newIds }));
+        } else {
+          // Move selection
+          nextIdx = e.key === 'ArrowUp' ? Math.max(0, lastIdx - 1) : Math.min(s.blocks.length - 1, lastIdx + 1);
+          store.set(Object.assign({}, s, { selectedIds: [s.blocks[nextIdx].id] }));
+        }
+        return;
+      }
+
+      // Delete/Backspace → remove selected
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        store.actions.removeSelectedBlocks();
+        return;
+      }
+
+      // Cmd+A → select all
+      if (meta && e.key === 'a') {
+        e.preventDefault();
+        store.set(Object.assign({}, s, { selectedIds: s.blocks.map(function(b) { return b.id; }) }));
+        return;
+      }
+
+      // Typing → replace selected with new paragraph containing typed char
+      if (e.key.length === 1 && !meta && !e.altKey) {
+        e.preventDefault();
+        batch(function() {
+          store.actions.removeSelectedBlocks();
+          // After removal, update the focused block with the typed char
+          var s2 = store.get();
+          if (s2.focusId) {
+            store.actions.updateContent({ id: s2.focusId, content: e.key, offset: 1 });
+          }
+        });
+        return;
+      }
+    }
+
+    // ── Handle context menu ──
+    var handleMenuSignal = store.select('handleMenuBlockId');
+
+    function renderHandleMenu(blockId) {
+      var convertTypes = [
+        { type: 'paragraph', label: 'Text' },
+        { type: 'heading', label: 'Heading 1', meta: { level: 1 } },
+        { type: 'heading', label: 'Heading 2', meta: { level: 2 } },
+        { type: 'bulletList', label: 'Bullet List' },
+        { type: 'numberedList', label: 'Numbered List' },
+        { type: 'todoList', label: 'To-do', meta: { checked: false } },
+        { type: 'quote', label: 'Quote' },
+        { type: 'code', label: 'Code', meta: { language: 'js' } },
+      ];
+
+      return h('div', {
+        class: 'b-handle-menu',
+        onMousedown: function(e) { e.preventDefault(); e.stopPropagation(); },
+      },
+        h('button', {
+          class: 'b-handle-menu-item',
+          onClick: function() { store.actions.closeHandleMenu(); store.actions.duplicateBlock({ id: blockId }); },
+        }, '📋 Duplicate'),
+        h('div', { class: 'b-handle-menu-sub b-handle-menu-item' },
+          '🔄 Convert to...',
+          h('div', { class: 'b-handle-submenu' },
+            convertTypes.map(function(ct) {
+              return h('button', {
+                class: 'b-handle-menu-item',
+                onClick: function() {
+                  store.actions.closeHandleMenu();
+                  store.actions.convertBlock({ id: blockId, type: ct.type, meta: ct.meta || {} });
+                },
+              }, ct.label);
+            })
+          )
+        ),
+        h('button', {
+          class: 'b-handle-menu-item b-handle-menu-danger',
+          onClick: function() { store.actions.closeHandleMenu(); store.actions.removeBlock({ id: blockId }); },
+        }, '🗑 Delete')
+      );
+    }
+
+    // ── Smart paste handler ──
+    function handlePaste(blockId, e) {
+      var text = (e.clipboardData || window.clipboardData).getData('text');
+      if (!text) return;
+
+      var el = e.target;
+      var block = store.get().blocks.find(function(x) { return x.id === blockId; });
+      if (!block) return;
+
+      // URL pasted over selection → apply link mark
+      var urlRe = /^https?:\/\/\S+$/;
+      if (urlRe.test(text.trim())) {
+        var contentEl = el.closest('.b-content') || el;
+        var sr = getSelectionRange(contentEl);
+        if (sr) {
+          e.preventDefault();
+          store.actions.toggleMark({ id: blockId, type: 'link', from: sr.from, to: sr.to, meta: { href: text.trim() } });
+          return;
+        }
+        // Bare URL on empty block → insert as link text
+        if (!block.content.trim()) {
+          e.preventDefault();
+          var url = text.trim();
+          store.actions.updateContent({ id: blockId, content: url, offset: url.length });
+          store.actions.toggleMark({ id: blockId, type: 'link', from: 0, to: url.length, meta: { href: url } });
+          return;
+        }
+      }
+
+      // Multi-line text → split into multiple paragraph blocks
+      var lines = text.split('\n');
+      if (lines.length > 1) {
+        e.preventDefault();
+        var offset = getCursorOffset(el);
+        batch(function() {
+          // Insert first line at cursor
+          var before = block.content.slice(0, offset);
+          var after = block.content.slice(offset);
+          store.actions.updateContent({ id: blockId, content: before + lines[0], offset: (before + lines[0]).length });
+          // Add remaining lines as new blocks
+          var prevId = blockId;
+          for (var i = 1; i < lines.length; i++) {
+            var isLast = i === lines.length - 1;
+            var lineContent = isLast ? lines[i] + after : lines[i];
+            store.actions.addBlock({ afterId: prevId, type: 'paragraph', content: lineContent });
+            prevId = store.get().blocks[store.get().blocks.findIndex(function(x) { return x.id === prevId; }) + 1].id;
+          }
+        });
+        return;
+      }
+    }
+
+    // ── Render slash menu ──
+    // LEARNING 4: Reactive style with display:none, not show or when().
+    // show attribute runs via effect (may flash before first paint at 0,0).
+    // when() creates/destroys DOM on toggle (breaks click handler timing).
+    // LEARNING 5: onMousedown preventDefault stops contenteditable blur.
+    var slashMenuSignal = store.select('slashMenu');
+    function renderSlashMenu() {
+      return h('div', {
+        class: 'b-slash-menu',
+        style: function() {
+          var m = slashMenuSignal();
+          if (!m.active) return 'display:none';
+          return 'left:' + m.x + 'px;top:' + m.y + 'px;';
+        },
+        onMousedown: function(e) { e.preventDefault(); },
+      }, SLASH_ITEMS.map(function(item, i) {
+        return h('button', {
+          class: function() { return 'b-slash-item' + (slashMenuSignal().idx === i ? ' b-slash-item-active' : ''); },
+          show: function() {
+            var q = slashMenuSignal().query.toLowerCase();
+            if (!q) return true;
+            return item.label.toLowerCase().indexOf(q) >= 0 || item.type.toLowerCase().indexOf(q) >= 0;
+          },
+          onMouseenter: function() {
+            var cur = store.get().slashMenu;
+            store.set(Object.assign({}, store.get(), { slashMenu: Object.assign({}, cur, { idx: i }) }));
+          },
+          onClick: function(e) {
+            e.stopPropagation();
+            executeSlash(item);
+          },
+        },
+          h('span', { class: 'b-slash-icon' }, item.icon),
+          h('div', {},
+            h('div', { class: 'b-slash-label' }, item.label),
+            h('div', { class: 'b-slash-desc' }, item.desc)
+          )
+        );
+      }));
+    }
+
+    // ── Render inline toolbar ──
+    var toolbarBtns = [
+      { label: 'B', type: 'bold' },
+      { label: 'I', type: 'italic' },
+      { label: 'U', type: 'underline' },
+      { label: 'S', type: 'strikethrough' },
+      { label: '</>', type: 'code' },
+      'sep',
+      { label: '🔗', type: 'link' },
+      { label: '🌟', type: 'highlight' },
+    ];
+    function renderToolbar() {
+      return h('div', {
+        class: 'b-toolbar',
+        style: function() {
+          var ts = toolbarState[0]();
+          if (!ts.active) return 'display:none';
+          return 'left:' + ts.x + 'px;top:' + ts.y + 'px;transform:translate(-50%,-100%)';
+        },
+        onMousedown: function(e) { e.preventDefault(); },
+      }, toolbarBtns.map(function(btn) {
+        if (btn === 'sep') return h('div', { class: 'b-toolbar-sep' });
+        return h('button', {
+          class: 'b-toolbar-btn',
+          onClick: function() {
+            var t = toolbarState[0]();
+            if (btn.type === 'link') {
+              var href = prompt('Enter URL:');
+              if (!href) return;
+              store.actions.toggleMark({ id: t.blockId, type: 'link', from: t.from, to: t.to, meta: { href: href } });
+            } else {
+              store.actions.toggleMark({ id: t.blockId, type: btn.type, from: t.from, to: t.to });
+            }
+          },
+        }, btn.label);
+      }));
+    }
+
+    // ── Handle slash trigger from input ──
+
+    // ── Theme toggle ──
+    function toggleTheme() {
+      var html = document.documentElement;
+      var current = html.getAttribute('data-theme');
+      html.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+    }
+
+    // ── Expose registerBlockType ──
+    store.registerBlockType = registerBlockType;
+    window.registerBlockType = registerBlockType;
+
+    // ── Per-document custom block registration ──
+    // Render functions are stored as JS strings in the document's customBlocks.
+    // On load, they're reconstructed via new Function().
+    // This allows agents/users to define custom visual blocks per document.
+
+    function registerBlockTypeFull(def) {
+      // If render is a string, compile it to a function
+      if (typeof def.render === 'string') {
+        try {
+          def._renderSource = def.render;
+          def.render = new Function('h', 'block', 'contentEl', 'store', def.render);
+        } catch(e) { def.render = null; }
+      } else if (typeof def.render === 'function' && !def._renderSource) {
+        // Extract source for serialization
+        var src = def.render.toString();
+        // Convert "function(h, block, contentEl, store) { ... }" → body
+        var bodyMatch = src.match(/^function\s*\([^)]*\)\s*\{([\s\S]*)\}\s*$/);
+        if (bodyMatch) def._renderSource = bodyMatch[1].trim();
+      }
+      registerBlockType(def);
+    }
+
+    // Override the global/store exposure to use the full version
+    store.registerBlockType = registerBlockTypeFull;
+    window.registerBlockType = registerBlockTypeFull;
+
+    // ── Persistence ──
+    // URL format: #docId:writeToken (write token omitted = read-only)
+    var ORIGIN = location.origin;
+    var saveStatus = signal('idle', 'saveStatus'); // 'idle' | 'saving' | 'saved' | 'error' | 'readonly'
+
+    function parseHash() {
+      var hash = (typeof location !== 'undefined' ? location.hash : '').replace(/^#\/?/, '');
+      if (!hash) {
+        // New document: generate docId + writeToken
+        var id = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        var token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+        try { history.replaceState(null, '', '#' + id + ':' + token); } catch(e) {}
+        return { docId: id, writeToken: token };
+      }
+      var parts = hash.split(':');
+      return { docId: parts[0], writeToken: parts[1] || null };
+    }
+
+    var docInfo = parseHash();
+    var docId = docInfo.docId;
+    var writeToken = docInfo.writeToken;
+    if (!writeToken) saveStatus[1]('readonly');
+
+    // Load document on startup
+    (function loadDoc() {
+      fetch(ORIGIN + '/docs/' + docId).then(function(r) {
+        if (!r.ok) return; // 404 = new doc, nothing to load
+        return r.json();
+      }).then(function(doc) {
+        if (!doc || doc.error) return;
+        var blocks = JSON.parse(doc.blocks);
+        // Restore custom block types first
+        if (doc.customBlocks) {
+          try {
+            var defs = JSON.parse(doc.customBlocks);
+            defs.forEach(function(def) { registerBlockTypeFull(def); });
+          } catch(e) {}
+        }
+        if (blocks.length) syncUidCounter(blocks);
+        batch(function() {
+          store.set({
+            doc: { title: doc.title || '', icon: doc.icon || '📝' },
+            blocks: blocks.length ? blocks : [makeBlock('paragraph', '')],
+            mode: 'edit',
+            focusId: null,
+            focusOffset: 0,
+            selectedIds: [],
+            handleMenuBlockId: null,
+            slashMenu: { active: false, blockId: null, query: '', x: 0, y: 0, idx: 0 },
+            expandedToggles: {},
+            undoStack: [],
+            redoStack: [],
+            _focusGen: 0,
+          });
+        });
+        // Set title in contenteditable after mount
+        requestAnimationFrame(function() {
+          var titleEl = document.querySelector('.b-title');
+          if (titleEl && doc.title) titleEl.textContent = doc.title;
+        });
+      }).catch(function() {});
+    })();
+
+    // Auto-save: debounced, triggers on blocks or doc changes
+    var _saveTimer = null;
+    var _lastSaveJson = '';
+
+    function autoSave() {
+      if (!writeToken) return; // read-only mode
+      var s = store.get();
+      var payload = JSON.stringify({
+        title: s.doc.title,
+        icon: s.doc.icon,
+        blocks: JSON.stringify(s.blocks),
+      });
+      // Skip if nothing changed
+      if (payload === _lastSaveJson) return;
+      _lastSaveJson = payload;
+      saveStatus[1]('saving');
+
+      // Collect custom block defs (with render source strings)
+      var customDefs = Object.keys(CUSTOM_BLOCKS).length
+        ? JSON.stringify(Object.values(CUSTOM_BLOCKS).map(function(d) {
+            var c = Object.assign({}, d);
+            delete c.render;
+            if (d._renderSource) c.render = d._renderSource;
+            return c;
+          }))
+        : undefined;
+
+      var body = {
+        writeToken: writeToken,
+        title: s.doc.title,
+        icon: s.doc.icon,
+        blocks: JSON.stringify(s.blocks),
+      };
+      if (customDefs) body.customBlocks = customDefs;
+
+      fetch(ORIGIN + '/docs/' + docId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then(function(r) {
+        saveStatus[1](r.ok ? 'saved' : 'error');
+        if (r.ok) setTimeout(function() { if (saveStatus[0]() === 'saved') saveStatus[1]('idle'); }, 2000);
+      }).catch(function() { saveStatus[1]('error'); });
+    }
+
+    function scheduleSave() {
+      clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(autoSave, 1500);
+    }
+
+    // Watch blocks + doc for changes
+    var blocksForSave = store.select('blocks');
+    var docForSave = store.select('doc');
+    effect(function() {
+      blocksForSave();
+      docForSave();
+      scheduleSave();
+    });
+
+    // ── Mount ──
+    N.mount('#app', function() {
+      var blockList = h('div', { class: 'b-block-list' });
+      // LEARNING 1: store.select('blocks') — NOT () => store.get().blocks.
+      // store.get() would make list() subscribe to every state change (focus,
+      // slash menu, toolbar), causing it to JSON-compare and re-render all
+      // blocks on every keystroke. select('blocks') only fires when the blocks
+      // key itself changes (structural actions), not on typing or UI state.
+      var blocksSignal = store.select('blocks');
+      list(blockList, blocksSignal, function(b) { return b.id; }, renderBlock);
+
+      return h('div', {
+        class: 'b-editor',
+        tabindex: '-1',
+        onKeydown: handleEditorKeydown,
+        onClick: function() {
+          var s = store.get();
+          if (s.handleMenuBlockId) store.actions.closeHandleMenu();
+        },
+      },
+        h('div', { class: 'b-save-status' },
+          h('span', { class: function() {
+            var s = saveStatus[0]();
+            return 'b-save-dot' + (s === 'idle' ? '' : ' b-save-' + s);
+          }}),
+          h('span', {}, function() {
+            var s = saveStatus[0]();
+            if (s === 'saving') return 'Saving...';
+            if (s === 'saved') return 'Saved';
+            if (s === 'error') return 'Save failed';
+            if (s === 'readonly') return 'Read-only';
+            return '';
+          })
+        ),
+        h('button', { class: 'b-theme-toggle', onClick: toggleTheme, title: 'Toggle dark mode' }, '◑'),
+        // Icon
+        h('button', {
+          class: 'b-icon-btn',
+          onClick: function() {
+            var icons = ['📝', '📄', '📋', '🎯', '💡', '🚀', '✨', '📚', '🎨', '⚡', '🔧', '📌'];
+            var s = store.get();
+            var idx = icons.indexOf(s.doc.icon);
+            store.actions.setIcon({ icon: icons[(idx + 1) % icons.length] });
+          },
+        }, function() { return store.get().doc.icon; }),
+        // Title
+        h('div', {
+          class: 'b-title', contenteditable: 'true',
+          'data-placeholder': 'Untitled',
+          onInput: function(e) {
+            store.actions.setTitle({ title: e.target.textContent || '' });
+          },
+          onKeydown: function(e) {
+            if (e.key === 'Enter' || e.key === 'ArrowDown') {
+              var el = e.target;
+              var content = el.textContent || '';
+              var atEnd = getCursorOffset(el) >= content.length;
+              if (e.key === 'Enter' || atEnd) {
+                e.preventDefault();
+                var s = store.get();
+                // Skip dividers
+                var i = 0;
+                while (i < s.blocks.length && s.blocks[i].type === 'divider') i++;
+                if (i < s.blocks.length) store.actions.setFocus({ id: s.blocks[i].id, offset: 0 });
+              }
+            }
+          },
+        }),
+        blockList,
+        // Click below blocks to add new block
+        h('div', {
+          style: 'min-height: 200px; cursor: text;',
+          onClick: function() {
+            var s = store.get();
+            var last = s.blocks[s.blocks.length - 1];
+            if (last && last.content === '' && last.type === 'paragraph') {
+              store.actions.setFocus({ id: last.id, offset: 0 });
+            } else {
+              store.actions.addBlock({ afterId: last ? last.id : null });
+            }
+          },
+        }),
+        renderSlashMenu(),
+        renderToolbar()
+      );
+    });
+  })();
+  </script>
+</body>
+</html>
