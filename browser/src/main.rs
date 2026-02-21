@@ -39,6 +39,10 @@ struct Cli {
     /// Push data to a query subscription after app init: --push <query_ref> '<json_data>'
     #[arg(long, num_args = 2, value_names = ["REF", "DATA"], action = clap::ArgAction::Append)]
     push: Option<Vec<String>>,
+
+    /// Set location.hash before app runs: --hash "#/docId"
+    #[arg(long)]
+    hash: Option<String>,
 }
 
 fn parse_convex_data(cli: &Cli) -> novoid_browser::ConvexData {
@@ -57,6 +61,7 @@ fn parse_convex_data(cli: &Cli) -> novoid_browser::ConvexData {
             }
         }
     }
+    data.hash = cli.hash.clone();
     data
 }
 
@@ -91,8 +96,9 @@ fn main() {
     if let Some(call_args) = &cli.call {
         let action = &call_args[0];
         let args = call_args.get(1).map(|s| s.as_str()).unwrap_or("{}");
+        let convex_data = parse_convex_data(&cli);
 
-        match novoid_browser::browse_and_call(&cli.file, action, args) {
+        match novoid_browser::browse_and_call_with_convex(&cli.file, action, args, &convex_data) {
             Ok(schema) => output(&cli, &schema),
             Err(e) => {
                 eprintln!("Error: {e}");

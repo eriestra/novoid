@@ -132,6 +132,20 @@ mod tests {
     }
 
     #[test]
+    fn test_skip_non_js_script_types() {
+        let html = r#"<html><head>
+            <script type="application/json" data-contracts>[{"name":"test"}]</script>
+            <script src="core.min.js"></script>
+        </head><body>
+            <script>Novoid.signal(0);</script>
+        </body></html>"#;
+        let parsed = parse_html(html);
+        assert!(parsed.is_novoid_app);
+        assert_eq!(parsed.inline_scripts.len(), 1);
+        assert!(parsed.inline_scripts[0].contains("Novoid.signal"));
+    }
+
+    #[test]
     fn test_parse_non_novoid() {
         let html = r#"<html><body><script>console.log("hello")</script></body></html>"#;
         let parsed = parse_html(html);

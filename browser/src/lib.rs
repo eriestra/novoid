@@ -33,6 +33,18 @@ pub struct ConvexData {
     pub seeds: Vec<(String, String)>,
     /// Query pushes: (ref, json_data) — pushed after app init
     pub pushes: Vec<(String, String)>,
+    /// Set location.hash before app runs (e.g. "#/docId")
+    pub hash: Option<String>,
+}
+
+/// Set location.hash on the runtime if provided
+fn apply_hash(rt: &runtime::NovoidRuntime, convex: &ConvexData) -> Result<(), String> {
+    if let Some(hash) = &convex.hash {
+        let h = hash.replace('\\', "\\\\").replace('\'', "\\'");
+        let val = if h.starts_with('#') { h.clone() } else { format!("#{h}") };
+        rt.eval(&format!("location.hash = '{val}';"))?;
+    }
+    Ok(())
 }
 
 /// Source of an app: local file or remote URL
@@ -174,6 +186,9 @@ pub fn browse_with_convex(file_path: &str, convex: &ConvexData) -> Result<synthe
         rt.eval(&js)?;
     }
 
+    // Set location.hash before app runs (for hash-routed apps)
+    apply_hash(&rt, convex)?;
+
     // Execute inline scripts (app code)
     for (i, script) in parsed.inline_scripts.iter().enumerate() {
         rt.execute_app(script).map_err(|e| format!("{e} (in inline script #{})", i + 1))?;
@@ -217,6 +232,16 @@ pub fn browse_and_call(
     action_name: &str,
     args_json: &str,
 ) -> Result<synthesizer::BrowseSchema, String> {
+    browse_and_call_with_convex(file_path, action_name, args_json, &ConvexData::default())
+}
+
+/// Browse a file (or URL) with Convex data, call an action, and return the updated state
+pub fn browse_and_call_with_convex(
+    file_path: &str,
+    action_name: &str,
+    args_json: &str,
+    convex: &ConvexData,
+) -> Result<synthesizer::BrowseSchema, String> {
     let source = resolve_source(file_path);
     let html = load_html(&source)?;
 
@@ -239,6 +264,8 @@ pub fn browse_and_call(
     }
 
     rt.load_observer()?;
+
+    apply_hash(&rt, convex)?;
 
     for script in &parsed.inline_scripts {
         rt.execute_app(script)?;
@@ -333,6 +360,8 @@ pub fn browse_and_assert_with_convex(file_path: &str, assertions: &[String], con
         );
         rt.eval(&js)?;
     }
+
+    apply_hash(&rt, convex)?;
 
     for script in &parsed.inline_scripts {
         rt.execute_app(script)?;
@@ -460,6 +489,8 @@ pub fn browse_and_test(file_path: &str, spec: &test_runner::TestSpec, convex: &C
         );
         rt.eval(&js)?;
     }
+
+    apply_hash(&rt, convex)?;
 
     // Execute inline scripts (app code)
     for script in &parsed.inline_scripts {
