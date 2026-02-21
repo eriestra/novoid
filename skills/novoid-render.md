@@ -598,12 +598,12 @@ Features are either **implemented** (working in `src/plugins/render.js`) or **pl
 - **Views & navigation:** named views, tabs navigation, view params, back button
 - **Expressions:** $-prefixed reactive bindings, inline arithmetic/comparison, CSP-safe evaluator
 - **Form fields:** text, number, date, select, radio, textarea, toggle, slider
+- **Table features:** sort (header click asc/desc/clear cycle, arrow indicators), pageSize (pagination with prev/next), loading (skeleton/spinner), hideBelow (responsive column hiding at md/lg breakpoints)
 
 ### Planned (not yet in render.js)
 - **Sections:** chart, list, panels
 - **Data bindings:** Convex queries/mutations/actions (`data: { queries, mutations, actions }`)
 - **Auth:** auth section, gate (role-based access control), `$auth.*` expressions
-- **Table features:** sort, pageSize, loading (skeleton/spinner)
 - **Action types:** mutation, serverAction, do (action chain), confirm dialogs, onSuccess/onError callbacks
 - **Navigation:** transition animations (fade/slide), sidebar/stack/bottomBar nav types, mobile nav
 - **Icons:** Lucide SVG rendering (currently uses Unicode fallback or `label.charAt(0)`)
