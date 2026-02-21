@@ -12,17 +12,26 @@ fn setup_body_elements(
     rt: &runtime::NovoidRuntime,
     parsed: &parser::ParsedPage,
 ) -> Result<(), String> {
-    for el in &parsed.body_elements {
-        let mut js = format!("(function() {{ var el = document.createElement('{}');", el.tag);
+    if parsed.body_elements.is_empty() {
+        return Ok(());
+    }
+    // Build all elements, then wire parent-child relationships
+    let mut js = String::from("(function() { var els = [];\n");
+    for (i, el) in parsed.body_elements.iter().enumerate() {
+        js.push_str(&format!("var e{i} = document.createElement('{}');", el.tag));
         if let Some(id) = &el.id {
-            js.push_str(&format!(" el.id = '{}'; el._attributes.id = '{}';", id, id));
+            js.push_str(&format!(" e{i}.id = '{id}'; e{i}._attributes.id = '{id}';"));
         }
         if let Some(class) = &el.class {
-            js.push_str(&format!(" el.className = '{}';", class));
+            js.push_str(&format!(" e{i}.className = '{class}';"));
         }
-        js.push_str(" document.body.appendChild(el); })()");
-        rt.eval(&js)?;
+        match el.parent_idx {
+            Some(p) => js.push_str(&format!(" e{p}.appendChild(e{i});\n")),
+            None => js.push_str(&format!(" document.body.appendChild(e{i});\n")),
+        }
     }
+    js.push_str("})()");
+    rt.eval(&js)?;
     Ok(())
 }
 

@@ -23,6 +23,8 @@ pub struct BodyElement {
     pub tag: String,
     pub id: Option<String>,
     pub class: Option<String>,
+    /// Index of parent in body_elements vec, None for direct children of <body>
+    pub parent_idx: Option<usize>,
 }
 
 /// Parse an HTML file and extract script blocks and metadata
@@ -80,14 +82,26 @@ pub fn parse_html(html: &str) -> ParsedPage {
         .next()
         .map(|el| el.text().collect::<String>());
 
-    // Extract non-script body elements (divs, etc.) for DOM setup
-    let body_sel = Selector::parse("body > *:not(script)").unwrap();
+    // Extract body elements recursively (for nested mount targets like <main><div id="app"></div></main>)
+    let body_sel = Selector::parse("body").unwrap();
     let mut body_elements = Vec::new();
-    for el in document.select(&body_sel) {
-        let tag = el.value().name().to_string();
-        let id = el.value().attr("id").map(String::from);
-        let class = el.value().attr("class").map(String::from);
-        body_elements.push(BodyElement { tag, id, class });
+    if let Some(body) = document.select(&body_sel).next() {
+        fn walk_children(parent: scraper::ElementRef, parent_idx: Option<usize>, elements: &mut Vec<BodyElement>) {
+            for child in parent.children() {
+                if let Some(el) = scraper::ElementRef::wrap(child) {
+                    let tag = el.value().name().to_string();
+                    if tag == "script" || tag == "style" || tag == "link" {
+                        continue;
+                    }
+                    let id = el.value().attr("id").map(String::from);
+                    let class = el.value().attr("class").map(String::from);
+                    let idx = elements.len();
+                    elements.push(BodyElement { tag, id, class, parent_idx });
+                    walk_children(el, Some(idx), elements);
+                }
+            }
+        }
+        walk_children(body, None, &mut body_elements);
     }
 
     ParsedPage {
