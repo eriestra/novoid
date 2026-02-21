@@ -1,0 +1,122 @@
+{
+  "steps": [
+    { "action": "read", "resource": "rows", "assert": { "length": 3 }, "label": "initial 3 rows" },
+    { "action": "read", "resource": "columns", "assert": { "length": 5 }, "label": "initial 5 columns" },
+
+    { "action": "read", "resource": "rows", "assert": { "eq_path": {
+      "0.c1": "Alice", "0.c2": 95, "0.c3": "Active", "0.c4": true, "0.c5": "2025-06-15",
+      "1.c1": "Bob", "1.c2": 82, "1.c3": "Pending", "1.c4": false, "1.c5": "2025-07-01",
+      "2.c1": "Carol", "2.c2": 77, "2.c3": "Inactive", "2.c4": false, "2.c5": ""
+    }}, "label": "all initial values including dates" },
+
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c1", "value": "Alice2" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c1": "Alice2" } } }, "label": "edit text r1" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r2", "colId": "c1", "value": "Bobby" },
+      "then": { "read": "rows", "assert": { "eq_path": { "1.c1": "Bobby" } } }, "label": "edit text r2" },
+    { "action": "read", "resource": "rows", "assert": { "eq_path": { "0.c1": "Alice2", "1.c1": "Bobby", "2.c1": "Carol" } },
+      "label": "text edits isolated" },
+
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c2", "value": 100 },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c2": 100 } } }, "label": "edit number" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r2", "colId": "c2", "value": 0 },
+      "then": { "read": "rows", "assert": { "eq_path": { "1.c2": 0 } } }, "label": "number to zero" },
+
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r3", "colId": "c3", "value": "Active" },
+      "then": { "read": "rows", "assert": { "eq_path": { "2.c3": "Active" } } }, "label": "change select" },
+
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c4", "value": false },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c4": false } } }, "label": "uncheck" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r2", "colId": "c4", "value": true },
+      "then": { "read": "rows", "assert": { "eq_path": { "1.c4": true } } }, "label": "check" },
+
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r3", "colId": "c5", "value": "2025-12-25" },
+      "then": { "read": "rows", "assert": { "eq_path": { "2.c5": "2025-12-25" } } }, "label": "set date on empty" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c5", "value": "2026-01-01" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c5": "2026-01-01" } } }, "label": "change existing date" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c5", "value": "" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c5": "" } } }, "label": "clear date" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c5", "value": "2025-06-15" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c5": "2025-06-15" } } }, "label": "restore date" },
+
+    { "action": "read", "resource": "rows", "assert": { "eq_path": {
+      "0.c5": "2025-06-15", "1.c5": "2025-07-01", "2.c5": "2025-12-25"
+    }}, "label": "date edits isolated" },
+
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c1", "value": "" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c1": "" } } }, "label": "clear text" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c1", "value": "Alice3" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c1": "Alice3" } } }, "label": "re-edit after clear" },
+
+    { "action": "call", "tool": "addRow", "args": {},
+      "then": { "read": "rows", "assert": { "length": 4 } }, "label": "add row" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r4", "colId": "c1", "value": "Dave" },
+      "then": { "read": "rows", "assert": { "eq_path": { "3.c1": "Dave" } } }, "label": "edit new row text" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r4", "colId": "c5", "value": "2025-11-11" },
+      "then": { "read": "rows", "assert": { "eq_path": { "3.c5": "2025-11-11" } } }, "label": "edit new row date" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r4", "colId": "c4", "value": true },
+      "then": { "read": "rows", "assert": { "eq_path": { "3.c4": true } } }, "label": "edit new row checkbox" },
+
+    { "action": "call", "tool": "removeRow", "args": { "rowId": "r2" },
+      "then": { "read": "rows", "assert": { "length": 3 } }, "label": "remove middle row" },
+    { "action": "read", "resource": "rows", "assert": { "eq_path": {
+      "0.c1": "Alice3", "1.c1": "Carol", "2.c1": "Dave"
+    }}, "label": "correct rows after remove" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r3", "colId": "c1", "value": "Carol2" },
+      "then": { "read": "rows", "assert": { "eq_path": { "1.c1": "Carol2" } } }, "label": "edit after remove" },
+
+    { "action": "call", "tool": "updateCol", "args": { "colId": "c1", "name": "Full Name" },
+      "then": { "read": "columns", "assert": { "eq_path": { "0.name": "Full Name" } } }, "label": "rename column" },
+    { "action": "call", "tool": "updateCol", "args": { "colId": "c5", "name": "Deadline" },
+      "then": { "read": "columns", "assert": { "eq_path": { "4.name": "Deadline" } } }, "label": "rename date column" },
+    { "action": "read", "resource": "columns", "assert": { "eq_path": {
+      "0.name": "Full Name", "1.name": "Score", "2.name": "Status", "3.name": "Done", "4.name": "Deadline"
+    }}, "label": "renames isolated" },
+
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c1", "value": "Alice4" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c1": "Alice4" } } }, "label": "edit after rename" },
+
+    { "action": "call", "tool": "removeCol", "args": { "colId": "c4" },
+      "then": { "read": "columns", "assert": { "length": 4 } }, "label": "remove checkbox column" },
+    { "action": "read", "resource": "columns", "assert": { "eq_path": {
+      "0.id": "c1", "1.id": "c2", "2.id": "c3", "3.id": "c5"
+    }}, "label": "correct columns after remove" },
+
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c1", "value": "Alice5" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c1": "Alice5" } } }, "label": "edit after col remove" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c5", "value": "2025-03-15" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c5": "2025-03-15" } } }, "label": "edit date after col remove" },
+
+    { "action": "call", "tool": "removeCol", "args": { "colId": "c3" },
+      "then": { "read": "columns", "assert": { "length": 3 } }, "label": "remove select column" },
+    { "action": "read", "resource": "columns", "assert": { "eq_path": {
+      "0.id": "c1", "1.id": "c2", "2.id": "c5"
+    }}, "label": "3 columns remain" },
+
+    { "action": "call", "tool": "addCol", "args": { "name": "Notes", "type": "text" },
+      "then": { "read": "columns", "assert": { "length": 4 } }, "label": "add column after removes" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r1", "colId": "c6", "value": "a note" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c6": "a note" } } }, "label": "write to new column" },
+
+    { "action": "call", "tool": "resizeCol", "args": { "colId": "c1", "width": 250 },
+      "then": { "read": "columns", "assert": { "eq_path": { "0.width": 250 } } }, "label": "resize" },
+
+    { "action": "call", "tool": "setSort", "args": { "key": "c2", "dir": "asc" },
+      "then": { "read": "sort", "assert": { "eq": { "key": "c2", "dir": "asc" } } }, "label": "sort asc" },
+    { "action": "call", "tool": "setSort", "args": { "key": "c2", "dir": "desc" },
+      "then": { "read": "sort", "assert": { "eq": { "key": "c2", "dir": "desc" } } }, "label": "sort desc" },
+    { "action": "call", "tool": "setSort", "args": { "key": null, "dir": null },
+      "then": { "read": "sort", "assert": { "eq": { "key": null, "dir": null } } }, "label": "clear sort" },
+
+    { "action": "call", "tool": "removeRow", "args": { "rowId": "r4" } },
+    { "action": "call", "tool": "removeRow", "args": { "rowId": "r3" } },
+    { "action": "call", "tool": "removeRow", "args": { "rowId": "r1" },
+      "then": { "read": "rows", "assert": { "length": 0 } }, "label": "drain to empty" },
+
+    { "action": "call", "tool": "addRow", "args": {},
+      "then": { "read": "rows", "assert": { "length": 1 } }, "label": "add to empty" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r5", "colId": "c1", "value": "Frank" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c1": "Frank" } } }, "label": "edit in rebuilt table" },
+    { "action": "call", "tool": "setCell", "args": { "rowId": "r5", "colId": "c5", "value": "2026-02-21" },
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c5": "2026-02-21" } } }, "label": "date in rebuilt table" }
+  ]
+}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Editable Table Test</title>
+<link rel="stylesheet" href="../js/core.min.css">
+<link rel="stylesheet" href="../js/components.min.css">
+<style>[data-theme="dark"]{color-scheme:dark}</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="../js/core.min.js"></script>
+<script src="../js/render.min.js"></script>
+<script>
+var N = window.Novoid;
+
+var store = N.createStore({
+  columns: [
+    { id: 'c1', name: 'Name', type: 'text', width: 180 },
+    { id: 'c2', name: 'Score', type: 'number', width: 120 },
+    { id: 'c3', name: 'Status', type: 'select', width: 160, options: [
+      { value: 'Active', color: 'green' },
+      { value: 'Inactive', color: 'red' },
+      { value: 'Pending', color: 'yellow' }
+    ]},
+    { id: 'c4', name: 'Done', type: 'checkbox', width: 80 },
+    { id: 'c5', name: 'Due', type: 'date', width: 140 }
+  ],
+  rows: [
+    { id: 'r1', c1: 'Alice', c2: 95, c3: 'Active', c4: true, c5: '2025-06-15' },
+    { id: 'r2', c1: 'Bob', c2: 82, c3: 'Pending', c4: false, c5: '2025-07-01' },
+    { id: 'r3', c1: 'Carol', c2: 77, c3: 'Inactive', c4: false, c5: '' }
+  ],
+  sort: null,
+  _nextRow: 4,
+  _nextCol: 6
+}, {
+  setSort: function(state, args) { return { sort: args }; },
+  setCell: function(state, args) {
+    return { rows: state.rows.map(function(r) {
+      if (r.id !== args.rowId) return r;
+      var copy = {};
+      for (var k in r) copy[k] = r[k];
+      copy[args.colId] = args.value;
+      return copy;
+    })};
+  },
+  addRow: function(state) {
+    var id = 'r' + state._nextRow;
+    var row = { id: id };
+    state.columns.forEach(function(c) { row[c.id] = c.type === 'checkbox' ? false : c.type === 'number' ? 0 : ''; });
+    return { rows: state.rows.concat([row]), _nextRow: state._nextRow + 1 };
+  },
+  removeRow: function(state, args) {
+    return { rows: state.rows.filter(function(r) { return r.id !== args.rowId; }) };
+  },
+  addCol: function(state, args) {
+    var id = 'c' + state._nextCol;
+    var col = { id: id, name: args.name || 'Column', type: args.type || 'text', width: 150 };
+    var rows = state.rows.map(function(r) {
+      var copy = {};
+      for (var k in r) copy[k] = r[k];
+      copy[id] = '';
+      return copy;
+    });
+    return { columns: state.columns.concat([col]), rows: rows, _nextCol: state._nextCol + 1 };
+  },
+  removeCol: function(state, args) {
+    return { columns: state.columns.filter(function(c) { return c.id !== args.colId; }) };
+  },
+  updateCol: function(state, args) {
+    return { columns: state.columns.map(function(c) {
+      if (c.id !== args.colId) return c;
+      var copy = {};
+      for (var k in c) copy[k] = c[k];
+      if (args.name !== undefined) copy.name = args.name;
+      if (args.type !== undefined) copy.type = args.type;
+      return copy;
+    })};
+  },
+  resizeCol: function(state, args) {
+    return { columns: state.columns.map(function(c) {
+      if (c.id !== args.colId) return c;
+      var copy = {};
+      for (var k in c) copy[k] = c[k];
+      copy.width = args.width;
+      return copy;
+    })};
+  }
+}, 'editable-test');
+
+N.render('#app', store, {
+  sections: [
+    { table: {
+      editable: true,
+      title: 'Editable Table Test',
+      columns: '$columns',
+      source: '$rows',
+      sort: { bind: '$sort', action: 'setSort' },
+      cell: { action: 'setCell' },
+      row: { add: 'addRow', remove: 'removeRow' },
+      column: { add: 'addCol', remove: 'removeCol', update: 'updateCol', resize: 'resizeCol' },
+      empty: 'No rows yet'
+    }}
+  ]
+});
+</script>
+</body>
+</html>

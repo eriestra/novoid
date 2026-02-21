@@ -105,6 +105,32 @@ Data table with filter, sort, pagination, row actions.
 
 Column fields: `key`, `label`, `format`, `bold`, `color`, `badge` (pill style), `subtitle` (second key below), `icon`, `hideBelow` (`md`|`lg`).
 
+#### Editable table
+
+When `editable: true`, the table supports cell editing, keyboard navigation, column resize, and row/column CRUD. Columns are reactive (bound via `$columns`), using `id`/`name`/`type`/`width` instead of `key`/`label`.
+
+```js
+{ table: {
+  editable: true,
+  title: 'Spreadsheet',
+  columns: '$columns',
+  source: '$rows',
+  sort: { bind: '$sort', action: 'setSort' },
+  cell: { action: 'setCell' },
+  row: { add: 'addRow', remove: 'removeRow' },
+  column: { add: 'addCol', remove: 'removeCol', resize: 'resizeCol' },
+  empty: 'No rows yet'
+}}
+```
+
+Column definition shape: `{ id, name, type, width }`. Types: `text`, `number`, `date`, `select` (with `options: [{ value, color }]`), `checkbox`.
+
+Column CRUD: `column.add` renders a `+` header. `column.remove` renders a `×` on each header (hover turns red). `column.update` enables double-click rename on column headers (inline input, Enter/blur commits, Escape discards).
+
+Keyboard: arrows (move), Enter (edit), Escape (cancel/deselect), Tab (move right + commit), Delete (clear), type-to-start (printable key opens editor). Double-click also opens editor. Checkboxes toggle on click.
+
+Reference implementation: `src/app/editable-test.html`.
+
 ### cards
 
 Iterable card list with a template.
@@ -599,6 +625,7 @@ Features are either **implemented** (working in `src/plugins/render.js`) or **pl
 - **Expressions:** $-prefixed reactive bindings, inline arithmetic/comparison, CSP-safe evaluator
 - **Form fields:** text, number, date, select, radio, textarea, toggle, slider
 - **Table features:** sort (header click asc/desc/clear cycle, arrow indicators), pageSize (pagination with prev/next), loading (skeleton/spinner), hideBelow (responsive column hiding at md/lg breakpoints)
+- **Editable table:** `editable: true` with reactive `columns: '$columns'`, cell editing (text/number/date/select/checkbox), keyboard navigation (arrow/enter/escape/tab/type-to-start/delete), focus ring, column resize drag, row add/remove, column add, row numbers (sticky), sticky headers
 
 ### Planned (not yet in render.js)
 - **Sections:** chart, list, panels

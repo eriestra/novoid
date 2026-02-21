@@ -390,12 +390,26 @@
   function renderTable(spec, store, ctx) {
     var children = [];
     var _tableId = '_nv_t' + (Math.random() * 1e6 | 0);
+    var _editable = !!spec.editable;
 
     // Pagination local state
     var _pageSig = spec.pageSize ? N.signal(0) : null;
     var _pageGet = _pageSig ? _pageSig[0] : null;
     var _pageSet = _pageSig ? _pageSig[1] : null;
     var _prevLen = { v: 0 };
+
+    // Editable table local state (signals persist across effect rebuilds)
+    var _activeCellSig = _editable ? N.signal(null) : null;
+    var _activeCellGet = _activeCellSig ? _activeCellSig[0] : null;
+    var _activeCellSet = _activeCellSig ? _activeCellSig[1] : null;
+    var _editingSig = _editable ? N.signal(null) : null;
+    var _editingGet = _editingSig ? _editingSig[0] : null;
+    var _editingSet = _editingSig ? _editingSig[1] : null;
+    var _editVal = { v: '' };
+    var _editingColSig = _editable ? N.signal(null) : null; // colId being renamed
+    var _editingColGet = _editingColSig ? _editingColSig[0] : null;
+    var _editingColSet = _editingColSig ? _editingColSig[1] : null;
+    var _editColVal = { v: '' };
 
     // Header with title and optional filter
     var headerItems = [];
@@ -420,25 +434,40 @@
       }, headerItems));
     }
 
-    // hideBelow style injection
-    var _hideStyles = [];
-    spec.columns.forEach(function(col, i) {
-      if (col.hideBelow) {
-        var bp = col.hideBelow === 'md' ? 768 : 1024;
-        var cls = _tableId + '_c' + i;
-        _hideStyles.push('@media(max-width:' + bp + 'px){.' + cls + '{display:none}}');
-        col._hideClass = cls;
+    // hideBelow style injection (only for static columns)
+    if (!_editable) {
+      var _hideStyles = [];
+      spec.columns.forEach(function(col, i) {
+        if (col.hideBelow) {
+          var bp = col.hideBelow === 'md' ? 768 : 1024;
+          var cls = _tableId + '_c' + i;
+          _hideStyles.push('@media(max-width:' + bp + 'px){.' + cls + '{display:none}}');
+          col._hideClass = cls;
+        }
+      });
+      if (_hideStyles.length) {
+        var styleEl = document.createElement('style');
+        styleEl.textContent = _hideStyles.join('');
+        children.push(styleEl);
       }
-    });
-    if (_hideStyles.length) {
-      var styleEl = document.createElement('style');
-      styleEl.textContent = _hideStyles.join('');
-      children.push(styleEl);
     }
 
     // Table content
-    var tableEl = h('div', { style: 'overflow-x:auto' });
+    var tableEl = h('div', { style: 'overflow-x:auto' + (_editable ? ';overflow-y:auto;max-height:80vh;outline:none' : '') });
+    if (_editable) tableEl.setAttribute('tabindex', '0');
     children.push(tableEl);
+
+    // Add row footer (editable)
+    var addRowEl = null;
+    if (_editable && spec.row && spec.row.add) {
+      addRowEl = h('div', {
+        style: 'padding:0.5rem 1rem;cursor:pointer;color:var(--nv-text-muted);font-size:0.85rem;border-top:1px solid var(--nv-border);transition:background 0.15s',
+        onMouseEnter: function(e) { e.currentTarget.style.background = 'var(--nv-bg-subtle)'; },
+        onMouseLeave: function(e) { e.currentTarget.style.background = ''; },
+        onClick: function() { wireAction(store, spec.row.add, ctx)(); }
+      }, '+ New row');
+      children.push(addRowEl);
+    }
 
     // Pagination footer
     var pagerEl = null;
@@ -447,9 +476,108 @@
       children.push(pagerEl);
     }
 
+    // Keyboard handler for editable tables
+    if (_editable) {
+      tableEl.addEventListener('keydown', function(e) {
+        var ac = _activeCellGet();
+        var ed = _editingGet();
+
+        if (ed) {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            _editingSet(null);
+            tableEl.focus();
+            return;
+          }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            // Commit handled by input blur — just blur
+            var inp = tableEl.querySelector('input[data-nv-editor],select[data-nv-editor]');
+            if (inp) inp.blur();
+            return;
+          }
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            var inp = tableEl.querySelector('input[data-nv-editor],select[data-nv-editor]');
+            if (inp) inp.blur();
+            // Move active cell
+            var cols = _lastCols || [];
+            var rows = _lastRows || [];
+            if (ac) {
+              var ni = ac.colIdx + (e.shiftKey ? -1 : 1);
+              if (ni >= 0 && ni < cols.length) {
+                _activeCellSet({ rowId: ac.rowId, colIdx: ni });
+              }
+            }
+            return;
+          }
+          return; // Don't intercept other keys while editing
+        }
+
+        if (!ac) return;
+
+        var cols = _lastCols || [];
+        var rows = _lastRows || [];
+        var rowIds = rows.map(function(r) { return r.id; });
+        var ri = rowIds.indexOf(ac.rowId);
+
+        if (e.key === 'ArrowUp') { e.preventDefault(); if (ri > 0) _activeCellSet({ rowId: rowIds[ri - 1], colIdx: ac.colIdx }); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); if (ri < rowIds.length - 1) _activeCellSet({ rowId: rowIds[ri + 1], colIdx: ac.colIdx }); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); if (ac.colIdx > 0) _activeCellSet({ rowId: ac.rowId, colIdx: ac.colIdx - 1 }); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); if (ac.colIdx < cols.length - 1) _activeCellSet({ rowId: ac.rowId, colIdx: ac.colIdx + 1 }); }
+        else if (e.key === 'Enter') {
+          e.preventDefault();
+          var col = cols[ac.colIdx];
+          if (col && col.type !== 'checkbox') {
+            var row = rows[ri];
+            _editVal.v = (row ? String(row[col.id] == null ? '' : row[col.id]) : '');
+            _editingSet({ rowId: ac.rowId, colIdx: ac.colIdx, initChar: null });
+          }
+        }
+        else if (e.key === 'Escape') { e.preventDefault(); _activeCellSet(null); }
+        else if (e.key === 'Delete' || e.key === 'Backspace') {
+          e.preventDefault();
+          var col = cols[ac.colIdx];
+          if (col && spec.cell && spec.cell.action) {
+            wireAction(store, { action: spec.cell.action, args: {} }, ctx)({ rowId: ac.rowId, colId: col.id, value: col.type === 'checkbox' ? false : '' });
+          }
+        }
+        else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          var col = cols[ac.colIdx];
+          if (col && col.type !== 'checkbox') {
+            _editVal.v = (e.key);
+            _editingSet({ rowId: ac.rowId, colIdx: ac.colIdx, initChar: e.key });
+          }
+        }
+      });
+    }
+
+    // Stash last resolved cols/rows for keyboard handler
+    var _lastCols = null;
+    var _lastRows = null;
+
     // Use effect to rebuild table body reactively
     var _tableDispose = effect(function() {
       var rawRows = reactive(store, spec.source, ctx)();
+
+      // Resolve columns reactively for editable tables
+      var cols;
+      if (_editable && spec.columns && typeof spec.columns === 'string' && spec.columns.indexOf('$') !== -1) {
+        cols = reactive(store, spec.columns, ctx)();
+        if (!Array.isArray(cols)) cols = [];
+      } else if (Array.isArray(spec.columns)) {
+        cols = spec.columns;
+      } else {
+        cols = [];
+      }
+
+      // Read editing signals inside effect to trigger rebuild on change
+      var activeCell = _activeCellGet ? _activeCellGet() : null;
+      var editing = _editingGet ? _editingGet() : null;
+      var editingCol = _editingColGet ? _editingColGet() : null;
+      // Stash for keyboard handler
+      _lastCols = cols;
 
       // Dispose child trees before clearing
       while (tableEl.firstChild) { _disposeTree(tableEl.firstChild); tableEl.removeChild(tableEl.firstChild); }
@@ -464,7 +592,7 @@
         } else {
           var skelRows = [];
           for (var si = 0; si < loadCount; si++) {
-            var skelCells = spec.columns.map(function() {
+            var skelCells = cols.map(function() {
               return h('td', { style: 'padding:0.6rem 1rem' },
                 h('div', { style: 'height:0.85rem;border-radius:4px;background:var(--nv-bg-subtle);animation:nv-pulse 1.5s ease-in-out infinite' })
               );
@@ -477,6 +605,7 @@
       }
 
       var rows = Array.isArray(rawRows) ? rawRows : [];
+      _lastRows = rows;
 
       // Reset page on data length change
       if (_pageGet && rows.length !== _prevLen.v) {
@@ -503,82 +632,345 @@
       }
 
       // Header row
-      var headerCells = spec.columns.map(function(col, ci) {
+      var headerCells = [];
+
+      // Row number header (editable)
+      if (_editable) {
+        headerCells.push(h('th', {
+          style: 'padding:0.6rem 0.5rem;text-align:center;font-size:0.7rem;color:var(--nv-text-muted);font-weight:600;width:40px;position:sticky;left:0;z-index:1;background:var(--nv-bg);border-right:1px solid var(--nv-border)'
+        }, '#'));
+      }
+
+      headerCells = headerCells.concat(cols.map(function(col, ci) {
+        var colKey = _editable ? col.id : col.key;
+        var colLabel = _editable ? col.name : col.label;
         var thStyle = 'padding:0.6rem 1rem;text-align:left;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--nv-text-muted);font-weight:600;';
+        if (_editable && col.width) thStyle += 'width:' + col.width + 'px;min-width:' + col.width + 'px;';
+        if (_editable) thStyle += 'position:relative;';
         var thClass = col._hideClass || '';
-        var thContent = [col.label];
+        var thContent = [];
+
+        // Column header: inline rename editor or label + remove button
+        if (_editable && editingCol === col.id && spec.column && spec.column.update) {
+          var colInp = h('input', {
+            type: 'text',
+            'data-nv-col-editor': '1',
+            class: 'nv-input nv-input-sm',
+            style: 'width:100%;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;font-weight:600',
+            value: _editColVal.v,
+            onBlur: (function(cId) {
+              return function(e) {
+                var v = e.target.value.trim();
+                if (v && v !== colLabel) {
+                  wireAction(store, { action: spec.column.update, args: {} }, ctx)({ colId: cId, name: v });
+                }
+                _editingColSet(null);
+                tableEl.focus();
+              };
+            })(col.id),
+            onKeyDown: function(e) {
+              if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+              if (e.key === 'Escape') { e.preventDefault(); _editingColSet(null); tableEl.focus(); }
+              e.stopPropagation();
+            }
+          });
+          thContent.push(colInp);
+          setTimeout(function() { colInp.focus(); colInp.select(); }, 0);
+        } else {
+          var labelSpan = h('span', {}, colLabel);
+          thContent.push(labelSpan);
+
+          // Column remove button
+          if (_editable && spec.column && spec.column.remove) {
+            var removeColBtn = h('span', {
+              style: 'margin-left:4px;cursor:pointer;font-size:0.65rem;opacity:0.4;transition:opacity 0.15s,color 0.15s',
+              onMouseEnter: function(e) { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ef4444'; },
+              onMouseLeave: function(e) { e.currentTarget.style.opacity = '0.4'; e.currentTarget.style.color = ''; },
+              onClick: (function(cId) {
+                return function(e) {
+                  e.stopPropagation();
+                  wireAction(store, { action: spec.column.remove, args: {} }, ctx)({ colId: cId });
+                };
+              })(col.id)
+            }, '\u00d7');
+            thContent.push(removeColBtn);
+          }
+        }
 
         if (spec.sort) {
           thStyle += 'cursor:pointer;user-select:none;';
-          var sortGetter = reactive(store, '$' + (spec.sort.key || 'sort').replace(/^\$/, ''), ctx);
+          var sortGetter = reactive(store, spec.sort.bind || ('$' + (spec.sort.key || 'sort').replace(/^\$/, '')), ctx);
           var sortVal = sortGetter();
-          if (sortVal && sortVal.key === col.key) {
+          if (sortVal && sortVal.key === colKey) {
             thContent.push(h('span', { style: 'margin-left:4px' }, sortVal.dir === 'asc' ? '\u2191' : '\u2193'));
           }
+        }
+
+        // Column resize handle
+        if (_editable && spec.column && spec.column.resize) {
+          var resizeHandle = h('div', {
+            style: 'position:absolute;right:0;top:0;bottom:0;width:4px;cursor:col-resize;z-index:2;transition:background 0.15s',
+            onMouseEnter: function(e) { e.currentTarget.style.background = 'var(--nv-primary)'; },
+            onMouseLeave: function(e) { e.currentTarget.style.background = ''; },
+            onMouseDown: (function(colId, startWidth) {
+              return function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var startX = e.clientX;
+                var w = startWidth || 120;
+                var th = e.currentTarget.parentElement;
+                var colIndex = Array.prototype.indexOf.call(th.parentElement.children, th);
+                var tbl = th.closest('table');
+                var onMove = function(me) {
+                  w = Math.max(60, startWidth + (me.clientX - startX));
+                  // Live visual feedback
+                  if (th) { th.style.width = w + 'px'; th.style.minWidth = w + 'px'; }
+                  if (tbl) {
+                    var bodyRows = tbl.querySelectorAll('tbody tr');
+                    for (var bi = 0; bi < bodyRows.length; bi++) {
+                      var cell = bodyRows[bi].children[colIndex];
+                      if (cell) { cell.style.width = w + 'px'; cell.style.minWidth = w + 'px'; }
+                    }
+                  }
+                };
+                var onUp = function() {
+                  document.removeEventListener('mousemove', onMove);
+                  document.removeEventListener('mouseup', onUp);
+                  document.body.style.cursor = '';
+                  wireAction(store, { action: spec.column.resize, args: {} }, ctx)({ colId: colId, width: w });
+                };
+                document.body.style.cursor = 'col-resize';
+                document.addEventListener('mousemove', onMove);
+                document.addEventListener('mouseup', onUp);
+              };
+            })(col.id, col.width || 120)
+          });
+          thContent.push(resizeHandle);
         }
 
         var thEl = h('th', {
           style: thStyle,
           class: thClass || undefined,
-          onClick: spec.sort ? (function(colKey) {
-            return function() {
-              var sortGetter = reactive(store, '$' + (spec.sort.key || 'sort').replace(/^\$/, ''), ctx);
+          onClick: spec.sort ? (function(ck) {
+            return function(e) {
+              if (e.target.getAttribute('data-nv-col-editor')) return;
+              var sortGetter = reactive(store, spec.sort.bind || ('$' + (spec.sort.key || 'sort').replace(/^\$/, '')), ctx);
               var cur = sortGetter();
               var newDir;
-              if (!cur || cur.key !== colKey) newDir = 'asc';
+              if (!cur || cur.key !== ck) newDir = 'asc';
               else if (cur.dir === 'asc') newDir = 'desc';
               else newDir = null;
-              wireAction(store, { action: spec.sort.action, args: {} }, ctx)(newDir ? { key: colKey, dir: newDir } : { key: null, dir: null });
+              wireAction(store, { action: spec.sort.action, args: {} }, ctx)(newDir ? { key: ck, dir: newDir } : { key: null, dir: null });
             };
-          })(col.key) : null
+          })(colKey) : null,
+          onDblClick: (_editable && spec.column && spec.column.update) ? (function(cId, cName) {
+            return function(e) {
+              e.stopPropagation();
+              _editColVal.v = cName || '';
+              _editingColSet(cId);
+            };
+          })(col.id, colLabel) : null
         }, thContent);
         return thEl;
-      });
-      var thead = h('thead', {}, h('tr', {}, headerCells));
+      }));
+
+      // Column add header (editable)
+      if (_editable && spec.column && spec.column.add) {
+        headerCells.push(h('th', {
+          style: 'padding:0.6rem 0.5rem;text-align:center;font-size:1rem;color:var(--nv-text-muted);cursor:pointer;width:40px;transition:color 0.15s',
+          onMouseEnter: function(e) { e.currentTarget.style.color = 'var(--nv-primary)'; },
+          onMouseLeave: function(e) { e.currentTarget.style.color = ''; },
+          onClick: function() { wireAction(store, { action: spec.column.add, args: {} }, ctx)({ name: 'Column', type: 'text' }); }
+        }, '+'));
+      }
+
+      // Remove row header placeholder
+      if (_editable && spec.row && spec.row.remove) {
+        headerCells.push(h('th', { style: 'width:32px' }));
+      }
+
+      var thead = h('thead', { style: _editable ? 'position:sticky;top:0;z-index:2;background:var(--nv-bg)' : '' }, h('tr', {}, headerCells));
 
       // Body rows
-      var bodyRows = displayRows.map(function(row) {
+      var bodyRows = displayRows.map(function(row, rowIdx) {
         var rowCtx = {};
         for (var k in ctx) rowCtx[k] = ctx[k];
         rowCtx.row = row;
 
-        var cells = spec.columns.map(function(col) {
-          var val = row[col.key];
-          var display = fmt(val, col.format);
+        var cells = [];
+
+        // Row number cell (editable)
+        if (_editable) {
+          cells.push(h('td', {
+            style: 'padding:0.4rem 0.5rem;text-align:center;font-size:0.75rem;color:var(--nv-text-muted);position:sticky;left:0;z-index:1;background:var(--nv-bg);border-right:1px solid var(--nv-border)'
+          }, String(rowIdx + 1)));
+        }
+
+        cells = cells.concat(cols.map(function(col, ci) {
+          var colKey = _editable ? col.id : col.key;
+          var val = row[colKey];
           var cellStyle = 'padding:0.6rem 1rem;font-size:0.85rem;';
+          if (_editable && col.width) cellStyle += 'width:' + col.width + 'px;min-width:' + col.width + 'px;';
+
+          // Active cell focus ring
+          if (_editable && activeCell && activeCell.rowId === row.id && activeCell.colIdx === ci) {
+            cellStyle += 'outline:2px solid var(--nv-primary);outline-offset:-2px;';
+          }
+
           if (col.color) cellStyle += 'color:' + (colors[col.color] || colors.gray).fg + ';';
           if (col.bold) cellStyle += 'font-weight:600;';
 
           var content = [];
-          if (col.icon) {
-            content.push(h('span', { style: 'margin-right:4px' }, col.icon === 'arrowDown' ? '\u2193' : col.icon === 'arrowUp' ? '\u2191' : ''));
-          }
 
-          if (col.badge) {
-            var badgeColors = { draft: colors.gray, final: colors.blue, paid: colors.green, active: colors.green, inactive: colors.red };
-            var bc = badgeColors[val] || colors.gray;
-            content.push(h('span', {
-              style: 'display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:500;background:' + bc.bg + ';color:' + bc.fg
-            }, val));
-          } else if (col.subtitle) {
-            content.push(h('div', {},
-              h('span', { style: 'font-weight:500' }, display),
-              h('br'),
-              h('span', { style: 'font-size:0.8rem;color:var(--nv-text-muted)' }, row[col.subtitle] || '')
-            ));
+          // Editable: check if this cell is being edited
+          if (_editable && editing && editing.rowId === row.id && editing.colIdx === ci) {
+            // Editor mode
+            if (col.type === 'select') {
+              var opts = (col.options || []).map(function(opt) {
+                return h('option', { value: opt.value, selected: opt.value === val }, opt.value);
+              });
+              var sel = h('select', {
+                'data-nv-editor': '1',
+                class: 'nv-input nv-input-sm',
+                style: 'width:100%;font-size:0.85rem',
+                value: val || '',
+                onBlur: (function(rId, cId) {
+                  return function(e) {
+                    if (spec.cell && spec.cell.action) {
+                      wireAction(store, { action: spec.cell.action, args: {} }, ctx)({ rowId: rId, colId: cId, value: e.target.value });
+                    }
+                    _editingSet(null);
+                    tableEl.focus();
+                  };
+                })(row.id, col.id),
+                onChange: (function(rId, cId) {
+                  return function(e) {
+                    if (spec.cell && spec.cell.action) {
+                      wireAction(store, { action: spec.cell.action, args: {} }, ctx)({ rowId: rId, colId: cId, value: e.target.value });
+                    }
+                    _editingSet(null);
+                    tableEl.focus();
+                  };
+                })(row.id, col.id)
+              }, opts);
+              content.push(sel);
+              setTimeout(function() { sel.focus(); }, 0);
+            } else {
+              var inputType = col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text';
+              var inp = h('input', {
+                type: inputType,
+                'data-nv-editor': '1',
+                class: 'nv-input nv-input-sm',
+                style: 'width:100%;font-size:0.85rem',
+                value: _editVal.v,
+                onBlur: (function(rId, cId, cType) {
+                  return function(e) {
+                    var v = e.target.value;
+                    if (cType === 'number') v = v === '' ? '' : Number(v);
+                    if (spec.cell && spec.cell.action) {
+                      wireAction(store, { action: spec.cell.action, args: {} }, ctx)({ rowId: rId, colId: cId, value: v });
+                    }
+                    _editingSet(null);
+                    tableEl.focus();
+                  };
+                })(row.id, col.id, col.type)
+              });
+              content.push(inp);
+              setTimeout(function() { inp.focus(); if (editing.initChar) inp.setSelectionRange(inp.value.length, inp.value.length); }, 0);
+            }
+          } else if (_editable && col.type === 'checkbox') {
+            // Checkbox — immediate toggle
+            var cb = h('input', {
+              type: 'checkbox',
+              style: 'cursor:pointer;accent-color:var(--nv-primary)',
+              checked: !!val,
+              onChange: (function(rId, cId, curVal) {
+                return function() {
+                  if (spec.cell && spec.cell.action) {
+                    wireAction(store, { action: spec.cell.action, args: {} }, ctx)({ rowId: rId, colId: cId, value: !curVal });
+                  }
+                };
+              })(row.id, col.id, val)
+            });
+            content.push(cb);
+          } else if (_editable && col.type === 'select') {
+            // Select display — colored badge
+            if (val) {
+              var optDef = (col.options || []).filter(function(o) { return o.value === val; })[0];
+              var bc = optDef && optDef.color ? (colors[optDef.color] || colors.gray) : colors.gray;
+              content.push(h('span', {
+                style: 'display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:500;background:' + bc.bg + ';color:' + bc.fg
+              }, val));
+            }
           } else {
-            content.push(h('span', {}, display));
+            // Standard display
+            var display = fmt(val, col.format);
+            if (!_editable && col.icon) {
+              content.push(h('span', { style: 'margin-right:4px' }, col.icon === 'arrowDown' ? '\u2193' : col.icon === 'arrowUp' ? '\u2191' : ''));
+            }
+            if (!_editable && col.badge) {
+              var badgeColors = { draft: colors.gray, final: colors.blue, paid: colors.green, active: colors.green, inactive: colors.red };
+              var bc = badgeColors[val] || colors.gray;
+              content.push(h('span', {
+                style: 'display:inline-flex;align-items:center;padding:2px 10px;border-radius:9999px;font-size:0.75rem;font-weight:500;background:' + bc.bg + ';color:' + bc.fg
+              }, val));
+            } else if (!_editable && col.subtitle) {
+              content.push(h('div', {},
+                h('span', { style: 'font-weight:500' }, display),
+                h('br'),
+                h('span', { style: 'font-size:0.8rem;color:var(--nv-text-muted)' }, row[col.subtitle] || '')
+              ));
+            } else {
+              content.push(h('span', {}, display));
+            }
           }
 
-          return h('td', { style: cellStyle, class: col._hideClass || undefined }, content);
-        });
+          var tdEl = h('td', {
+            style: cellStyle,
+            class: col._hideClass || undefined,
+            onClick: _editable ? (function(rId, ci2) {
+              return function(e) {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                _activeCellSet({ rowId: rId, colIdx: ci2 });
+              };
+            })(row.id, ci) : null,
+            onDblClick: _editable ? (function(rId, ci2, colDef, curVal) {
+              return function(e) {
+                if (colDef.type === 'checkbox') return;
+                _activeCellSet({ rowId: rId, colIdx: ci2 });
+                _editVal.v = (curVal == null ? '' : String(curVal));
+                _editingSet({ rowId: rId, colIdx: ci2, initChar: null });
+              };
+            })(row.id, ci, col, val) : null
+          }, content);
+          return tdEl;
+        }));
+
+        // Remove row button (editable)
+        if (_editable && spec.row && spec.row.remove) {
+          cells.push(h('td', { style: 'padding:0.4rem 0.25rem;text-align:center' },
+            h('button', {
+              style: 'border:none;background:none;cursor:pointer;color:var(--nv-text-muted);font-size:0.85rem;padding:2px 6px;border-radius:4px;transition:background 0.15s,color 0.15s',
+              onMouseEnter: function(e) { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.color = '#ef4444'; },
+              onMouseLeave: function(e) { e.currentTarget.style.background = ''; e.currentTarget.style.color = ''; },
+              onClick: (function(rId) {
+                return function() { wireAction(store, { action: spec.row.remove, args: {} }, ctx)({ rowId: rId }); };
+              })(row.id)
+            }, '\u00d7')
+          ));
+        }
+
+        // Column add placeholder cell
+        if (_editable && spec.column && spec.column.add) {
+          cells.push(h('td', {}));
+        }
 
         var trStyle = 'border-bottom:1px solid var(--nv-border);transition:background 0.15s;';
         var tr = h('tr', {
-          style: trStyle + (spec.onRowClick ? 'cursor:pointer;' : ''),
+          style: trStyle + (!_editable && spec.onRowClick ? 'cursor:pointer;' : ''),
           onMouseEnter: function(e) { e.currentTarget.style.background = 'var(--nv-bg-subtle)'; },
           onMouseLeave: function(e) { e.currentTarget.style.background = ''; },
-          onClick: spec.onRowClick ? function() {
+          onClick: !_editable && spec.onRowClick ? function() {
             wireAction(store, spec.onRowClick, rowCtx)();
           } : null
         }, cells);
