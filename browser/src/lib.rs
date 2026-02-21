@@ -158,7 +158,7 @@ pub fn browse_with_convex(file_path: &str, convex: &ConvexData) -> Result<synthe
         }
 
         let code = load_script(&source, src)?;
-        rt.eval(&code)?;
+        rt.eval(&code).map_err(|e| format!("{e} (loading {src})"))?;
     }
 
     // Load observer (after core, before app)
@@ -175,8 +175,8 @@ pub fn browse_with_convex(file_path: &str, convex: &ConvexData) -> Result<synthe
     }
 
     // Execute inline scripts (app code)
-    for script in &parsed.inline_scripts {
-        rt.execute_app(script)?;
+    for (i, script) in parsed.inline_scripts.iter().enumerate() {
+        rt.execute_app(script).map_err(|e| format!("{e} (in inline script #{})", i + 1))?;
     }
 
     // Flush any pending requestAnimationFrame callbacks (for onMount)
@@ -235,7 +235,7 @@ pub fn browse_and_call(
             continue;
         }
         let code = load_script(&source, src)?;
-        rt.eval(&code)?;
+        rt.eval(&code).map_err(|e| format!("{e} (loading {src})"))?;
     }
 
     rt.load_observer()?;
@@ -319,7 +319,7 @@ pub fn browse_and_assert_with_convex(file_path: &str, assertions: &[String], con
             continue;
         }
         let code = load_script(&source, src)?;
-        rt.eval(&code)?;
+        rt.eval(&code).map_err(|e| format!("{e} (loading {src})"))?;
     }
 
     rt.load_observer()?;
@@ -436,7 +436,7 @@ pub fn browse_and_test(file_path: &str, spec: &test_runner::TestSpec, convex: &C
             continue;
         }
         let code = load_script(&source, src)?;
-        rt.eval(&code)?;
+        rt.eval(&code).map_err(|e| format!("{e} (loading {src})"))?;
     }
 
     rt.load_observer()?;

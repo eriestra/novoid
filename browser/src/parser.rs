@@ -50,6 +50,13 @@ pub fn parse_html(html: &str) -> ParsedPage {
             }
             script_srcs.push(src_str);
         } else {
+            // Skip non-JS script types (e.g. application/json, application/ld+json)
+            if let Some(script_type) = el.value().attr("type") {
+                let t = script_type.trim().to_lowercase();
+                if t != "text/javascript" && t != "module" && t != "" {
+                    continue;
+                }
+            }
             let text: String = el.text().collect();
             let trimmed = text.trim();
             if !trimmed.is_empty() {

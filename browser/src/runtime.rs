@@ -107,12 +107,17 @@ impl NovoidRuntime {
 
     /// Execute the app's inline script, capturing uncaught errors
     pub fn execute_app(&self, app_js: &str) -> Result<(), String> {
-        // Wrap in try/catch to capture uncaught errors without aborting
+        // Wrap in try/catch to capture uncaught errors without aborting.
+        // If the wrapped version fails to parse (e.g. code invalid in block context),
+        // fall back to raw eval.
         let wrapped = format!(
             r#"try {{ {} }} catch(__e) {{ __novoid_browser.captureError('uncaught', __e.message || String(__e), __e.stack || ''); }}"#,
             app_js
         );
-        self.eval(&wrapped)
+        match self.eval(&wrapped) {
+            Ok(()) => Ok(()),
+            Err(_) => self.eval(app_js),
+        }
     }
 
     /// Call a store action by name with JSON args
