@@ -9,7 +9,9 @@ if (!file) {
 }
 
 const html = readFileSync(file, "utf-8");
-const report = analyze(html);
+const contractMatch = html.match(/<script[^>]*data-nous-contracts[^>]*>([\s\S]*?)<\/script>/i);
+const contracts = contractMatch ? JSON.parse(contractMatch[1]) : [];
+const report = analyze(html, { contracts });
 report.document = file;
 
 console.log(JSON.stringify(report, null, 2));
