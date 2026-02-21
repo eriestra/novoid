@@ -5,10 +5,18 @@ set -e
 
 SLUG="$1"
 FILE="$2"
-SKIP_CHECK="$3"
+shift 2 || true
+SKIP_CHECK=""
+FORCE=""
+for arg in "$@"; do
+  case "$arg" in
+    --skip-check) SKIP_CHECK="--skip-check" ;;
+    --force) FORCE="--force" ;;
+  esac
+done
 
 if [ -z "$SLUG" ] || [ -z "$FILE" ]; then
-  echo "Usage: sh publish.sh <slug> <file> [--skip-check]"
+  echo "Usage: sh publish.sh <slug> <file> [--skip-check] [--force]"
   exit 1
 fi
 
@@ -20,7 +28,7 @@ fi
 # ─── Locked slugs ─────────────────────────────────────────
 LOCKED_SLUGS="nex vox novoid bloox platform"
 for locked in $LOCKED_SLUGS; do
-  if [ "$SLUG" = "$locked" ] && [ "$SKIP_CHECK" != "--force" ]; then
+  if [ "$SLUG" = "$locked" ] && [ "$FORCE" != "--force" ]; then
     echo "Error: slug '$SLUG' is locked. Use --force to overwrite."
     exit 1
   fi

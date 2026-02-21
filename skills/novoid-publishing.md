@@ -79,6 +79,9 @@ URL testing: `novoid-browser https://site.convex.site/raw/<slug> --peek`
 ### `--skip-check`
 Bypasses verification. **Only for confirmed false positives** (e.g., Convex-dependent code that can't run headlessly).
 
+### `--force`
+Required for locked slugs (`nex`, `vox`, `novoid`, `bloox`, `platform`). Both flags can be combined: `sh publish.sh bloox src/app/bloox.html --skip-check --force`
+
 ---
 
 ## Test Specs

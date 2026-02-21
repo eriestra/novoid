@@ -114,8 +114,12 @@ fi
 
 # ─── Phase 2: novoid-browser (empirical) ──────────────────
 if [ -f "$BROWSER" ]; then
-  # Auto-detect Convex usage and seed empty defaults for query refs
+  # Auto-detect hash-routed apps and set location.hash
   SEED_ARGS=""
+  if grep -qE 'location\.hash' "$FILE" 2>/dev/null; then
+    SEED_ARGS="$SEED_ARGS --hash #/test"
+  fi
+  # Auto-detect Convex usage and seed empty defaults for query refs
   if grep -qE 'convex\.min\.js|createClient' "$FILE" 2>/dev/null; then
     # Extract query refs from useQuery(client, "ref") calls
     REFS=$(grep -oE 'useQuery\([^,]+,\s*"[^"]+' "$FILE" 2>/dev/null | sed 's/.*"\([^"]*\)$/\1/' | sort -u)

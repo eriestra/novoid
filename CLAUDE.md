@@ -20,6 +20,7 @@ Why: no∅ is built for agents. Agents don't manage deployment pipelines, promot
 |novoid-render.md       — declarative UI: sections, $expressions, formats, views, navigation, panels, data bindings, hybrid apps
 |novoid-css.md          — nv-* classes, --nv-* variables, components, layout, theming, dark mode, animations
 |novoid-publishing.md   — publish.sh, verify.sh, url.sh, build.sh, seed.sh, MCP endpoints, test specs, sentinel errors
+|fragment.md            — fragment.sh: read/write/list #region blocks in large single-file apps
 |novoid-verification.md — Nous static analysis, novoid-browser headless execution, MCP test harness
 |novoid-agents.md       — Nex (replaces OpenClaw), Vox (vibe-coded app builder), personas, memory, multi-channel, inline apps
 |novoid-math.md         — KaTeX integration, TeX notation, MathML visibility fix
@@ -97,6 +98,9 @@ sh url.sh <slug>                               # look up URLs
 sh verify.sh src/app/<slug>.html               # verify without publishing
 sh build.sh                                    # minify src/ → dist/
 sh seed.sh "$CONVEX_URL" "$PUBLISH_SECRET"     # upload framework assets after editing src/
+sh fragment.sh <file> --list                   # list #region blocks with line numbers
+sh fragment.sh <file> <region>                 # read a region to stdout
+sh fragment.sh <file> <region> <infile>        # replace region content from infile
 ```
 
 ## Conventions
