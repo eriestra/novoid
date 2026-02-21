@@ -1,4 +1,6 @@
 import { GenericQueryCtx, GenericMutationCtx } from "convex/server";
+import { internalQuery } from "./_generated/server";
+import { v } from "convex/values";
 import { DataModel } from "./_generated/dataModel";
 
 export async function hashSecret(value: string): Promise<string> {
@@ -134,3 +136,24 @@ export async function requireOrgRole(
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 export { SESSION_DURATION_MS };
+
+// ─── Internal Queries (for use in actions) ───────────────
+
+export const getSecret = internalQuery({
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("keys")
+      .withIndex("by_name", (q) => q.eq("name", "PUBLISH_SECRET"))
+      .first();
+  },
+});
+
+export const getKey = internalQuery({
+  args: { name: v.string() },
+  handler: async (ctx, { name }) => {
+    return await ctx.db
+      .query("keys")
+      .withIndex("by_name", (q) => q.eq("name", name))
+      .first();
+  },
+});

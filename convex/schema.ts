@@ -174,6 +174,7 @@ export default defineSchema({
     icon: v.string(),
     blocks: v.string(),         // JSON-encoded block array
     customBlocks: v.optional(v.string()), // JSON-encoded registerBlockType definitions
+    ribbon: v.optional(v.string()),          // hex color for document ribbon
     updatedAt: v.number(),
   })
     .index("by_docId", ["docId"])
@@ -369,6 +370,17 @@ export default defineSchema({
     error: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_org_status", ["orgId", "status"]),
+
+  nex_wallets: defineTable({
+    orgId: v.string(),
+    network: v.string(),
+    address: v.string(),
+    walletData: v.string(),
+    status: v.string(),
+    guardrails: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_org", ["orgId"]),
 
   nex_skills: defineTable({
     orgId: v.string(),

@@ -168,6 +168,50 @@ Reads `.env.local` for credentials, queries active channels, queues a channel jo
 
 ---
 
+## Wallet (Coinbase AgentKit)
+
+Nex has an optional crypto wallet powered by Coinbase AgentKit. When configured, Nex can send, receive, and trade crypto autonomously.
+
+### Configuration
+
+Store CDP API keys in the `keys` table:
+- `CDP_API_KEY_NAME_<orgId>` — Coinbase Developer Platform API key name
+- `CDP_API_KEY_PRIVATE_<orgId>` — CDP API private key
+
+Configure wallet via Nex settings UI (Wallet tab) or `nex:configureWallet` mutation.
+
+### Available Actions
+
+| Action | Description |
+|---|---|
+| `balance` | Get wallet details and balances |
+| `send` | Native ETH transfer or ERC-20 transfer |
+| `trade` | DEX swap via AgentKit |
+| `export` | Export wallet data for backup |
+
+### Guardrails
+
+Programmable spending limits enforced before every signing operation:
+- `maxPerTx` — maximum ETH per single transaction
+- `dailyLimit` — maximum ETH per 24-hour period
+
+Set via `nex:updateGuardrails` mutation or the UI.
+
+### Heartbeat Integration
+
+When a wallet is configured, heartbeat pipeline steps gain wallet capability. Nex can autonomously check balances and send payments when instructed, with guardrails enforcing limits without per-transaction human approval.
+
+### Networks
+
+- `base-mainnet` — Base L2 mainnet
+- `base-sepolia` — Base Sepolia testnet (recommended for initial setup)
+
+### Future: x402 Micropayments
+
+AgentKit wallet will enable x402 protocol support — HTTP 402-based micropayments for agent-to-agent service calls.
+
+---
+
 ## Multi-Channel Messaging
 
 | Channel | Transport | Input |

@@ -1,7 +1,6 @@
-import { mutation, query, action, internalMutation, internalQuery } from "./_generated/server";
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { verifySecret } from "./lib";
-import { api, internal } from "./_generated/api";
 
 // ─── Job Queue ─────────────────────────────────────────────
 
@@ -641,6 +640,89 @@ export const deleteSkill = mutation({
   handler: async (ctx, { skillId, secret }) => {
     await verifySecret(ctx, secret);
     await ctx.db.delete(skillId);
+  },
+});
+
+// ─── Wallet ──────────────────────────────────────────────────
+
+export const wallets = query({
+  args: { orgId: v.string() },
+  handler: async (ctx, { orgId }) => {
+    return await ctx.db
+      .query("nex_wallets")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .collect();
+  },
+});
+
+export const walletByOrg = query({
+  args: { orgId: v.string() },
+  handler: async (ctx, { orgId }) => {
+    return await ctx.db
+      .query("nex_wallets")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .first();
+  },
+});
+
+export const configureWallet = mutation({
+  args: {
+    orgId: v.string(),
+    network: v.string(),
+    address: v.string(),
+    walletData: v.string(),
+    guardrails: v.optional(v.string()),
+    secret: v.string(),
+  },
+  handler: async (ctx, { orgId, network, address, walletData, guardrails, secret }) => {
+    await verifySecret(ctx, secret);
+    const existing = await ctx.db
+      .query("nex_wallets")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, { network, address, walletData, guardrails, status: "active" });
+      return existing._id;
+    } else {
+      return await ctx.db.insert("nex_wallets", {
+        orgId,
+        network,
+        address,
+        walletData,
+        status: "active",
+        guardrails,
+        createdAt: Date.now(),
+      });
+    }
+  },
+});
+
+export const removeWallet = mutation({
+  args: {
+    walletId: v.id("nex_wallets"),
+    secret: v.string(),
+  },
+  handler: async (ctx, { walletId, secret }) => {
+    await verifySecret(ctx, secret);
+    await ctx.db.delete(walletId);
+  },
+});
+
+export const updateGuardrails = mutation({
+  args: {
+    orgId: v.string(),
+    guardrails: v.string(),
+    secret: v.string(),
+  },
+  handler: async (ctx, { orgId, guardrails, secret }) => {
+    await verifySecret(ctx, secret);
+    const wallet = await ctx.db
+      .query("nex_wallets")
+      .withIndex("by_org", (q) => q.eq("orgId", orgId))
+      .first();
+    if (!wallet) throw new Error("No wallet configured");
+    await ctx.db.patch(wallet._id, { guardrails });
   },
 });
 
