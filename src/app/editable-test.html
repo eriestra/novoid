@@ -4,12 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Editable Table Test</title>
-<link rel="stylesheet" href="../js/core.min.css">
-<link rel="stylesheet" href="../js/components.min.css">
-<style>[data-theme="dark"]{color-scheme:dark}</style>
+<link rel="stylesheet" href="../css/core.min.css">
+<link rel="stylesheet" href="../css/components.min.css">
+<style>
+[data-theme="dark"]{color-scheme:dark}
+body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--nv-bg); color: var(--nv-text); margin: 0; padding: 0; }
+</style>
 </head>
-<body>
-<div id="app"></div>
+<body data-theme="dark">
+<div id="app" class="nv-container" style="max-width:960px;margin:2rem auto;padding:0 1.5rem"></div>
 <script src="../js/core.min.js"></script>
 <script src="../js/render.min.js"></script>
 <script>
@@ -76,6 +79,7 @@ var store = N.createStore({
       for (var k in c) copy[k] = c[k];
       if (args.name !== undefined) copy.name = args.name;
       if (args.type !== undefined) copy.type = args.type;
+      if (args.options !== undefined) copy.options = args.options;
       return copy;
     })};
   },
@@ -100,7 +104,7 @@ N.render('#app', store, {
       sort: { bind: '$sort', action: 'setSort' },
       cell: { action: 'setCell' },
       row: { add: 'addRow', remove: 'removeRow' },
-      column: { add: 'addCol', remove: 'removeCol', update: 'updateCol', resize: 'resizeCol' },
+      column: { add: 'addCol', remove: 'removeCol', update: 'updateCol', resize: 'resizeCol', menu: true },
       empty: 'No rows yet'
     }}
   ]

@@ -107,6 +107,11 @@
     { "action": "call", "tool": "setSort", "args": { "key": null, "dir": null },
       "then": { "read": "sort", "assert": { "eq": { "key": null, "dir": null } } }, "label": "clear sort" },
 
+    { "action": "call", "tool": "updateCol", "args": { "colId": "c1", "type": "number" },
+      "then": { "read": "columns", "assert": { "eq_path": { "0.type": "number" } } }, "label": "change type via menu action" },
+    { "action": "call", "tool": "updateCol", "args": { "colId": "c1", "type": "text" },
+      "then": { "read": "columns", "assert": { "eq_path": { "0.type": "text" } } }, "label": "revert type via menu action" },
+
     { "action": "call", "tool": "removeRow", "args": { "rowId": "r4" } },
     { "action": "call", "tool": "removeRow", "args": { "rowId": "r3" } },
     { "action": "call", "tool": "removeRow", "args": { "rowId": "r1" },
@@ -117,6 +122,13 @@
     { "action": "call", "tool": "setCell", "args": { "rowId": "r5", "colId": "c1", "value": "Frank" },
       "then": { "read": "rows", "assert": { "eq_path": { "0.c1": "Frank" } } }, "label": "edit in rebuilt table" },
     { "action": "call", "tool": "setCell", "args": { "rowId": "r5", "colId": "c5", "value": "2026-02-21" },
-      "then": { "read": "rows", "assert": { "eq_path": { "0.c5": "2026-02-21" } } }, "label": "date in rebuilt table" }
+      "then": { "read": "rows", "assert": { "eq_path": { "0.c5": "2026-02-21" } } }, "label": "date in rebuilt table" },
+
+    { "action": "call", "tool": "updateCol", "args": { "colId": "c3", "options": [{"value":"Active","color":"green"},{"value":"Inactive","color":"red"},{"value":"Pending","color":"yellow"},{"value":"Archived","color":"#8b5cf6"}] },
+      "then": { "read": "columns", "assert": { "eq_path": { "2.options.3.value": "Archived" } } }, "label": "add select option" },
+    { "action": "call", "tool": "updateCol", "args": { "colId": "c3", "options": [{"value":"Active","color":"green"},{"value":"Pending","color":"yellow"},{"value":"Archived","color":"#8b5cf6"}] },
+      "then": { "read": "columns", "assert": { "eq_path": { "2.options.1.value": "Pending", "2.options.2.value": "Archived" } } }, "label": "remove select option" },
+    { "action": "call", "tool": "updateCol", "args": { "colId": "c3", "options": [{"value":"Active","color":"#10b981"},{"value":"Pending","color":"yellow"},{"value":"Archived","color":"#8b5cf6"}] },
+      "then": { "read": "columns", "assert": { "eq_path": { "2.options.0.color": "#10b981" } } }, "label": "change option color" }
   ]
 }

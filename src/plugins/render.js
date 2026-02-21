@@ -398,6 +398,15 @@
     var _pageSet = _pageSig ? _pageSig[1] : null;
     var _prevLen = { v: 0 };
 
+    // Apply sort.default on mount
+    if (spec.sort && spec.sort.default && spec.sort.action) {
+      var _sortKey = spec.sort.bind || ('$' + (spec.sort.key || 'sort').replace(/^\$/, ''));
+      var _sortCur = reactive(store, _sortKey, ctx)();
+      if (!_sortCur || !_sortCur.key) {
+        wireAction(store, { action: spec.sort.action, args: {} }, ctx)(spec.sort.default);
+      }
+    }
+
     // Editable table local state (signals persist across effect rebuilds)
     var _activeCellSig = _editable ? N.signal(null) : null;
     var _activeCellGet = _activeCellSig ? _activeCellSig[0] : null;
@@ -410,6 +419,9 @@
     var _editingColGet = _editingColSig ? _editingColSig[0] : null;
     var _editingColSet = _editingColSig ? _editingColSig[1] : null;
     var _editColVal = { v: '' };
+    var _colMenuSig = _editable ? N.signal(null) : null;
+    var _colMenuGet = _colMenuSig ? _colMenuSig[0] : null;
+    var _colMenuSet = _colMenuSig ? _colMenuSig[1] : null;
 
     // Header with title and optional filter
     var headerItems = [];
@@ -453,7 +465,7 @@
     }
 
     // Table content
-    var tableEl = h('div', { style: 'overflow-x:auto' + (_editable ? ';overflow-y:auto;max-height:80vh;outline:none' : '') });
+    var tableEl = h('div', { style: 'overflow-x:auto' + (_editable ? ';overflow-y:auto;max-height:' + (spec.maxHeight || '80vh') + ';outline:none' : '') });
     if (_editable) tableEl.setAttribute('tabindex', '0');
     children.push(tableEl);
 
@@ -576,8 +588,22 @@
       var activeCell = _activeCellGet ? _activeCellGet() : null;
       var editing = _editingGet ? _editingGet() : null;
       var editingCol = _editingColGet ? _editingColGet() : null;
+      var colMenu = _colMenuGet ? _colMenuGet() : null;
       // Stash for keyboard handler
       _lastCols = cols;
+
+      // Toggle overflow so nv-dropdown-menu escapes the scroll container
+      if (_editable) {
+        if (colMenu) {
+          tableEl.style.overflowX = 'visible';
+          tableEl.style.overflowY = 'visible';
+          if (tableEl.parentNode) tableEl.parentNode.style.overflow = 'visible';
+        } else {
+          tableEl.style.overflowX = 'auto';
+          tableEl.style.overflowY = 'auto';
+          if (tableEl.parentNode) tableEl.parentNode.style.overflow = 'hidden';
+        }
+      }
 
       // Dispose child trees before clearing
       while (tableEl.firstChild) { _disposeTree(tableEl.firstChild); tableEl.removeChild(tableEl.firstChild); }
@@ -652,6 +678,7 @@
 
         // Column header: inline rename editor or label + remove button
         if (_editable && editingCol === col.id && spec.column && spec.column.update) {
+          var _colEscaped = { v: false };
           var colInp = h('input', {
             type: 'text',
             'data-nv-col-editor': '1',
@@ -660,17 +687,17 @@
             value: _editColVal.v,
             onBlur: (function(cId) {
               return function(e) {
+                if (_colEscaped.v) return;
                 var v = e.target.value.trim();
                 if (v && v !== colLabel) {
                   wireAction(store, { action: spec.column.update, args: {} }, ctx)({ colId: cId, name: v });
                 }
                 _editingColSet(null);
-                tableEl.focus();
               };
             })(col.id),
             onKeyDown: function(e) {
               if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
-              if (e.key === 'Escape') { e.preventDefault(); _editingColSet(null); tableEl.focus(); }
+              if (e.key === 'Escape') { e.preventDefault(); _colEscaped.v = true; _editingColSet(null); tableEl.focus(); }
               e.stopPropagation();
             }
           });
@@ -680,8 +707,8 @@
           var labelSpan = h('span', {}, colLabel);
           thContent.push(labelSpan);
 
-          // Column remove button
-          if (_editable && spec.column && spec.column.remove) {
+          // Column remove button (when no menu)
+          if (_editable && spec.column && spec.column.remove && !(spec.column && spec.column.menu)) {
             var removeColBtn = h('span', {
               style: 'margin-left:4px;cursor:pointer;font-size:0.65rem;opacity:0.4;transition:opacity 0.15s,color 0.15s',
               onMouseEnter: function(e) { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#ef4444'; },
@@ -694,6 +721,181 @@
               })(col.id)
             }, '\u00d7');
             thContent.push(removeColBtn);
+          }
+
+          // Column context menu (nv-dropdown pattern)
+          if (_editable && spec.column && spec.column.menu) {
+            var _menuOpen = _colMenuGet() === col.id;
+            var _menuTrigger = h('span', {
+              style: 'cursor:pointer;font-size:0.6rem;width:1.25rem;height:1.25rem;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--nv-radius-sm);opacity:0.35;transition:opacity 0.15s,background 0.15s,color 0.15s',
+              'data-nv-col-menu-btn': '1',
+              onClick: (function(cId) {
+                return function(e) {
+                  e.stopPropagation();
+                  _colMenuSet(_colMenuGet() === cId ? null : cId);
+                };
+              })(col.id),
+              onMouseEnter: function(e) { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = 'var(--nv-bg-muted)'; },
+              onMouseLeave: function(e) { if (!_menuOpen) e.currentTarget.style.opacity = '0.35'; e.currentTarget.style.background = ''; }
+            }, '\u25be');
+            if (_menuOpen) _menuTrigger.style.opacity = '1';
+
+            var ddChildren = [_menuTrigger];
+
+            // Only build menu DOM when open
+            if (_menuOpen) {
+              var menuItemEls = [];
+              var _colType = col.type || 'text';
+              var _menuItem = function(label, icon, onClick, opts) {
+                opts = opts || {};
+                var children = [];
+                if (icon) children.push(h('span', { style: 'width:1.25rem;display:inline-block;text-align:center;flex-shrink:0' }, icon));
+                children.push(h('span', {}, label));
+                return h('div', {
+                  class: 'nv-dropdown-item',
+                  style: 'display:flex;align-items:center;gap:0.375rem;white-space:nowrap' + (opts.danger ? ';color:var(--nv-danger)' : '') + (opts.muted ? ';color:var(--nv-text-muted);font-size:0.75rem;pointer-events:none' : '') + (opts.indent ? ';padding-left:2rem' : '') + (opts.active ? ';background:var(--nv-bg-muted)' : ''),
+                  onClick: opts.muted ? null : onClick
+                }, children);
+              };
+
+              // Sort items
+              if (spec.sort) {
+                menuItemEls.push(_menuItem('Sort ascending', '\u2191', (function(ck) { return function() {
+                  wireAction(store, { action: spec.sort.action, args: {} }, ctx)({ key: ck, dir: 'asc' });
+                  _colMenuSet(null);
+                }; })(colKey)));
+                menuItemEls.push(_menuItem('Sort descending', '\u2193', (function(ck) { return function() {
+                  wireAction(store, { action: spec.sort.action, args: {} }, ctx)({ key: ck, dir: 'desc' });
+                  _colMenuSet(null);
+                }; })(colKey)));
+                menuItemEls.push(h('div', { class: 'nv-dropdown-divider' }));
+              }
+
+              // Rename
+              if (spec.column.update) {
+                menuItemEls.push(_menuItem('Rename column', '\u270e', (function(cId, cName) { return function() {
+                  _colMenuSet(null);
+                  _editColVal.v = cName || '';
+                  _editingColSet(cId);
+                }; })(col.id, colLabel)));
+              }
+
+              // Change type
+              if (spec.column.update) {
+                menuItemEls.push(h('div', { class: 'nv-dropdown-divider' }));
+                menuItemEls.push(_menuItem('Type', '', null, { muted: true }));
+                var _typeMap = { text: 'Aa', number: '#', date: '\ud83d\udcc5', select: '\u25bd', checkbox: '\u2611' };
+                var typeOptions = ['text', 'number', 'date', 'select', 'checkbox'];
+                typeOptions.forEach(function(tp) {
+                  menuItemEls.push(_menuItem(tp.charAt(0).toUpperCase() + tp.slice(1), _typeMap[tp] || '', (function(cId, t) { return function() {
+                    wireAction(store, { action: spec.column.update, args: {} }, ctx)({ colId: cId, type: t });
+                    _colMenuSet(null);
+                  }; })(col.id, tp), { indent: true, active: _colType === tp }));
+                });
+              }
+
+              // Select options management
+              if (spec.column.update && _colType === 'select') {
+                var _colOpts = col.options || [];
+                menuItemEls.push(h('div', { class: 'nv-dropdown-divider' }));
+                menuItemEls.push(_menuItem('Options', '', null, { muted: true }));
+                var _defaultColors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+                _colOpts.forEach(function(opt, oi) {
+                  var optRow = h('div', {
+                    class: 'nv-dropdown-item',
+                    style: 'display:flex;align-items:center;gap:0.375rem;padding-left:2rem'
+                  }, [
+                    h('input', {
+                      type: 'color',
+                      value: opt.color || _defaultColors[oi % _defaultColors.length],
+                      style: 'width:1.25rem;height:1.25rem;border:none;padding:0;background:none;cursor:pointer;flex-shrink:0',
+                      onChange: (function(cId, opts, idx) { return function(e) {
+                        var updated = opts.map(function(o, i) {
+                          if (i !== idx) return o;
+                          var copy = {}; for (var k in o) copy[k] = o[k]; copy.color = e.target.value; return copy;
+                        });
+                        wireAction(store, { action: spec.column.update, args: {} }, ctx)({ colId: cId, options: updated });
+                      }; })(col.id, _colOpts, oi)
+                    }),
+                    h('span', { style: 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis' }, opt.value),
+                    h('span', {
+                      style: 'cursor:pointer;opacity:0.4;font-size:0.75rem;flex-shrink:0',
+                      onClick: (function(cId, opts, idx) { return function() {
+                        var updated = opts.filter(function(_, i) { return i !== idx; });
+                        wireAction(store, { action: spec.column.update, args: {} }, ctx)({ colId: cId, options: updated });
+                      }; })(col.id, _colOpts, oi),
+                      onMouseEnter: function(e) { e.currentTarget.style.opacity = '1'; },
+                      onMouseLeave: function(e) { e.currentTarget.style.opacity = '0.4'; }
+                    }, '\u00d7')
+                  ]);
+                  menuItemEls.push(optRow);
+                });
+                // Add option input
+                var _addOptInput = h('input', {
+                  type: 'text',
+                  class: 'nv-input nv-input-sm',
+                  placeholder: 'Add option\u2026',
+                  style: 'flex:1;min-width:0;font-size:0.75rem',
+                  onKeyDown: (function(cId, opts) { return function(e) {
+                    if (e.key === 'Enter' && e.target.value.trim()) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      var newVal = e.target.value.trim();
+                      var updated = opts.concat([{ value: newVal, color: _defaultColors[opts.length % _defaultColors.length] }]);
+                      wireAction(store, { action: spec.column.update, args: {} }, ctx)({ colId: cId, options: updated });
+                      e.target.value = '';
+                    }
+                  }; })(col.id, _colOpts)
+                });
+                menuItemEls.push(h('div', {
+                  class: 'nv-dropdown-item',
+                  style: 'display:flex;align-items:center;gap:0.375rem;padding-left:2rem'
+                }, [_addOptInput]));
+              }
+
+              // Remove
+              if (spec.column.remove) {
+                menuItemEls.push(h('div', { class: 'nv-dropdown-divider' }));
+                menuItemEls.push(_menuItem('Remove column', '\u2212', (function(cId) { return function() {
+                  wireAction(store, { action: spec.column.remove, args: {} }, ctx)({ colId: cId });
+                  _colMenuSet(null);
+                }; })(col.id), { danger: true }));
+              }
+
+              ddChildren.push(h('div', {
+                class: 'nv-dropdown-menu',
+                style: 'text-transform:none;letter-spacing:normal;font-weight:normal;font-size:0.8125rem;min-width:11rem'
+              }, menuItemEls));
+
+              // Close on outside click / Escape
+              var _ddWrapRef = { el: null };
+              var _closeCol = function() { _colMenuSet(null); };
+              var _onDocDown = function(ev) {
+                if (_ddWrapRef.el && !_ddWrapRef.el.contains(ev.target)) {
+                  document.removeEventListener('mousedown', _onDocDown);
+                  document.removeEventListener('keydown', _onDocEsc);
+                  _closeCol();
+                }
+              };
+              var _onDocEsc = function(ev) {
+                if (ev.key === 'Escape') {
+                  document.removeEventListener('mousedown', _onDocDown);
+                  document.removeEventListener('keydown', _onDocEsc);
+                  _closeCol();
+                }
+              };
+              setTimeout(function() {
+                document.addEventListener('mousedown', _onDocDown);
+                document.addEventListener('keydown', _onDocEsc);
+              }, 0);
+            }
+
+            var ddWrap = h('div', {
+              class: 'nv-dropdown' + (_menuOpen ? ' nv-active' : ''),
+              style: 'display:inline-block;vertical-align:middle;margin-left:0.25rem'
+            }, ddChildren);
+            if (_menuOpen && _ddWrapRef) _ddWrapRef.el = ddWrap;
+            thContent.push(ddWrap);
           }
         }
 
@@ -771,6 +973,7 @@
             };
           })(col.id, colLabel) : null
         }, thContent);
+
         return thEl;
       }));
 
