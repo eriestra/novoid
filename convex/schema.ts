@@ -382,6 +382,29 @@ export default defineSchema({
   })
     .index("by_org", ["orgId"]),
 
+  // ─── Agent Billing ─────────────────────────────────────
+
+  agentKeys: defineTable({
+    apiKey: v.string(),
+    walletAddress: v.string(),
+    credit: v.string(),
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+  })
+    .index("by_api_key", ["apiKey"])
+    .index("by_wallet", ["walletAddress"]),
+
+  usage: defineTable({
+    keyId: v.id("agentKeys"),
+    slug: v.string(),
+    txHash: v.optional(v.string()),
+    cost: v.string(),
+    timestamp: v.number(),
+    liveUrl: v.string(),
+  })
+    .index("by_key_time", ["keyId", "timestamp"])
+    .index("by_tx_hash", ["txHash"]),
+
   nex_skills: defineTable({
     orgId: v.string(),
     name: v.string(),

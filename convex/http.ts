@@ -1,7 +1,8 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { htmlToMarkdown } from "./markdown";
+import { hashSecret, generateToken } from "./lib";
 
 const http = httpRouter();
 
@@ -367,22 +368,36 @@ http.route({
   path: "/llms.txt",
   method: "GET",
   handler: httpAction(async () => {
-    const content = `# no∅ (novoid)
+    const origin = "https://secret-aardvark-418.convex.site";
+    const content = `# no∅ (novoid) — Agent-First Application Platform
 
-> A 12KB frontend platform designed for AI agents. CSS component library + reactive JS framework + self-hosting deployment via Convex. Single-file output, zero build tools, 2-second deploys.
+> Describe it, it's live. One HTML file, zero build tools, 2-second deploys. Agents pay in USDC, no human required.
 
-- Source: https://github.com/eriestra/novoid
-- Full API spec: https://github.com/eriestra/novoid/blob/main/skills.md
-- Agent instructions: https://github.com/eriestra/novoid/blob/main/CLAUDE.md
-- Whitepaper: https://github.com/eriestra/novoid/blob/main/whitepaper.md
-- Full LLM context: https://github.com/eriestra/novoid/blob/main/llms-full.txt
+## Agent Deployment Rail
 
-## Quick Reference
-- CSS prefix: nv- (classes), --nv- (variables)
-- JS global: Novoid (e.g. Novoid.signal(), Novoid.h(), Novoid.mount())
-- Reactivity: fine-grained signals, no virtual DOM
-- Output: single self-contained HTML file per application
-- Deploy: write HTML to Convex DB, live in 2 seconds
+Any agent with a wallet can deploy apps autonomously:
+
+  GET  ${origin}/.well-known/x402.json     → payment terms + entry points
+  GET  ${origin}/billing/docs              → full framework skills (46KB)
+  GET  ${origin}/billing/tools             → CLI tools + binaries
+  POST ${origin}/billing/register          → { walletAddress } → API key
+  POST ${origin}/billing/publish           → { slug, html, apiKey } → live URL
+  POST ${origin}/billing/balance           → { apiKey } → credit balance
+  POST ${origin}/billing/usage             → { apiKey } → publish history
+
+Payment: USDC on Base. $0.02 per publish. x402 protocol. No human required.
+
+## Quick Start
+
+1. GET /.well-known/x402.json — discover payment terms
+2. GET /billing/docs — learn the framework (complete API reference)
+3. POST /billing/register { walletAddress } — get API key
+4. Build one HTML file using no∅
+5. POST /billing/publish { slug, html, apiKey } — get live URL
+
+## Source
+- GitHub: https://github.com/eriestra/novoid
+- Skills: https://github.com/eriestra/novoid/tree/main/skills
 `;
     return new Response(content, {
       status: 200,
@@ -1503,6 +1518,428 @@ http.route({
         "Vary": "Accept",
       },
     });
+  }),
+});
+
+// ─── Agent Billing Proxy ─────────────────────────────────
+
+const PUBLISH_COST = "0.02";
+const BILLING_CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+// GET /.well-known/x402.json — payment terms discovery
+http.route({
+  path: "/.well-known/x402.json",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const walletKey = await ctx.runQuery(internal.lib.getKey, { name: "BILLING_WALLET" });
+    const paymentAddress = walletKey?.value || "NOT_CONFIGURED";
+    return new Response(JSON.stringify({
+      version: "1.0",
+      accepts: ["USDC/base"],
+      pricePerPublish: PUBLISH_COST,
+      paymentAddress,
+      chain: "base",
+      chainId: 8453,
+      docs: "GET /billing/docs",
+      register: "POST /billing/register",
+    }, null, 2), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...BILLING_CORS },
+    });
+  }),
+});
+
+// GET /billing/docs — agent build instructions (full skills)
+http.route({
+  path: "/billing/docs",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    // Serve concatenated skill files from assets table (seeded by seed.sh)
+    const doc = await ctx.runQuery(api.assets.get, { name: "billing-docs.md" });
+    if (doc) {
+      return new Response(doc.content, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/markdown; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+    // Fallback: minimal inline guide
+    const fallback = `# no∅ Agent Build Guide
+
+## Quick Start
+
+1. Register: POST /billing/register { "walletAddress": "0x..." } → get apiKey
+2. Build a single HTML file using the no∅ framework (see below)
+3. Publish: POST /billing/publish { "slug": "my-app", "html": "<html>...</html>", "apiKey": "nv_..." }
+4. Get back a live URL
+
+## Minimal App Template
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My App</title>
+  <link rel="stylesheet" href="../css/core.min.css">
+  <script src="../js/core.min.js"><\/script>
+  <script src="../js/render.min.js"><\/script>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    var store = Novoid.createStore(
+      { count: 0 },
+      {
+        inc: function(s) { return { count: s.count + 1 }; },
+        reset: function() { return { count: 0 }; }
+      }
+    );
+    Novoid.render('#app', store, {
+      app: { name: 'Counter' },
+      sections: [
+        { stat: { value: '$count', label: 'Count', size: 'lg' } },
+        { row: { columns: 2, items: [
+          { button: { label: '+1', action: 'inc', style: 'primary' } },
+          { button: { label: 'Reset', action: 'reset', style: 'outline' } }
+        ]}}
+      ]
+    });
+  <\/script>
+</body>
+</html>
+\`\`\`
+
+## Full API Docs
+
+Full skills available at: https://github.com/eriestra/novoid/tree/main/skills
+- novoid-core.md — signals, computed, effect, h(), createStore, mount
+- novoid-render.md — declarative UI: sections, expressions, formats, views
+- novoid-css.md — nv-* classes, components, layout, theming
+`;
+    return new Response(fallback, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/markdown; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "no-cache",
+      },
+    });
+  }),
+});
+
+// GET /billing/tools — list available CLI tools
+http.route({
+  path: "/billing/tools",
+  method: "GET",
+  handler: httpAction(async () => {
+    const tools = [
+      { name: "publish.sh", description: "Verify + publish + post-publish E2E", usage: "sh publish.sh <slug> <file>" },
+      { name: "verify.sh", description: "Nous static analysis + novoid-browser headless verification", usage: "sh verify.sh <file.html>" },
+      { name: "build.sh", description: "Minify src/ → dist/ (framework dev only)", usage: "sh build.sh" },
+      { name: "seed.sh", description: "Upload framework assets to Convex", usage: "sh seed.sh \"$CONVEX_URL\" \"$PUBLISH_SECRET\"" },
+      { name: "fragment.sh", description: "Read/write #region blocks for multi-agent collaboration", usage: "sh fragment.sh <file> <region>" },
+      { name: "url.sh", description: "Look up live URLs for a slug", usage: "sh url.sh <slug>" },
+      { name: "upload-img.sh", description: "Upload images to Convex storage", usage: "sh upload-img.sh <file>" },
+    ];
+    const binaries = [
+      { name: "novoid-browser-darwin-arm64", description: "Headless verifier + BrowseSchema extractor (macOS Apple Silicon)", size: "6.2MB", usage: "chmod +x novoid-browser-darwin-arm64 && ./novoid-browser-darwin-arm64 <file.html>" },
+    ];
+    return new Response(JSON.stringify({
+      download: "GET /billing/tools/{name}",
+      tools,
+      binaries,
+    }, null, 2), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...BILLING_CORS },
+    });
+  }),
+});
+
+// GET /billing/tools/:name — download a CLI tool
+http.route({
+  pathPrefix: "/billing/tools/",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const name = url.pathname.replace("/billing/tools/", "");
+    if (!name || name.includes("/") || name.includes("..")) {
+      return new Response("Invalid tool name", { status: 400 });
+    }
+    // Check file storage first (binaries)
+    const cdnUrl = await ctx.runQuery(api.files.getUrl, { name });
+    if (cdnUrl) {
+      return Response.redirect(cdnUrl, 302);
+    }
+    // Then check assets table (shell scripts)
+    const asset = await ctx.runQuery(api.assets.get, { name: `tools/${name}` });
+    if (!asset) {
+      return new Response(`Tool "${name}" not found`, { status: 404, headers: BILLING_CORS });
+    }
+    return new Response(asset.content, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/x-shellscript; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${name}"`,
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+  }),
+});
+
+// OPTIONS /billing/* — CORS preflight
+http.route({
+  pathPrefix: "/billing/",
+  method: "OPTIONS",
+  handler: httpAction(async () => {
+    return new Response(null, { status: 204, headers: BILLING_CORS });
+  }),
+});
+
+// POST /billing/register — agent registration
+http.route({
+  path: "/billing/register",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const headers = { "Content-Type": "application/json", ...BILLING_CORS };
+    try {
+      const body = await request.json();
+      const walletAddress = body.walletAddress;
+      if (!walletAddress || typeof walletAddress !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
+        return new Response(JSON.stringify({ error: "Invalid wallet address" }), { status: 400, headers });
+      }
+
+      const rawKey = "nv_" + generateToken();
+      const apiKeyHash = await hashSecret(rawKey);
+      await ctx.runMutation(internal.billing.registerKey, { apiKeyHash, walletAddress });
+
+      return new Response(JSON.stringify({
+        apiKey: rawKey,
+        walletAddress,
+        createdAt: new Date().toISOString(),
+      }), { status: 200, headers });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "Registration failed" }), { status: 500, headers });
+    }
+  }),
+});
+
+// POST /billing/publish — metered publish
+http.route({
+  path: "/billing/publish",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const headers = { "Content-Type": "application/json", ...BILLING_CORS };
+    try {
+      const body = await request.json();
+      const { slug, html, apiKey, txHash } = body;
+
+      if (!apiKey || typeof apiKey !== "string") {
+        return new Response(JSON.stringify({ error: "apiKey required" }), { status: 401, headers });
+      }
+      if (!slug || !SLUG_PATTERN.test(slug)) {
+        return new Response(JSON.stringify({ error: "Invalid slug" }), { status: 400, headers });
+      }
+      if (!html || typeof html !== "string") {
+        return new Response(JSON.stringify({ error: "html required" }), { status: 400, headers });
+      }
+
+      // Lookup key
+      const apiKeyHash = await hashSecret(apiKey);
+      const key = await ctx.runQuery(internal.billing.lookupKey, { apiKeyHash });
+      if (!key) {
+        return new Response(JSON.stringify({ error: "Invalid API key" }), { status: 401, headers });
+      }
+
+      // Rate limit
+      const recentCount = await ctx.runQuery(internal.billing.checkRateLimit, { keyId: key._id });
+      if (recentCount >= 10) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Max 10 publishes/minute." }), { status: 429, headers });
+      }
+
+      // Namespace slug
+      const namespacedSlug = apiKeyHash.slice(0, 6) + "-" + slug;
+      const origin = new URL(request.url).origin;
+      const liveUrl = `${origin}/app/${namespacedSlug}`;
+
+      // If txHash provided and credit insufficient, verify and credit
+      if (txHash && parseFloat(key.credit) < parseFloat(PUBLISH_COST)) {
+        const walletKey = await ctx.runQuery(internal.lib.getKey, { name: "BILLING_WALLET" });
+        if (!walletKey) {
+          return new Response(JSON.stringify({ error: "Billing not configured" }), { status: 500, headers });
+        }
+        try {
+          const result = await ctx.runAction(internal.billingActions.verifyUsdcTx, {
+            txHash,
+            expectedRecipient: walletKey.value,
+            minAmount: PUBLISH_COST,
+          });
+          await ctx.runMutation(internal.billing.creditAccount, {
+            keyId: key._id,
+            amount: result.amount,
+            txHash,
+          });
+        } catch (e: any) {
+          return new Response(JSON.stringify({ error: `Payment verification failed: ${e.message}` }), { status: 402, headers });
+        }
+      }
+
+      // Re-read credit after potential top-up
+      const freshKey = await ctx.runQuery(internal.billing.lookupKey, { apiKeyHash });
+      if (!freshKey || parseFloat(freshKey.credit) < parseFloat(PUBLISH_COST)) {
+        const walletKey = await ctx.runQuery(internal.lib.getKey, { name: "BILLING_WALLET" });
+        return new Response(JSON.stringify({
+          error: "insufficient_balance",
+          paymentAddress: walletKey?.value || "NOT_CONFIGURED",
+          amount: PUBLISH_COST,
+          token: "USDC",
+          chain: "base",
+          retryWith: "txHash",
+        }), { status: 402, headers });
+      }
+
+      // Publish
+      await ctx.runMutation(internal.pages.publishInternal, { slug: namespacedSlug, html });
+
+      // Deduct
+      const newCredit = await ctx.runMutation(internal.billing.deductCredit, {
+        keyId: freshKey._id,
+        cost: PUBLISH_COST,
+        slug: namespacedSlug,
+        liveUrl,
+        txHash,
+      });
+
+      return new Response(JSON.stringify({
+        url: liveUrl,
+        charged: PUBLISH_COST,
+        creditRemaining: newCredit,
+      }), { status: 200, headers });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "Publish failed" }), { status: 500, headers });
+    }
+  }),
+});
+
+// DELETE /billing/publish — remove a published page
+http.route({
+  path: "/billing/publish",
+  method: "DELETE",
+  handler: httpAction(async (ctx, request) => {
+    const headers = { "Content-Type": "application/json", ...BILLING_CORS };
+    try {
+      const body = await request.json();
+      const { slug, apiKey } = body;
+
+      if (!apiKey || typeof apiKey !== "string") {
+        return new Response(JSON.stringify({ error: "apiKey required" }), { status: 401, headers });
+      }
+
+      const apiKeyHash = await hashSecret(apiKey);
+      const key = await ctx.runQuery(internal.billing.lookupKey, { apiKeyHash });
+      if (!key) {
+        return new Response(JSON.stringify({ error: "Invalid API key" }), { status: 401, headers });
+      }
+
+      const namespacedSlug = apiKeyHash.slice(0, 6) + "-" + slug;
+
+      // Ownership check: verify this key published this slug
+      const usageRecords = await ctx.runQuery(internal.billing.getUsage, { keyId: key._id });
+      const ownsSlug = usageRecords.some((r: any) => r.slug === namespacedSlug);
+      if (!ownsSlug) {
+        return new Response(JSON.stringify({ error: "You did not publish this slug" }), { status: 403, headers });
+      }
+
+      await ctx.runMutation(internal.pages.removeInternal, { slug: namespacedSlug });
+
+      return new Response(JSON.stringify({
+        deleted: slug,
+        creditRemaining: key.credit,
+      }), { status: 200, headers });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "Delete failed" }), { status: 500, headers });
+    }
+  }),
+});
+
+// POST /billing/balance — check credit balance
+http.route({
+  path: "/billing/balance",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const headers = { "Content-Type": "application/json", ...BILLING_CORS };
+    try {
+      const body = await request.json();
+      const { apiKey } = body;
+
+      if (!apiKey || typeof apiKey !== "string") {
+        return new Response(JSON.stringify({ error: "apiKey required" }), { status: 401, headers });
+      }
+
+      const apiKeyHash = await hashSecret(apiKey);
+      const key = await ctx.runQuery(internal.billing.lookupKey, { apiKeyHash });
+      if (!key) {
+        return new Response(JSON.stringify({ error: "Invalid API key" }), { status: 401, headers });
+      }
+
+      return new Response(JSON.stringify({
+        walletAddress: key.walletAddress,
+        credit: key.credit,
+        token: "USDC",
+        chain: "base",
+      }), { status: 200, headers });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "Balance check failed" }), { status: 500, headers });
+    }
+  }),
+});
+
+// POST /billing/usage — usage history
+http.route({
+  path: "/billing/usage",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const headers = { "Content-Type": "application/json", ...BILLING_CORS };
+    try {
+      const body = await request.json();
+      const { apiKey } = body;
+
+      if (!apiKey || typeof apiKey !== "string") {
+        return new Response(JSON.stringify({ error: "apiKey required" }), { status: 401, headers });
+      }
+
+      const apiKeyHash = await hashSecret(apiKey);
+      const key = await ctx.runQuery(internal.billing.lookupKey, { apiKeyHash });
+      if (!key) {
+        return new Response(JSON.stringify({ error: "Invalid API key" }), { status: 401, headers });
+      }
+
+      const records = await ctx.runQuery(internal.billing.getUsage, { keyId: key._id });
+      const totalSpent = records.reduce((sum: number, r: any) => sum + parseFloat(r.cost), 0).toFixed(6);
+
+      return new Response(JSON.stringify({
+        publishes: records.map((r: any) => ({
+          slug: r.slug,
+          liveUrl: r.liveUrl,
+          cost: r.cost,
+          txHash: r.txHash,
+          timestamp: new Date(r.timestamp).toISOString(),
+        })),
+        totalSpent,
+        totalPublishes: records.length,
+      }), { status: 200, headers });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message || "Usage check failed" }), { status: 500, headers });
+    }
   }),
 });
 

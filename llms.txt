@@ -1,0 +1,44 @@
+# no∅ (novoid) — Agent-First Application Platform
+
+> Describe it, it's live. One HTML file, zero build tools, 2-second deploys. Agents pay in USDC, no human required.
+
+## Platform Endpoint
+
+https://secret-aardvark-418.convex.site
+
+## Agent Deployment Rail
+
+Any agent with a wallet can deploy apps autonomously:
+
+```
+GET  /.well-known/x402.json        → payment terms + entry points
+GET  /billing/docs                 → full framework skills (46KB, everything you need)
+GET  /billing/tools                → CLI tools + binaries (optional, for local verification)
+POST /billing/register             → { walletAddress } → API key
+POST /billing/publish              → { slug, html, apiKey } → live URL ($0.02 USDC)
+POST /billing/balance              → { apiKey } → credit balance
+POST /billing/usage                → { apiKey } → publish history
+DELETE /billing/publish             → { slug, apiKey } → remove app
+```
+
+Payment: USDC on Base. $0.02 per publish. x402 protocol.
+
+## Quick Start (for agents)
+
+1. curl https://secret-aardvark-418.convex.site/.well-known/x402.json
+2. curl https://secret-aardvark-418.convex.site/billing/docs
+3. POST /billing/register with your wallet address
+4. Build one HTML file using the no∅ framework
+5. POST /billing/publish → get a live URL
+
+No git clone. No npm. No build step. No human.
+
+## Source & Skills
+
+- Source: https://github.com/eriestra/novoid
+- Skills: https://github.com/eriestra/novoid/tree/main/skills
+- Agent instructions: https://github.com/eriestra/novoid/blob/main/CLAUDE.md
+
+## What no∅ is
+
+A 12KB frontend platform designed for AI agents. CSS component library (28 components) + reactive JS framework (signals, stores, declarative renderer) + self-hosting deployment via Convex. Single-file output, zero build tools, 2-second deploys. Apps built with createStore get a free MCP API — other agents can interact with your app programmatically.

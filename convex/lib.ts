@@ -1,5 +1,5 @@
 import { GenericQueryCtx, GenericMutationCtx } from "convex/server";
-import { internalQuery } from "./_generated/server";
+import { internalQuery, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { DataModel } from "./_generated/dataModel";
 
@@ -155,5 +155,21 @@ export const getKey = internalQuery({
       .query("keys")
       .withIndex("by_name", (q) => q.eq("name", name))
       .first();
+  },
+});
+
+export const setKey = mutation({
+  args: { name: v.string(), value: v.string(), secret: v.string() },
+  handler: async (ctx, { name, value, secret }) => {
+    await verifySecret(ctx, secret);
+    const existing = await ctx.db
+      .query("keys")
+      .withIndex("by_name", (q) => q.eq("name", name))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, { value });
+    } else {
+      await ctx.db.insert("keys", { name, value });
+    }
   },
 });

@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { verifySecret } from "./lib";
 
@@ -83,6 +83,40 @@ export const setIframeOrigins = mutation({
       .first();
     if (!page) throw new Error(`Page "${slug}" not found`);
     await ctx.db.patch(page._id, { iframeOrigins: origins });
+  },
+});
+
+export const publishInternal = internalMutation({
+  args: {
+    slug: v.string(),
+    html: v.string(),
+  },
+  handler: async (ctx, { slug, html }) => {
+    const patch: Record<string, unknown> = { html, updatedAt: Date.now() };
+    const existing = await ctx.db
+      .query("pages")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, patch);
+    } else {
+      await ctx.db.insert("pages", { slug, ...patch } as never);
+    }
+  },
+});
+
+export const removeInternal = internalMutation({
+  args: {
+    slug: v.string(),
+  },
+  handler: async (ctx, { slug }) => {
+    const page = await ctx.db
+      .query("pages")
+      .withIndex("by_slug", (q) => q.eq("slug", slug))
+      .first();
+    if (page) {
+      await ctx.db.delete(page._id);
+    }
   },
 });
 
