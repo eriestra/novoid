@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { internalQuery, internalMutation } from "./_generated/server";
+import { internalQuery, internalMutation, mutation } from "./_generated/server";
+import { verifySecret, hashSecret } from "./lib";
 
 // ─── Internal Queries ───────────────────────────────────
 
@@ -110,6 +111,28 @@ export const creditAccount = internalMutation({
     const newCredit = (currentCredit + addAmount).toFixed(6);
     await ctx.db.patch(keyId, { credit: newCredit });
 
+    return newCredit;
+  },
+});
+
+// Operator-only: manually credit an agent account (gated by PUBLISH_SECRET)
+export const operatorCredit = mutation({
+  args: {
+    apiKey: v.string(),
+    amount: v.string(),
+    secret: v.string(),
+  },
+  handler: async (ctx, { apiKey, amount, secret }) => {
+    await verifySecret(ctx, secret);
+    const apiKeyHash = await hashSecret(apiKey);
+    const key = await ctx.db
+      .query("agentKeys")
+      .withIndex("by_api_key", (q) => q.eq("apiKey", apiKeyHash))
+      .first();
+    if (!key) throw new Error("Key not found");
+    const currentCredit = parseFloat(key.credit);
+    const newCredit = (currentCredit + parseFloat(amount)).toFixed(6);
+    await ctx.db.patch(key._id, { credit: newCredit });
     return newCredit;
   },
 });
