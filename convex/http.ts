@@ -29,7 +29,7 @@ const APP_SECURITY_HEADERS = {
     "font-src https://fonts.gstatic.com https://cdn.jsdelivr.net; " +
     "connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.convex.site https://unpkg.com; " +
     "img-src * data: blob:; " +
-    "frame-ancestors 'self' https://eriestra.github.io;",
+    "frame-ancestors *;",
 };
 
 // CORS helper: restrict admin routes to same-origin or localhost
@@ -214,7 +214,7 @@ http.route({
     if (page.iframeOrigins && page.iframeOrigins.length > 0) {
       const csp = appHeaders["Content-Security-Policy"].replace(
         /frame-ancestors[^;]*/,
-        "frame-ancestors 'self' https://eriestra.github.io " + page.iframeOrigins.join(" ")
+        "frame-ancestors * " + page.iframeOrigins.join(" ")
       );
       appHeaders["Content-Security-Policy"] = csp;
     }
@@ -363,37 +363,69 @@ http.route({
   }),
 });
 
+// GET /skills — serve concatenated skills documentation
+http.route({
+  path: "/skills",
+  method: "GET",
+  handler: httpAction(async (ctx) => {
+    const doc = await ctx.runQuery(api.assets.get, { name: "skills.md" });
+    if (!doc) {
+      return new Response("Skills not seeded. Run seed.sh first.", {
+        status: 404,
+        headers: { "Content-Type": "text/plain", "Access-Control-Allow-Origin": "*" },
+      });
+    }
+    return new Response(doc.content, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/markdown; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
+  }),
+});
+
 // GET /llms.txt — LLM discovery file
 http.route({
   path: "/llms.txt",
   method: "GET",
-  handler: httpAction(async () => {
-    const origin = "https://secret-aardvark-418.convex.site";
+  handler: httpAction(async (_, request) => {
+    const origin = new URL(request.url).origin;
     const content = `# no∅ (novoid) — Agent-First Application Platform
 
 > Describe it, it's live. One HTML file, zero build tools, 2-second deploys. Agents pay in USDC, no human required.
+
+## Full Documentation
+
+  GET  ${origin}/skills  → complete framework skills (text/markdown)
+
+## API Quick Reference
+
+| Route | Method | Description |
+|---|---|---|
+| /skills | GET | Full framework documentation (text/markdown) |
+| /.well-known/x402.json | GET | Payment terms + entry points |
+| /billing/register | POST | { walletAddress } → API key |
+| /billing/publish | POST | { slug, html, apiKey } → live URL |
+| /billing/publish | DELETE | { slug, apiKey } → remove page |
+| /billing/balance | POST | { apiKey } → credit balance |
+| /billing/usage | POST | { apiKey } → publish history |
+| /billing/tools | GET | CLI tools + binaries |
+| /app/:slug | GET | Serve published page |
+| /mcp/:slug | GET/POST | MCP JSON-RPC per app |
 
 ## Agent Deployment Rail
 
 Any agent with a wallet can deploy apps autonomously:
 
-  GET  ${origin}/.well-known/x402.json     → payment terms + entry points
-  GET  ${origin}/billing/docs              → full framework skills (46KB)
-  GET  ${origin}/billing/tools             → CLI tools + binaries
-  POST ${origin}/billing/register          → { walletAddress } → API key
-  POST ${origin}/billing/publish           → { slug, html, apiKey } → live URL
-  POST ${origin}/billing/balance           → { apiKey } → credit balance
-  POST ${origin}/billing/usage             → { apiKey } → publish history
-
-Payment: USDC on Base. $0.02 per publish. x402 protocol. No human required.
-
-## Quick Start
-
-1. GET /.well-known/x402.json — discover payment terms
-2. GET /billing/docs — learn the framework (complete API reference)
+1. GET /skills — learn the framework (complete API reference)
+2. GET /.well-known/x402.json — discover payment terms
 3. POST /billing/register { walletAddress } — get API key
 4. Build one HTML file using no∅
 5. POST /billing/publish { slug, html, apiKey } — get live URL
+
+Payment: USDC on Base. $0.02 per publish. x402 protocol. No human required.
 
 ## Source
 - GitHub: https://github.com/eriestra/novoid
@@ -1544,7 +1576,7 @@ http.route({
       paymentAddress,
       chain: "base",
       chainId: 8453,
-      docs: "GET /billing/docs",
+      docs: "GET /skills",
       register: "POST /billing/register",
     }, null, 2), {
       status: 200,
@@ -1553,85 +1585,15 @@ http.route({
   }),
 });
 
-// GET /billing/docs — agent build instructions (full skills)
+// GET /billing/docs — redirect to /skills (legacy URL)
 http.route({
   path: "/billing/docs",
   method: "GET",
-  handler: httpAction(async (ctx) => {
-    // Serve concatenated skill files from assets table (seeded by seed.sh)
-    const doc = await ctx.runQuery(api.assets.get, { name: "billing-docs.md" });
-    if (doc) {
-      return new Response(doc.content, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/markdown; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-          "Cache-Control": "public, max-age=3600",
-        },
-      });
-    }
-    // Fallback: minimal inline guide
-    const fallback = `# no∅ Agent Build Guide
-
-## Quick Start
-
-1. Register: POST /billing/register { "walletAddress": "0x..." } → get apiKey
-2. Build a single HTML file using the no∅ framework (see below)
-3. Publish: POST /billing/publish { "slug": "my-app", "html": "<html>...</html>", "apiKey": "nv_..." }
-4. Get back a live URL
-
-## Minimal App Template
-
-\`\`\`html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My App</title>
-  <link rel="stylesheet" href="../css/core.min.css">
-  <script src="../js/core.min.js"><\/script>
-  <script src="../js/render.min.js"><\/script>
-</head>
-<body>
-  <div id="app"></div>
-  <script>
-    var store = Novoid.createStore(
-      { count: 0 },
-      {
-        inc: function(s) { return { count: s.count + 1 }; },
-        reset: function() { return { count: 0 }; }
-      }
-    );
-    Novoid.render('#app', store, {
-      app: { name: 'Counter' },
-      sections: [
-        { stat: { value: '$count', label: 'Count', size: 'lg' } },
-        { row: { columns: 2, items: [
-          { button: { label: '+1', action: 'inc', style: 'primary' } },
-          { button: { label: 'Reset', action: 'reset', style: 'outline' } }
-        ]}}
-      ]
-    });
-  <\/script>
-</body>
-</html>
-\`\`\`
-
-## Full API Docs
-
-Full skills available at: https://github.com/eriestra/novoid/tree/main/skills
-- novoid-core.md — signals, computed, effect, h(), createStore, mount
-- novoid-render.md — declarative UI: sections, expressions, formats, views
-- novoid-css.md — nv-* classes, components, layout, theming
-`;
-    return new Response(fallback, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/markdown; charset=utf-8",
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "no-cache",
-      },
+  handler: httpAction(async (_, request) => {
+    const origin = new URL(request.url).origin;
+    return new Response(null, {
+      status: 301,
+      headers: { Location: `${origin}/skills`, "Access-Control-Allow-Origin": "*" },
     });
   }),
 });
