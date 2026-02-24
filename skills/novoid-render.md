@@ -500,7 +500,7 @@ Built-in expressions: `$auth.user`, `$auth.role`, `$auth.orgId`, `$auth.isAuthen
 | `duration` | `2h 15m` | elapsed time |
 | `{ template: "{} units" }` | `42 units` | custom format |
 
-Locale follows `app.locale`. Defaults to `es-MX`. The `timeAgo` formatter outputs Spanish (`hace 3 min`) when locale starts with `es`, English (`3 min ago`) otherwise.
+Locale defaults to `navigator.language` (browser setting). Override with `Novoid.render.setLocale('es-MX')` before calling `N.render()`. The `timeAgo` formatter outputs Spanish (`hace 3 min`) when locale starts with `es`, English (`3 min ago`) otherwise.
 
 ---
 
@@ -629,8 +629,6 @@ Features are either **implemented** (working in `src/plugins/render.js`) or **pl
 
 ### Planned (not yet in render.js)
 - **Sections:** chart, list, panels
-- **Data bindings:** Convex queries/mutations/actions (`data: { queries, mutations, actions }`)
-- **Auth:** auth section, gate (role-based access control), `$auth.*` expressions
 - **Action types:** mutation, serverAction, do (action chain), confirm dialogs, onSuccess/onError callbacks
 - **Navigation:** transition animations (fade/slide), sidebar/stack/bottomBar nav types, mobile nav
 - **Icons:** Lucide SVG rendering (currently uses Unicode fallback or `label.charAt(0)`)

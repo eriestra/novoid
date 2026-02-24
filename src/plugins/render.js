@@ -33,18 +33,32 @@
     }
     // Logical not
     if (expr[0] === '!') return !parseLiteral(expr.slice(1).trim());
-    // Arithmetic: + - * /
-    var m;
-    if ((m = expr.match(/^(.+?)\s*(\+|\-|\*|\/|%)\s*(.+)$/))) {
-      var a = parseLiteral(m[1].trim()), op = m[2], b = parseLiteral(m[3].trim());
-      switch (op) {
-        case '+': return a + b;
-        case '-': return a - b;
-        case '*': return a * b;
-        case '/': return b !== 0 ? a / b : 0;
-        case '%': return a % b;
+    // Arithmetic with correct precedence: + - first, then * / %
+    // Scan right-to-left for + or - (lowest precedence, left-associative)
+    var paren = 0, i;
+    for (i = expr.length - 1; i >= 1; i--) {
+      if (expr[i] === ')') paren++;
+      if (expr[i] === '(') paren--;
+      if (paren === 0 && (expr[i] === '+' || expr[i] === '-') && expr[i - 1] !== 'e' && expr[i - 1] !== 'E') {
+        var la = expr.slice(0, i).trim(), ra = expr.slice(i + 1).trim();
+        if (la) return expr[i] === '+' ? safeEval(la, values) + safeEval(ra, values) : safeEval(la, values) - safeEval(ra, values);
       }
     }
+    // Then * / % (higher precedence)
+    paren = 0;
+    for (i = expr.length - 1; i >= 1; i--) {
+      if (expr[i] === ')') paren++;
+      if (expr[i] === '(') paren--;
+      if (paren === 0 && (expr[i] === '*' || expr[i] === '/' || expr[i] === '%')) {
+        var lm = expr.slice(0, i).trim(), rm = expr.slice(i + 1).trim();
+        if (lm) {
+          var av = safeEval(lm, values), bv = safeEval(rm, values);
+          return expr[i] === '*' ? av * bv : expr[i] === '/' ? (bv !== 0 ? av / bv : 0) : av % bv;
+        }
+      }
+    }
+    // Parentheses
+    if (expr[0] === '(' && expr[expr.length - 1] === ')') return safeEval(expr.slice(1, -1), values);
     return parseLiteral(expr);
   }
 
@@ -54,7 +68,7 @@
     if (s === 'null') return null;
     if (s === 'undefined') return undefined;
     if ((s[0] === '"' && s[s.length - 1] === '"') || (s[0] === "'" && s[s.length - 1] === "'"))
-      return s.slice(1, -1);
+      return s.slice(1, -1).replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
     var n = Number(s);
     if (!isNaN(n) && s !== '') return n;
     return s;
@@ -91,7 +105,7 @@
       var resolved = expr.replace(/\$([a-zA-Z_][a-zA-Z0-9_.]*)/g, function(m, path) {
         var val = resolvePath(path);
         values[m] = val;
-        return typeof val === 'string' ? '"' + val.replace(/"/g, '\\"') + '"' : String(val);
+        return typeof val === 'string' ? '"' + val.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t') + '"' : String(val);
       });
       return safeEval(resolved, values);
     };
@@ -138,7 +152,10 @@
 
   // ── Formatters ──────────────────────────────────────
 
-  var locale = 'es-MX';
+  var locale = (typeof navigator !== 'undefined' && navigator.language) || 'en-US';
+
+  // Allow apps to override: Novoid.render.setLocale('es-MX')
+  function setLocale(l) { locale = l; }
 
   var formatters = {
     currency: function(v) {
@@ -1768,5 +1785,6 @@
   N.render = render;
   N.render.formatters = formatters;
   N.render.colors = colors;
+  N.render.setLocale = setLocale;
 
 })(window.Novoid);

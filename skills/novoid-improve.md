@@ -32,20 +32,14 @@ Every feature change touches multiple surfaces. Work through each applicable ite
 
 ### 4. Documentation (human-facing)
 - [ ] `README.md` — project overview, getting started
-- [ ] `docs/user-guide.md` — comprehensive usage guide
-- [ ] `docs/verification-and-markdown.md` — verification and agent API docs
+- [ ] `AGENTS.md` — architecture overview for external agents
 
 ### 5. Specs (architectural records)
-- [ ] `spec.md` — API specification
-- [ ] `render.md` — render plugin specification
 - [ ] `specs/novoid-whitepaper.md` — architectural thesis
 - [ ] `specs/agent-first.md` — agent-first design spec
+- [ ] `specs/delta-sync.md` — delta sync specification
 
-### 6. Verification
-- [ ] `NOUS.md` — static analysis engine docs
-- [ ] `BROWSER.md` — headless execution engine docs
-
-### 7. Build & Deploy
+### 6. Build & Deploy
 - [ ] `sh build.sh` — rebuild minified output
 - [ ] `sh seed.sh` — upload framework assets to Convex
 - [ ] Republish affected apps via `sh publish.sh`
@@ -77,9 +71,9 @@ Every feature change touches multiple surfaces. Work through each applicable ite
 | New render section | source, novoid-render skill, render.md |
 | New CSS component | source, novoid-css skill, components.css |
 | New shell command | novoid-publishing skill, CLAUDE.md commands |
-| New verification rule | source, novoid-verification skill, NOUS.md or BROWSER.md |
+| New verification rule | source, novoid-verification skill, novoid-publishing skill |
 | New agent feature | source, novoid-agents skill, AGENTS.md |
-| Architecture change | whitepaper, AGENTS.md, README.md, user-guide |
+| Architecture change | whitepaper, AGENTS.md, README.md |
 | New skill added | skill file, CLAUDE.md skills index, AGENTS.md |
 
 ---

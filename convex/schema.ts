@@ -31,7 +31,7 @@ export default defineSchema({
       description: v.string(),
     })),
     template: v.string(),
-    status: v.string(),
+    status: v.union(v.literal("active"), v.literal("complete")),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_slug", ["slug"]),
@@ -43,7 +43,7 @@ export default defineSchema({
     line: v.optional(v.number()),
     col: v.optional(v.number()),
     stack: v.optional(v.string()),
-    type: v.string(), // "error" | "unhandledrejection" | "console.error"
+    type: v.union(v.literal("error"), v.literal("unhandledrejection"), v.literal("console.error")),
     timestamp: v.number(),
     userAgent: v.optional(v.string()),
   })
@@ -57,7 +57,7 @@ export default defineSchema({
     order: v.number(),
     claimedBy: v.optional(v.string()),
     claimedAt: v.optional(v.number()),
-    status: v.string(),
+    status: v.union(v.literal("open"), v.literal("claimed"), v.literal("published")),
     updatedAt: v.number(),
     version: v.number(),
   })
@@ -69,7 +69,7 @@ export default defineSchema({
     email: v.string(),
     passwordHash: v.string(),
     name: v.string(),
-    globalRole: v.string(),
+    globalRole: v.union(v.literal("superadmin"), v.literal("user")),
     emailVerified: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -152,12 +152,12 @@ export default defineSchema({
   jobs: defineTable({
     prompt: v.string(),
     slug: v.optional(v.string()),
-    status: v.string(), // "pending" | "claimed" | "building" | "done" | "error"
+    status: v.union(v.literal("pending"), v.literal("claimed"), v.literal("building"), v.literal("done"), v.literal("error")),
     agentId: v.optional(v.string()),
     result: v.optional(v.string()),
     context: v.optional(v.string()),
     audioClip: v.optional(v.string()),
-    model: v.optional(v.string()), // "sonnet" | "opus" — routing hint for watcher
+    model: v.optional(v.union(v.literal("sonnet"), v.literal("opus"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -184,7 +184,7 @@ export default defineSchema({
     orgId: v.string(),
     slug: v.optional(v.string()),
     conversationId: v.optional(v.string()),  // source conversation for crosstalk scoping
-    type: v.string(),                     // "short" | "long" | "app" | "conversation"
+    type: v.union(v.literal("short"), v.literal("long"), v.literal("app"), v.literal("conversation")),
     content: v.string(),
     embedding: v.array(v.float64()),      // 1536-dim (text-embedding-3-small)
     metadata: v.optional(v.object({
@@ -199,6 +199,7 @@ export default defineSchema({
     .index("by_org_type", ["orgId", "type"])
     .index("by_org_slug", ["orgId", "slug"])
     .index("by_org_conversation", ["orgId", "conversationId"])
+    .index("by_expires", ["expiresAt"])
     .searchIndex("by_content", {
       searchField: "content",
       filterFields: ["orgId", "type", "slug", "conversationId"],
@@ -211,9 +212,9 @@ export default defineSchema({
 
   nex_jobs: defineTable({
     orgId: v.string(),
-    type: v.string(),                     // "chat" | "channel" | "canvas" | "heartbeat" | "memorize" | "recall"
+    type: v.union(v.literal("chat"), v.literal("channel"), v.literal("canvas"), v.literal("heartbeat"), v.literal("memorize"), v.literal("recall")),
     payload: v.string(),                  // JSON-encoded payload
-    status: v.string(),                   // "pending" | "claimed" | "building" | "done" | "error" | "interrupted"
+    status: v.union(v.literal("pending"), v.literal("claimed"), v.literal("building"), v.literal("done"), v.literal("error"), v.literal("interrupted")),
     agentId: v.optional(v.string()),
     result: v.optional(v.string()),
     conversationId: v.optional(v.id("nex_conversations")),
@@ -239,10 +240,10 @@ export default defineSchema({
 
   nex_messages: defineTable({
     conversationId: v.id("nex_conversations"),
-    role: v.string(),                     // "user" | "assistant" | "system"
+    role: v.union(v.literal("user"), v.literal("assistant"), v.literal("system")),
     content: v.string(),
     appHtml: v.optional(v.string()),      // full no∅ HTML for inline app messages
-    type: v.optional(v.string()),         // "text" | "app" — defaults to "text"
+    type: v.optional(v.union(v.literal("text"), v.literal("app"))),
     memoryContext: v.optional(v.string()), // JSON: recalled memories used for this response
     images: v.optional(v.array(v.string())), // data URLs for attached images
     createdAt: v.number(),
@@ -268,10 +269,10 @@ export default defineSchema({
 
   nex_channels: defineTable({
     orgId: v.string(),
-    type: v.string(),                    // "slack" | "telegram" | "discord" | "webhook" | "email"
+    type: v.union(v.literal("slack"), v.literal("telegram"), v.literal("discord"), v.literal("webhook"), v.literal("email")),
     name: v.string(),
     config: v.string(),                  // JSON-encoded config (secrets inside)
-    status: v.string(),                  // "active" | "inactive"
+    status: v.union(v.literal("active"), v.literal("inactive")),
     lastMessageAt: v.optional(v.number()),
   })
     .index("by_org", ["orgId"])
@@ -282,7 +283,7 @@ export default defineSchema({
     slug: v.string(),
     title: v.string(),
     description: v.string(),
-    origin: v.string(),                 // "nex-direct" | "vox-delegated" | "inline-promoted"
+    origin: v.union(v.literal("nex-direct"), v.literal("vox-delegated"), v.literal("inline-promoted")),
     voxJobId: v.optional(v.id("jobs")),
     conversationId: v.optional(v.id("nex_conversations")),
     pinned: v.boolean(),
@@ -298,7 +299,7 @@ export default defineSchema({
   nex_agents: defineTable({
     agentId: v.string(),
     orgId: v.string(),
-    status: v.string(),               // "idle" | "busy" | "offline"
+    status: v.union(v.literal("idle"), v.literal("busy"), v.literal("offline")),
     capabilities: v.array(v.string()),// ["chat", "build", "research", "review"]
     currentJobId: v.optional(v.id("nex_jobs")),
     lastHeartbeat: v.number(),
@@ -316,9 +317,9 @@ export default defineSchema({
     fromAgent: v.string(),
     toAgent: v.optional(v.string()),
     conversationId: v.optional(v.id("nex_conversations")),
-    type: v.string(),                 // "request" | "response" | "notify" | "delegate" | "cancel"
+    type: v.union(v.literal("request"), v.literal("response"), v.literal("notify"), v.literal("delegate"), v.literal("cancel")),
     payload: v.string(),              // JSON-encoded signal data
-    status: v.string(),               // "pending" | "read" | "expired"
+    status: v.union(v.literal("pending"), v.literal("read"), v.literal("expired")),
     createdAt: v.number(),
     expiresAt: v.optional(v.number()),
   })
@@ -328,12 +329,12 @@ export default defineSchema({
 
   nex_approvals: defineTable({
     orgId: v.string(),
-    subtype: v.string(),              // "tidy" | "sentinel" | "review" | "followup"
+    subtype: v.union(v.literal("tidy"), v.literal("sentinel"), v.literal("review"), v.literal("followup")),
     prompt: v.string(),               // what was found
     description: v.string(),          // short summary
     chatId: v.string(),               // Telegram chat ID
     messageId: v.optional(v.number()), // Telegram message ID (for editing inline keyboard)
-    status: v.string(),               // "pending" | "approved" | "denied" | "expired" | "batched"
+    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("denied"), v.literal("expired"), v.literal("batched")),
     batchId: v.optional(v.string()),  // groups multiple approvals into one message
     createdAt: v.number(),
     expiresAt: v.number(),
@@ -365,7 +366,7 @@ export default defineSchema({
   nex_browse_jobs: defineTable({
     orgId: v.string(),
     slug: v.string(),
-    status: v.string(),            // "pending" | "done" | "error"
+    status: v.union(v.literal("pending"), v.literal("done"), v.literal("error")),
     result: v.optional(v.string()), // BrowseSchema JSON
     error: v.optional(v.string()),
     createdAt: v.number(),
@@ -376,7 +377,7 @@ export default defineSchema({
     network: v.string(),
     address: v.string(),
     walletData: v.string(),
-    status: v.string(),
+    status: v.union(v.literal("active"), v.literal("frozen"), v.literal("archived")),
     guardrails: v.optional(v.string()),
     createdAt: v.number(),
   })
@@ -410,7 +411,7 @@ export default defineSchema({
     name: v.string(),
     description: v.string(),
     command: v.string(),                 // slash command trigger (e.g., "/weather")
-    type: v.string(),                    // "builtin" | "learned" | "certified"
+    type: v.union(v.literal("builtin"), v.literal("learned"), v.literal("certified")),
     handler: v.string(),                 // job payload template (JSON)
     enabled: v.boolean(),
     metadata: v.optional(v.object({

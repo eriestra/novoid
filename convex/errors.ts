@@ -11,7 +11,7 @@ export const log = mutation({
     line: v.optional(v.number()),
     col: v.optional(v.number()),
     stack: v.optional(v.string()),
-    type: v.string(),
+    type: v.union(v.literal("error"), v.literal("unhandledrejection"), v.literal("console.error")),
     userAgent: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

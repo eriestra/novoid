@@ -257,7 +257,7 @@ export const getChannelConfig = internalQuery({
 export const updateJobStatus = internalMutation({
   args: {
     jobId: v.id("nex_jobs"),
-    status: v.string(),
+    status: v.union(v.literal("pending"), v.literal("claimed"), v.literal("building"), v.literal("done"), v.literal("error"), v.literal("interrupted")),
     result: v.optional(v.string()),
   },
   handler: async (ctx, { jobId, status, result }) => {

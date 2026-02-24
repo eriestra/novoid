@@ -62,7 +62,7 @@ export const claim = mutation({
 export const update = mutation({
   args: {
     jobId: v.id("jobs"),
-    status: v.string(),
+    status: v.union(v.literal("pending"), v.literal("claimed"), v.literal("building"), v.literal("done"), v.literal("error")),
     result: v.optional(v.string()),
     slug: v.optional(v.string()),
     secret: v.string(),

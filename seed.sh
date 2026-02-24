@@ -10,6 +10,8 @@
 # ─────────────────────────────────────────────
 set -e
 
+. scripts/lib.sh
+
 CONVEX_URL="$1"
 SECRET="$2"
 
@@ -26,25 +28,22 @@ SITE_URL=$(echo "$CONVEX_URL" | sed 's/.convex.cloud/.convex.site/')
 echo "Seeding $CONVEX_URL → $SITE_URL"
 echo ""
 
-# Helper: json-encode a file's contents (uses python3 which ships with macOS/Linux)
-json_file() { python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < "$1"; }
-
 # 1. Set the publish secret (stored as SHA-256 hash)
-echo "1/4 Setting PUBLISH_SECRET (hashed)..."
+echo "1/7 Setting PUBLISH_SECRET (hashed)..."
 npx convex run seed:seedSecret "{\"name\":\"PUBLISH_SECRET\",\"value\":\"$SECRET\"}"
 
 # 2. Core CSS
-echo "2/4 Uploading core.min.css..."
+echo "2/7 Uploading core.min.css..."
 CORE_CSS=$(json_file dist/core.min.css)
 npx convex run seed:seedAsset "{\"name\":\"core.min.css\",\"content\":$CORE_CSS,\"contentType\":\"text/css\"}"
 
 # 3. Components CSS
-echo "3/4 Uploading components.min.css..."
+echo "3/7 Uploading components.min.css..."
 COMP_CSS=$(json_file dist/components.min.css)
 npx convex run seed:seedAsset "{\"name\":\"components.min.css\",\"content\":$COMP_CSS,\"contentType\":\"text/css\"}"
 
 # 4. JS (core + plugins)
-echo "4/5 Uploading JS assets..."
+echo "4/7 Uploading JS assets..."
 for plugin in core router convex auth toast render; do
   FILE="dist/${plugin}.min.js"
   if [ -f "$FILE" ]; then
@@ -61,8 +60,25 @@ BROWSE_JS=$(json_file /tmp/browse-polyfills.js)
 npx convex run seed:seedAsset "{\"name\":\"browse-polyfills.js\",\"content\":$BROWSE_JS,\"contentType\":\"application/javascript\"}"
 rm -f /tmp/browse-polyfills.js
 
-# 6. Ecosystem apps (nex, vox, novoid) — deploy if missing
-echo "6/6 Deploying ecosystem apps (if missing)..."
+# 6. Concatenate + seed skills documentation
+echo "6/7 Uploading skills.md..."
+SKILLS_TMP=$(mktemp)
+for f in skills/*.md; do
+  echo "" >> "$SKILLS_TMP"
+  cat "$f" >> "$SKILLS_TMP"
+  echo "" >> "$SKILLS_TMP"
+done
+for f in skills/certified/*.md; do
+  echo "" >> "$SKILLS_TMP"
+  cat "$f" >> "$SKILLS_TMP"
+  echo "" >> "$SKILLS_TMP"
+done
+SKILLS_JSON=$(json_file "$SKILLS_TMP")
+npx convex run seed:seedAsset "{\"name\":\"skills.md\",\"content\":$SKILLS_JSON,\"contentType\":\"text/markdown\"}"
+rm -f "$SKILLS_TMP"
+
+# 7. Ecosystem apps (nex, vox, novoid) — deploy if missing
+echo "7/7 Deploying ecosystem apps (if missing)..."
 for eco_slug in novoid nex vox bloox; do
   EXISTS=$(npx convex run pages:get "{\"slug\":\"$eco_slug\"}" 2>/dev/null)
   if [ "$EXISTS" = "null" ] || [ -z "$EXISTS" ]; then

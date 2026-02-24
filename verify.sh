@@ -259,6 +259,8 @@ if [ -f "$TEST_SPEC" ] && [ -f "$BROWSER" ]; then
   fi
 elif [ -f "$TEST_SPEC" ] && [ ! -f "$BROWSER" ]; then
   echo "│ test    - novoid-browser not built (skipping $TEST_SPEC)"
+elif [ ! -f "$TEST_SPEC" ]; then
+  echo "│ test    ~ missing ${TEST_SPEC} — generate a test spec for full coverage"
 fi
 
 # ─── Phase 4: Secret leak detection ──────────────────────

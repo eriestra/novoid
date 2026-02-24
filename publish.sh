@@ -39,34 +39,34 @@ VERIFY_ID=$$
 export NOVOID_VERIFY_ID="$VERIFY_ID"
 NOUS_JSON="/tmp/novoid-nous-${VERIFY_ID}.json"
 BROWSER_JSON="/tmp/novoid-browser-${VERIFY_ID}.json"
+trap 'rm -f "$NOUS_JSON" "$BROWSER_JSON"' EXIT
 
 if [ "$SKIP_CHECK" != "--skip-check" ]; then
   sh verify.sh "$FILE" || {
     echo ""
     echo "Publish aborted. Fix issues or use --skip-check to bypass."
-    rm -f "$NOUS_JSON" "$BROWSER_JSON"
     exit 1
   }
 fi
 
 # ─── Load credentials ─────────────────────────────────────
-source .env.local
+. scripts/lib.sh
+load_env || exit 1
 
 # ─── Build publish args with schemas ─────────────────────
-HTML_JSON=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < "$FILE")
+HTML_JSON=$(json_file "$FILE")
 
 SCHEMA_ARGS=""
 if [ -s "$NOUS_JSON" ]; then
-  NOUS_ESC=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < "$NOUS_JSON")
+  NOUS_ESC=$(json_file "$NOUS_JSON")
   SCHEMA_ARGS="$SCHEMA_ARGS,\"nousReport\":$NOUS_ESC"
 fi
 if [ -s "$BROWSER_JSON" ]; then
-  BROWSER_ESC=$(python3 -c "import sys,json; print(json.dumps(sys.stdin.read()))" < "$BROWSER_JSON")
+  BROWSER_ESC=$(json_file "$BROWSER_JSON")
   SCHEMA_ARGS="$SCHEMA_ARGS,\"browserSchema\":$BROWSER_ESC"
 fi
 
-# Clean up temp files
-rm -f "$NOUS_JSON" "$BROWSER_JSON"
+# Temp files cleaned up by EXIT trap
 
 # ─── Publish ───────────────────────────────────────────────
 npx convex run pages:publish "{\"slug\":\"$SLUG\",\"html\":$HTML_JSON,\"secret\":\"$PUBLISH_SECRET\"$SCHEMA_ARGS}"
@@ -93,7 +93,7 @@ else
 fi
 
 # Phase 2: MCP schema has expected signals/tools
-MCP_OUT=$(curl -s "$MCP_URL" 2>/dev/null)
+MCP_OUT=$(curl -s --max-time 10 "$MCP_URL" 2>/dev/null)
 if [ -n "$MCP_OUT" ]; then
   MCP_REPORT=$(printf '%s\n' "$MCP_OUT" | python3 -c "
 import sys, json

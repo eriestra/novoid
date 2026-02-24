@@ -22,6 +22,14 @@ for plugin in router convex auth toast render; do
   fi
 done
 
+# ─── Verify outputs ──────────────────────────────────────────
+for required in core.min.js core.min.css components.min.css; do
+  if [ ! -f "$DIST/$required" ]; then
+    echo "Build failed: $DIST/$required not created"
+    exit 1
+  fi
+done
+
 # ─── Stats ──────────────────────────────────────────────────
 echo ""
 echo "no∅ build complete"

@@ -21,7 +21,10 @@ Codified knowledge lives in `skills/`. Each skill replaces reading multiple sour
 |novoid-agents.md      — Nex (replaces OpenClaw), Vox (vibe-coded app builder), personas, memory, multi-channel, inline apps
 |novoid-math.md        — KaTeX integration, TeX notation, MathML visibility
 |novoid-cdp.md         — CDP browser control: browse, scrape, screenshot, Nex skills
+|novoid-motion.md      — Motion.dev animations: animate, scroll, stagger, timeline
+|novoid-convex.md      — Convex client, reactive queries, mutations, actions, AI helper
 |novoid-improve.md     — meta-skill: feature expansion checklist, consistency rules
+|fragment.md           — region-based file editing for large single-file apps
 ```
 
 Certified Convex skills in `skills/certified/` — read before any Convex backend work.
@@ -51,6 +54,7 @@ Pages stored in Convex DB, served via HTTP. Publishing = writing to DB. No git p
 |Toast|`Novoid.toast.info('msg')`, `.success()`, `.danger()`, `.warning()`|
 |Store|`Novoid.createStore(state, actions)` — actions return partial state (auto-merged)|
 |Render|`Novoid.render('#app', store, config)` — declarative UI, zero h() calls|
+|Locale|`Novoid.render.setLocale('es-MX')` — defaults to `navigator.language`|
 |Router|`Novoid.createRouter(routes, container)` — hash-based (`#/path`)|
 |Bind|`{ bind: [getter, setter] }` on inputs — never inside `effect()`|
 
@@ -143,9 +147,10 @@ Both are novoid apps themselves — same reactive core, same Convex platform, sa
 ## Agent SEO
 
 - **`AGENTS.md`** (this file) — discoverable at repo root, follows the standard pattern
-- **`llms.txt`** — served at `/llms.txt` via Convex HTTP routes
+- **`GET /skills`** — full framework documentation served as text/markdown (concatenated skills)
+- **`llms.txt`** — served at `/llms.txt` via Convex HTTP routes, points to `/skills`
 - **`robots.txt`** — served at `/robots.txt` via Convex HTTP routes
-- **Content negotiation** — `Accept: application/json` on HTTP routes returns structured data
+- **Content negotiation** — `Accept: text/markdown` on app routes returns markdown
 - **MCP endpoints** — every published app gets `/mcp/:slug` automatically
 - **Skills directory** — `skills/` with codified knowledge for agents that clone the repo
 

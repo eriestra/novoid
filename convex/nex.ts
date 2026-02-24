@@ -106,7 +106,7 @@ export const claimJob = mutation({
 export const updateJob = mutation({
   args: {
     jobId: v.id("nex_jobs"),
-    status: v.string(),
+    status: v.union(v.literal("pending"), v.literal("claimed"), v.literal("building"), v.literal("done"), v.literal("error"), v.literal("interrupted")),
     result: v.optional(v.string()),
     secret: v.string(),
   },
@@ -455,7 +455,7 @@ export const configureChannel = mutation({
 export const updateChannelStatus = mutation({
   args: {
     channelId: v.id("nex_channels"),
-    status: v.string(),
+    status: v.union(v.literal("active"), v.literal("inactive")),
     lastMessageAt: v.optional(v.number()),
     secret: v.string(),
   },
@@ -525,7 +525,7 @@ export const pendingApprovals = query({
 export const resolveApproval = mutation({
   args: {
     approvalId: v.id("nex_approvals"),
-    status: v.string(), // "approved" | "denied" | "expired"
+    status: v.union(v.literal("approved"), v.literal("denied"), v.literal("expired")),
     secret: v.string(),
   },
   handler: async (ctx, { approvalId, status, secret }) => {
@@ -537,7 +537,7 @@ export const resolveApproval = mutation({
 export const resolveApprovalBatch = mutation({
   args: {
     batchId: v.string(),
-    status: v.string(),
+    status: v.union(v.literal("approved"), v.literal("denied"), v.literal("expired")),
     secret: v.string(),
   },
   handler: async (ctx, { batchId, status, secret }) => {
@@ -773,7 +773,7 @@ export const registerAgent = mutation({
 export const agentPing = mutation({
   args: {
     agentId: v.string(),
-    status: v.string(),
+    status: v.union(v.literal("idle"), v.literal("busy"), v.literal("offline")),
     currentJobId: v.optional(v.id("nex_jobs")),
     secret: v.string(),
   },

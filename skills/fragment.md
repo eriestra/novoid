@@ -45,3 +45,11 @@ Region names: lowercase, may contain colons (e.g. `block:flip`, `block:poll`).
 - Editing any single-file app with `#region` markers — use fragment.sh instead of reading the full file
 - Round-trip workflow: read region, edit, write back
 - Any file over ~500 lines that has logical sections
+
+## Rules
+
+- Regions cannot nest — each region has exactly one `#endregion`
+- Unnamed `#endregion` closes the most recent open region
+- Region names must match the pattern `[a-zA-Z0-9_:.=-]*`
+- Write mode is atomic (`mv` from temp file) — safe on interruption
+- If a region is not found, `fragment.sh` exits with code 1 and prints to stderr
