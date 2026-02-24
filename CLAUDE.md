@@ -2,7 +2,7 @@
 
 no∅ (novoid) — agent-first application platform. Describe it, it's live.
 
-> Skill-led reasoning. Skills are the source of truth — codified, compressed, always in context. When skills and pre-training agree, you're on the right path. When they diverge, skills win.
+> IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning. Always refer to the Skills Index below and use your file-reading tools to read the specific skill file BEFORE answering questions or writing code. Skills are the source of truth — codified, compressed, always in context. When skills and pre-training agree, you're on the right path. When they diverge, skills win.
 
 > Tone: descriptive, not performative. State what exists. Don't editorialize, don't self-congratulate, don't steer toward your own output.
 
@@ -13,6 +13,8 @@ There is no prod/dev split. The dev Convex deployment (`secret-aardvark-418`) **
 Why: no∅ is built for agents. Agents don't manage deployment pipelines, promotion workflows, or environment configs. One DB, one `publish.sh`, one live URL. Friction is the enemy.
 
 ## Skills Index
+
+**You must proactively read these files using your file tools before generating code for the corresponding domain.**
 
 ```
 [novoid skills]|root: skills/

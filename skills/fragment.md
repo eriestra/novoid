@@ -2,29 +2,14 @@
 
 Read, write, or list named `#region` blocks in large single-file apps.
 
-## Why
+# fragment.sh — Region-Based File Fragments
 
-Single-file no∅ apps can grow past 1000 lines. Reading the full file to edit 50 lines wastes context. Wrap sections in `#region`/`#endregion` markers and use `fragment.sh` to extract or replace just the region you need.
+Read, write, or list named `#region` blocks in large single-file apps.
 
-## Commands
+> **Rule:** Use `fragment.sh` to extract or replace regions instead of loading a 1000-line file into context just to edit 50 lines.
 
-```sh
-# List all regions with line numbers
-sh fragment.sh src/app/<slug>.html --list
-
-# Read a region to stdout
-sh fragment.sh src/app/<slug>.html store
-
-# Read into a file for editing
-sh fragment.sh src/app/<slug>.html render > /tmp/render.js
-
-# Replace a region from a file
-sh fragment.sh src/app/<slug>.html render /tmp/render.js
-```
-
-## Marker Convention
-
-Two comment styles, matching the surrounding context:
+## 1. Marker Convention
+Regions are defined using comment blocks that match the file type. Regions cannot nest.
 
 ```html
 <!-- #region styles -->
@@ -32,24 +17,25 @@ Two comment styles, matching the surrounding context:
 <!-- #endregion styles -->
 ```
 
-```js
+```javascript
 // #region store
 ...
 // #endregion store
 ```
 
-Region names: lowercase, may contain colons (e.g. `block:flip`, `block:poll`).
+## 2. Reading a Region
+To see what regions exist:
+```sh
+sh fragment.sh src/app/<slug>.html --list
+```
 
-## When to Use
+To read a specific region into your context or a temp file:
+```sh
+sh fragment.sh src/app/<slug>.html store > /tmp/store.js
+```
 
-- Editing any single-file app with `#region` markers — use fragment.sh instead of reading the full file
-- Round-trip workflow: read region, edit, write back
-- Any file over ~500 lines that has logical sections
-
-## Rules
-
-- Regions cannot nest — each region has exactly one `#endregion`
-- Unnamed `#endregion` closes the most recent open region
-- Region names must match the pattern `[a-zA-Z0-9_:.=-]*`
-- Write mode is atomic (`mv` from temp file) — safe on interruption
-- If a region is not found, `fragment.sh` exits with code 1 and prints to stderr
+## 3. Writing to a Region
+After editing the temp file, replace the region in the source file:
+```sh
+sh fragment.sh src/app/<slug>.html store /tmp/store.js
+```

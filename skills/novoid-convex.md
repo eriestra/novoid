@@ -2,55 +2,91 @@
 
 Data layer — connecting no∅ apps to Convex backends with reactive queries, mutations, actions, and AI.
 
-## Competencies
+## 1. Client Setup
+Connect the frontend to the backend using `createClient`.
 
-### 1. Client Setup
-- `Novoid.createClient(url)` — connect to a Convex deployment
-- Script loading order: Convex CDN → core.min.js → convex.min.js → auth.min.js → toast.min.js
-- Connection state monitoring: `useConnectionState(client)`
+```js
+// Load scripts in order: Convex CDN -> core -> convex -> auth
+const client = Novoid.createClient("https://your-convex-url.convex.cloud");
+const auth = Novoid.useNovoidAuth(client);
+```
 
-### 2. Reactive Queries
-- `useQuery(client, ref, args?)` — returns `{ data, loading, error }` signals
-- `data()` is `undefined` until loaded — always default: `(data() ?? []).map(...)`
-- Skip pattern: `useQuery(db, ref, 'skip')` or `useQuery(db, ref, () => id() ? { id: id() } : 'skip')`
-- Queries auto-update when backend data changes (real-time subscriptions)
+## 2. Reading Data (Queries)
+Queries are reactive and auto-update when backend data changes.
 
-### 3. Mutations & Actions
-- `useMutation(client, ref)` — returns callable + `.isLoading()`, `.error()`
-- `useAction(client, ref)` — for server-side logic (AI calls, external APIs)
-- `useAI(client, ref)` — AI action with `.response()`, `.isLoading()`, `.history()`, `.clear()`
+```js
+// Returns { data, loading, error } signals
+const bills = Novoid.useQuery(client, 'bills:list', { orgId: auth.orgId });
 
-### 4. Authentication
-- `useNovoidAuth(client)` — `auth.user()`, `auth.isAuthenticated()`, `auth.register()`, `auth.login()`, `auth.logout()`, `auth.getToken()`
-- `useOrg(client, auth)` — `org.orgs()`, `org.currentOrg()`, `org.currentRole()`, `org.switchOrg(id)`
-- Session-based (SHA-256 tokens, 7-day expiry), no cookies
+Novoid.effect(() => {
+  // Always default data() as it is undefined while loading
+  const items = bills.data() ?? [];
+  console.log("Bills:", items);
+});
+```
+**Skip Pattern:** Useful when waiting on other data before querying:
+```js
+// Query won't run until orgId() is truthy
+const query = Novoid.useQuery(client, 'stats:get', () => auth.orgId() ? { orgId: auth.orgId() } : 'skip');
+```
 
-### 5. Backend Schema & Functions
-- Schema definition in `convex/schema.ts` with table definitions and indexes
-- Query/mutation/action patterns in Convex functions
-- Auth gating with `PUBLISH_SECRET` for write operations
-- `keys` table for secret storage (API keys read via `internalQuery`)
+## 3. Writing Data (Mutations)
+Use mutations to modify the database transactionally.
 
-## Evaluation Criteria
+```js
+const createBill = Novoid.useMutation(client, 'bills:create');
 
-| Level | Description |
-|---|---|
-| **Novice** | Can connect a client, use useQuery to display data, call a mutation |
-| **Competent** | Handles loading/error states, uses skip pattern, implements auth flow |
-| **Proficient** | Builds full CRUD apps with real-time updates, uses useAI for AI features, manages org-scoped data |
-| **Expert** | Designs Convex schemas, writes backend functions, implements the OpenRouter pattern (key in DB, server-side AI calls), uses headless Convex testing |
+async function handleSave(data) {
+  try {
+    const id = await createBill({ ...data, orgId: auth.orgId() });
+    console.log("Created:", id);
+  } catch (err) {
+    console.error("Failed:", err);
+  }
+}
+```
 
-## Test Scenarios
+## 4. Backend Actions (External APIs & AI)
+Use actions for server-side logic that calls external APIs.
 
-1. **Read-only dashboard** — useQuery to display a list, loading spinner while fetching, error handling.
-2. **CRUD app** — useQuery + useMutation for create/read/update/delete with optimistic UI.
-3. **Auth-gated app** — login/register flow, protected content, org switching.
-4. **AI chat** — useAI with conversation history, clear, loading states.
-5. **Headless verification** — novoid-browser with `--seed` for query data, `--push` for live updates, `--assert` for state.
+```js
+const processAI = Novoid.useAction(client, 'ai:processText');
+// Calling it works exactly like a mutation
+await processAI({ text: "Hello" });
+```
+
+**Built-in AI helper (`useAI`):**
+```js
+const chat = Novoid.useAI(client, 'ai:chat');
+await chat.submit("Explain quantum physics");
+console.log(chat.response()); // Streams the response
+```
+
+## 5. Built-in Authentication
+Session-based auth using SHA-256 tokens.
+```js
+auth.user();            // Reactive signal of current user
+auth.isAuthenticated(); // Reactive boolean
+auth.login(email, pwd); // Promise
+auth.logout();          // Promise
+```
+
+## 6. Backend Schema (convex/schema.ts)
+Always define your tables and indexes in the schema.
+```ts
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+export default defineSchema({
+  users: defineTable({
+    name: v.string(),
+    email: v.string(),
+    orgId: v.optional(v.string()),
+  }).index("by_email", ["email"]), // Define indexes for fast queries
+});
+```
 
 ## Conventions
-
-- Load Convex CDN bundle before core.min.js (the client constructor depends on it)
-- Default `data()` with `?? []` or `?? null` — it's `undefined` until the first server response
-- Use the skip pattern when query args depend on other async state
-- API keys belong in the Convex `keys` table, read server-side via `internalQuery` (verify.sh checks for secret leaks in HTML)
+- **Load Order:** Convex CDN bundle must load *before* `core.min.js`.
+- **Default Data:** `data()` is `undefined` initially. Use `data() ?? []`.
+- **Secrets:** API keys should be stored in the Convex `keys` table and read via `internalQuery`. *Never* expose them to the frontend.

@@ -12,42 +12,25 @@ Nex is the primary user-facing agent, replacing OpenClaw as the main interaction
 User message → Convex job (pending) → nex-watch claims → Claude CLI → response stored → user sees reply
 ```
 
-### Job Lifecycle
-`pending` → `claimed` → `building` → `completed` | `failed`
+# novoid-agents
 
-### Concurrency: Surgeon Model
-- Quick questions can interrupt long-running builds
-- Priority classification on incoming messages
-- Queue-based: high-priority jobs preempt lower ones
+Codified knowledge for the no∅ agent system — Nex, Vox, personas, memory, multi-channel, inline apps.
 
----
+## 1. Core Architecture
+- **Nex:** The primary chat agent (handles user queries, memory, heartbeat pipelines).
+- **Vox:** Visual app-builder canvas. Generates full HTML apps based on prompts.
+Both run locally via `nex-watch.js`, which polls Convex for pending jobs and spawns the Claude CLI to resolve them.
 
-## Vox Voice Builder
-
-Vox is a canvas capability of Nex — generates and publishes no∅ apps from natural language.
-
-- Published at `/app/vox`, served at `/vox`
-- Same job lifecycle as Nex
-- Output: full no∅ HTML apps
-
-### Unified Canvas
-
-All generated apps appear in the same canvas regardless of origin (Nex chat, Vox voice, inline-promoted). No split by generator — `origin` is metadata, not a filter boundary.
-
-### Canvas Deletion
-
-All canvas apps are deletable — both canvas-only entries and published pages. Deleting removes the `nex_canvas` record AND the published page from the `pages` table.
-
-**Protected slugs:** `nex`, `vox`, `novoid` cannot be deleted (mutation rejects). These are also locked in `publish.sh` (require `--force` to republish).
-
----
-
-## Inline Apps
-
-Nex can respond with embedded no∅ apps inside chat messages.
-
-### Format
+### Running the System
+```sh
+npx convex dev  # Terminal 1: run the backend
+node nex-watch.js # Terminal 2: run the agent worker
 ```
+
+## 2. Inline Apps (Rendering UI in Chat)
+Nex can respond with interactive no∅ apps embedded directly in the chat using iframes.
+
+```html
 ---app---
 <!DOCTYPE html>
 <html>
@@ -58,187 +41,43 @@ Nex can respond with embedded no∅ apps inside chat messages.
 <body>
   <div id="app"></div>
   <script>
-    // full no∅ app code
+    // Your no∅ app code here.
+    // Remember to escape closing script tags: '<\/script>'
   <\/script>
 </body>
 </html>
 ---/app---
 ```
+**Rules for Inline Apps:**
+- Use **absolute URLs** for all assets (the iframe has no base URL).
+- For data-driven apps, use `Novoid.render()`.
+- The iframe auto-resizes to fit content.
 
-### Rules
-1. **Use absolute URLs for framework assets.** Inline apps render in sandboxed iframes with `srcdoc` — no base URL context.
-2. **Auto-sizing.** ResizeObserver + postMessage adjusts iframe height.
-3. **Introspectable.** Agent can use novoid-browser on inline app HTML.
-4. **Hybrid inline apps.** When an inline app needs both custom visuals and data-driven sections (forms, tables), use the hybrid pattern: h() shell for layout + `Novoid.render()` for interactive sections. See `novoid-render.md` § Hybrid Apps.
+## 3. The Heartbeat Pipeline
+Nex can run background tasks autonomously on a schedule.
+- Tasks are stored in `nex_heartbeat.checklist` (array of JSON objects).
+- Steps execute sequentially, passing context to the next step.
 
----
+### Approval Gates
+If a heartbeat step text contains keywords like `approve`, `confirm`, `permission`, or `authorize`:
+1. The pipeline pauses.
+2. An interactive message is sent to Telegram via `nex-telegram.mjs`.
+3. If the user clicks approve, a resume job is created.
 
-## Memory System
+```sh
+# Sending manual messages via the Telegram helper:
+node nex-telegram.mjs "Your message here"
+```
 
-Hybrid RAG: vector embeddings (OpenAI) + keyword matching.
-
-| Type | Scope | Lifecycle |
-|---|---|---|
-| Short-term | Current conversation | Auto-stored per exchange |
-| Long-term | Cross-conversation | Promoted from short-term |
-
-### Behavior
-- Memories tagged with active agent persona
-- Recall by relevance, filtered by agent context
-- Search combines vector similarity + keyword matching
-
----
-
-## Agent Personas
-
-Defined in `.claude/agents/` — each persona has:
+## 4. Agent Personas
+Personas live in `.claude/agents/` and define:
 - System prompt
 - Available tools
 - Memory scope
-- Certified skills (Supraversity integration)
+ Nex classifies intent and hot-swaps personas behind the scenes (e.g., swapping to the `builder` persona when asked to code).
 
-### Swap Mechanism
-```
-Classify intent → Pick persona → Load config → Execute → Tag memory with persona
-```
-
-### Built-in Personas
-`builder`, `architect`, `devops`, `analyst`, `mentor`, `certifier`
-
----
-
-## Heartbeat Pipeline
-
-Proactive autonomous operation — Nex wakes on schedule to execute a structured checklist.
-
-### Data Format
-Stored in `nex_heartbeat.checklist` as JSON string:
-```json
-[
-  { "id": "a1b2", "text": "Check memory for pending work", "enabled": true, "order": 0 },
-  { "id": "c3d4", "text": "Ask for approval via Telegram", "enabled": true, "order": 1 }
-]
-```
-Legacy plain-text checklists auto-convert on load.
-
-### Pipeline Execution
-Steps run sequentially — each step's output feeds as context to the next:
-```
-Step 1 → result₁ → Step 2 (with context: result₁) → result₂ → Step 3 (with context: result₁ + result₂)
-```
-
-### Approval Gates
-Steps containing approval keywords (`approve`, `confirm`, `permission`, `authorize`, `green light`) are detected as **approval gates**. When hit:
-1. Pipeline **pauses** and saves state (step index + accumulated context)
-2. Sends approval request to Telegram via `queueApproval` with inline keyboard
-3. Current job completes with "⏸ Paused — awaiting approval"
-4. When user approves via Telegram callback → new heartbeat job resumes pipeline from next step with full context
-5. When user denies → pipeline stays paused (no resume job created)
-
-Pipeline state is serialized as `__PIPELINE_RESUME__:{json}` at the end of the approval prompt. The approval callback handler detects this marker and creates a heartbeat resume job instead of a generic chat follow-up.
-
-### Model Routing
-- **Sonnet 4.6** — default for conversational steps (check, look, pick, review)
-- **Opus 4.6** — auto-selected when step text matches: `implement|build|generate|create|refactor|deploy|code|develop|telegram|send|notify|message`
-
-### Capabilities Injection
-Before execution, the pipeline queries active channels and injects capability instructions:
-- If Telegram is configured, steps get: `node nex-telegram.mjs "message"`
-- No new channels are created — existing active channels are reused
-
-### Telegram Helper
-`nex-telegram.mjs` — pre-built script to send messages through the active Telegram channel:
-```sh
-node nex-telegram.mjs "Your message here"
-```
-Reads `.env.local` for credentials, queries active channels, queues a channel job.
-
-### Telegram Formatting
-`toTelegramFormat()` converts markdown to Telegram-friendly text before sending:
-- Tables → `cell · cell · cell` inline format
-- `###` headers → 📦 prefix, `##`/`#` → 📋 prefix
-- Strips table separator rows
-- Keeps `**bold**` and `` `code` `` (Telegram supports these)
-
-### UI (HeartbeatView in nex.html)
-- Structured item list with checkbox toggle, up/down reorder, delete
-- Auto-saves on every mutation (add, toggle, delete, reorder) — no Save button
-- Add item input with Enter key support and disabled + button when empty
-- Recent Runs list shows which checklist item each job was for
-
----
-
-## Wallet (Coinbase AgentKit)
-
-Nex has an optional crypto wallet powered by Coinbase AgentKit. When configured, Nex can send, receive, and trade crypto autonomously.
-
-### Configuration
-
-Store CDP API keys in the `keys` table:
-- `CDP_API_KEY_NAME_<orgId>` — Coinbase Developer Platform API key name
-- `CDP_API_KEY_PRIVATE_<orgId>` — CDP API private key
-
-Configure wallet via Nex settings UI (Wallet tab) or `nex:configureWallet` mutation.
-
-### Available Actions
-
-| Action | Description |
-|---|---|
-| `balance` | Get wallet details and balances |
-| `send` | Native ETH transfer or ERC-20 transfer |
-| `trade` | DEX swap via AgentKit |
-| `export` | Export wallet data for backup |
-
-### Guardrails
-
-Programmable spending limits enforced before every signing operation:
-- `maxPerTx` — maximum ETH per single transaction
-- `dailyLimit` — maximum ETH per 24-hour period
-
-Set via `nex:updateGuardrails` mutation or the UI.
-
-### Heartbeat Integration
-
-When a wallet is configured, heartbeat pipeline steps gain wallet capability. Nex can autonomously check balances and send payments when instructed, with guardrails enforcing limits without per-transaction human approval.
-
-### Networks
-
-- `base-mainnet` — Base L2 mainnet
-- `base-sepolia` — Base Sepolia testnet (recommended for initial setup)
-
-### Future: x402 Micropayments
-
-AgentKit wallet will enable x402 protocol support — HTTP 402-based micropayments for agent-to-agent service calls.
-
----
-
-## Multi-Channel Messaging
-
-| Channel | Transport | Input |
-|---|---|---|
-| Web chat | Convex real-time (useQuery subscriptions) | Browser |
-| Telegram | Webhook via Convex HTTP routes | Telegram bot |
-
-Same job system, different input sources. Image support: photos stored in Convex, rendered inline.
-
----
-
-## Commands
-
-```sh
-# Start the worker (requires Convex backend running)
-npx convex dev  # in one terminal
-node nex-watch.js  # in another
-
-# Job system is Convex-backed — no local state
-```
-
----
-
-## Conventions
-
-1. Run `npx convex dev` before starting nex-watch.
-2. Inline apps use absolute URLs — iframes with `srcdoc` have no base URL.
-3. Tag memories with the active persona for filtered recall.
-4. Long-running jobs are interruptible via the surgeon model.
-5. `'</' + 'script>'` in JS strings inside inline apps (HTML parser limitation).
+## 5. Wallet Integration (AgentKit)
+Nex supports an autonomous Coinbase CDP wallet. 
+- Keys live in the DB: `CDP_API_KEY_NAME_<orgId>` and `CDP_API_KEY_PRIVATE_<orgId>`.
+- Allows sending, receiving, and trading crypto natively on Base L2.
+- Spending limits (`maxPerTx`, `dailyLimit`) act as autonomous guardrails instead of requiring manual approval for every transaction.

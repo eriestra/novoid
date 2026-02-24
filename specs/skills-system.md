@@ -121,8 +121,8 @@ Three outcomes:
 Each Nex persona has a defined skill loadout. When Nex swaps persona, it loads that persona's skills and unloads others — keeping the context window tight.
 
 ```
-builder    → novoid-core, novoid-render, novoid-css, novoid-motion
-architect  → novoid-core, novoid-convex, convex-schema-validator, convex-best-practices
+builder    → novoid-core, novoid-render, novoid-css
+architect  → novoid-convex, convex-schema-validator, convex-best-practices
 devops     → novoid-publishing, novoid-verification, convex-functions
 analyst    → novoid-convex, convex-realtime, convex-agents
 mentor     → all core skills (read-only guidance)

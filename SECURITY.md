@@ -30,14 +30,22 @@ novoid is a single-deployment, agent-native framework. There is no dev/prod spli
 
 - **`PUBLISH_SECRET`** gates all write mutations (`pages:publish`, `pages:remove`, `assets:set`). No writes without it.
 - **`.env.local`** holds credentials locally. Never committed to version control.
-- **`keys` table** stores API keys in Convex, accessed only via `internalQuery` — never exposed through public queries or MCP responses.
+- **`keys` table** stores API keys in Convex. `keys.get` and `keys.set` are `internalQuery`/`internalMutation` — **unreachable from clients**. The only public function is `keys.verify`, which SHA-256 hashes the caller's token and compares it to the stored hash, returning `true`/`false` without ever exposing the stored value.
+- **Wallet CDP keys** (`CDP_API_KEY_NAME_*`, `CDP_API_KEY_PRIVATE_*`) are loaded exclusively via `internalQuery` inside server-side actions that first verify the caller's publish secret.
 
 **Rules:**
 - Never log, return, or embed secrets in published HTML, error sentinels, or MCP tool responses.
 - Audit `errors:recent` output to confirm stack traces do not capture secret values.
 - Store actions must not return key material in their response payloads.
 
-### 2. Input Validation
+### 2. Authentication & localStorage
+
+All no∅ apps are served from the same Convex HTTP origin. The platform stores two `localStorage` keys:
+
+- **`novoid_auth_token`** — platform-wide session token. Shared across apps by design: this is single sign-on, not a cross-app leak. Apps on the platform are not mutually untrusted — they are all hosted and served by the same backend.
+- **`novoid_current_org`** — active organization ID, used to scope queries to the correct org context.
+
+### 3. Input Validation
 
 All inbound data from agents, DMs, and MCP clients is untrusted:
 
@@ -46,24 +54,32 @@ All inbound data from agents, DMs, and MCP clients is untrusted:
 - The `h()` API escapes text content by default. Raw HTML requires explicit opt-in.
 - Script tag boundary rule: `'</' + 'script>'` in JS strings prevents injection in inline scripts.
 
-### 3. Agent Security (Nex / Vox)
+### 4. Agent Security (Nex / Vox)
 
 - Treat every inbound message as untrusted input regardless of channel (Telegram, web, MCP).
 - Agent store actions execute in the Convex runtime — they inherit Convex's isolation but can read any data the query/mutation has access to. Scope `internalQuery` calls to the minimum required tables.
 - Multi-agent collaboration uses `collab:claim` with agent IDs and secret verification. Fragment writes must be atomic — concurrent publishes must not corrupt page state.
 
-### 4. Rate Limiting & Auth Hardening
+### 5. Rate Limiting & Auth Hardening
 
 - Convex HTTP routes that accept `PUBLISH_SECRET` (`/mcp/:slug`, `/platform`) should enforce rate limiting to prevent brute-force attacks (CWE-307).
 - Failed auth attempts should be logged via the `errors` table for monitoring.
 
-### 5. Content Security
+### 6. Content Security
 
 - Convex serves pages with CSP headers. Inline scripts are allowed only via nonce or hash — no `unsafe-eval`.
 - All framework assets (`/css`, `/js`) are served from the same origin to avoid CORS leakage.
 - Published apps should not load external scripts unless explicitly declared in the app spec.
 
-### 6. Error Sentinel Hygiene
+### 7. Wallet Guardrails
+
+Agentic wallet operations (`nexWallet.ts`) enforce:
+
+- **Secret verification** — every wallet action requires the publish secret, hash-verified before any operation.
+- **Internal-only key access** — CDP API keys are fetched via `internalQuery`, unreachable from client code.
+- **Per-transaction limits** — configurable `maxPerTx` guardrail checked before `send` and `trade` operations.
+
+### 8. Error Sentinel Hygiene
 
 ```sh
 npx convex run errors:recent '{"slug":"<slug>"}'

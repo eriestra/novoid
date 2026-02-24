@@ -1,7 +1,7 @@
 # AGENTS.md
 
 > Model-agnostic agent instructions for no∅ (novoid).
-> IMPORTANT: Skill-led reasoning. Skills are the source of truth — not source files. Read skills first.
+> IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning. Always refer to the Skills Index below and use your file-reading tools to read the specific skill file BEFORE answering questions or writing code. Skills are the absolute source of truth.
 
 ## What This Is
 
@@ -9,7 +9,7 @@ no∅ — frictionless frontend framework. Describe what you want, it's live in 
 
 ## Skills Index
 
-Codified knowledge lives in `skills/`. Each skill replaces reading multiple source files. Skills are always-in-context compressed references — agents never need to decide *when* to look things up.
+Codified knowledge lives in `skills/`. Each skill replaces reading multiple source files. Skills are always-in-context compressed references. **You must proactively read these files using your file tools before generating code for the corresponding domain.**
 
 ```
 [novoid skills]|root: skills/

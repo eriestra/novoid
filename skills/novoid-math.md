@@ -48,45 +48,36 @@ katex.render(texString, domElement, {
 
 ---
 
-## TeX Notation
+# novoid-math
 
+Codified knowledge for math rendering in no∅ — KaTeX integration, TeX notation, MathML visibility.
+
+## 1. Setup KaTeX
+If the app renders math, load the CDN scripts and ALWAYS inline the MathML hiding CSS to prevent accessibility-layer duplication bugs.
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+<!-- Critical: Always inline this fallback to hide duplicate screen-reader text -->
+<style>.katex-mathml{position:absolute!important;clip:rect(1px,1px,1px,1px)!important;width:1px!important;height:1px!important;overflow:hidden!important;}</style>
+```
+
+## 2. Rendering Mathematical Strings
+Use the `katex.render()` API targeting a DOM node.
+
+```js
+// The target container should be empty. KaTeX replaces its contents.
+const container = document.getElementById('math-container');
+
+katex.render("E = mc^2", container, {
+  displayMode: true,       // Block (true) or inline (false)
+  throwOnError: false,     // Graceful degradation on syntax errors
+});
+```
+*Note: Use `setTimeout` or `onMount` in components to ensure the container exists before rendering.*
+
+## 3. TeX Standard Syntax
 - **Display math:** `$$F = ma$$` — centered, block-level
 - **Inline math:** `$E = mc^2$` — within text flow
-- One formula = one representation. TeX only, no Unicode/ASCII fallback alongside.
-
-### Common syntax
-| Syntax | Output |
-|---|---|
-| `\frac{a}{b}` | Fraction |
-| `x^2`, `x_1` | Superscript, subscript |
-| `\alpha`, `\beta`, `\nabla` | Greek letters |
-| `\sqrt{x}` | Square root |
-| `\sum_{i=1}^{n}` | Summation |
-| `\int_0^\infty` | Integral |
-| `\,` | Thin space |
-| `\quad` | Wide space |
-| `\\` | Newline (in aligned environments) |
-
----
-
-## In Markdown Responses (nex.html)
-
-The `renderMarkdown()` function converts `$$...$$` and `$...$` to `<span>` elements with `data-tex` attributes. Then `renderMath()` calls `katex.render()` on each span.
-
-```
-$$\nabla \cdot E = \frac{\rho}{\epsilon_0}$$
-  → <span class="nex-math-block" data-tex="..."></span>
-  → katex.render(tex, span, { displayMode: true })
-```
-
-The parent page must have the `.katex-mathml` hiding CSS inline in its `<style>` block.
-
----
-
-## Conventions
-
-1. Always inline `.katex-mathml` hiding CSS — CDN-only is fragile in iframes.
-2. One formula, one representation: TeX only.
-3. Give formula containers a stable `id` to survive reactive re-renders.
-4. Use `throwOnError: false` for graceful degradation.
-5. KaTeX version: `0.16.11`.
+- Use standard commands: `\frac{a}{b}`, `\sqrt{x}`, `\sum_{i=1}^{n}`, `\alpha`
