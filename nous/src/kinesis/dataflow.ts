@@ -100,6 +100,8 @@ export function analyzeDataflow(bundle: DocumentBundle): DataflowResult {
 
   const deadSignals: string[] = [];
   for (const sig of patterns.signals) {
+    // Store signals (store:key) are accessed via store.select(), not directly called
+    if (sig.getter.startsWith("store:")) continue;
     const getterUsed = allDeps.has(sig.getter);
     // A signal is dead if its getter is never read by any effect or derived.
     // Even if the setter is called, writing to a value nobody reads is dead code.
@@ -125,6 +127,20 @@ export function analyzeDataflow(bundle: DocumentBundle): DataflowResult {
 }
 
 // --- Taint analysis helpers ---
+
+/** Collect identifiers used only as computed property keys (e.g. obj[name]) */
+function collectComputedPropertyKeys(node: unknown): Set<string> {
+  const ids = new Set<string>();
+  walkNode(node, (n: AstNode) => {
+    if (n.type === "MemberExpression" && n.computed) {
+      const prop = n.property as AstNode;
+      if (prop.type === "Identifier") {
+        ids.add((prop as AstIdentifier).name);
+      }
+    }
+  });
+  return ids;
+}
 
 /** Collect all identifier names in an AST subtree */
 function collectIdentifiers(node: unknown): Set<string> {
@@ -253,9 +269,12 @@ function analyzeTaint(ast: Node): string[] {
       if (left?.type === "MemberExpression") {
         const prop = left.property as AstNode;
         if (prop?.type === "Identifier" && (prop as AstIdentifier).name === "innerHTML") {
+          // Collect tainted identifiers, excluding those only used as computed property keys
+          // e.g. obj[tainted] is safe — tainted selects a key, not the value flowing to innerHTML
+          const computedKeyIds = collectComputedPropertyKeys(n.right);
           const exprIds = collectIdentifiers(n.right);
           for (const t of tainted) {
-            if (exprIds.has(t) && !sanitizedVars.has(t)) {
+            if (exprIds.has(t) && !sanitizedVars.has(t) && !computedKeyIds.has(t)) {
               if (!isSanitized(n.right, t)) {
                 violations.push(`User input '${t}' flows to innerHTML without sanitization (line ${line})`);
               }

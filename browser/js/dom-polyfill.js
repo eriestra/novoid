@@ -396,6 +396,7 @@
     body: _body,
     activeElement: _body,
     createElement(tag) { return new Element(tag); },
+    createElementNS(ns, tag) { return new Element(tag); },
     createTextNode(text) { return new Text(text); },
     createComment(text) { return new Comment(text); },
     createDocumentFragment() { return new DocumentFragment(); },

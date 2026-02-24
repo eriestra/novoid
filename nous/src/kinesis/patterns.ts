@@ -41,6 +41,12 @@ const MEMBER_SIGNAL_CREATORS: Record<string, Record<string, Framework>> = {
   Novoid: { signal: "novoid", derived: "novoid", effect: "novoid" },
 };
 
+const STORE_CREATORS = new Set(["createStore"]);
+const MEMBER_STORE_CREATORS: Record<string, string> = {
+  Novoid: "createStore",
+  N: "createStore",
+};
+
 const EFFECT_NAMES = new Set(["effect", "createEffect"]);
 const DERIVED_NAMES: Record<string, Framework> = {
   derived: "novoid",
@@ -107,6 +113,9 @@ export function detectPatterns(ast: Program): DetectedPattern {
   // First pass: collect signals so we know getter names for dependency tracking
   const getterNames = new Set<string>();
 
+  // Track store variable names for store.select() resolution
+  const storeVarNames = new Set<string>();
+
   walk(ast, (node: AstNode) => {
     if (node.type !== "VariableDeclaration") return;
     const declarations = node.declarations as AstNode[];
@@ -114,6 +123,48 @@ export function detectPatterns(ast: Program): DetectedPattern {
       const init = decl.init as AstNode | null;
       if (!init || init.type !== "CallExpression") continue;
       const callee = init.callee as AstNode;
+
+      // Check for createStore(...) / N.createStore(...) / Novoid.createStore(...)
+      let isStore = false;
+      if (callee.type === "Identifier" && STORE_CREATORS.has((callee as AstIdentifier).name)) {
+        isStore = true;
+      } else if (callee.type === "MemberExpression") {
+        const obj = callee.object as AstNode;
+        const prop = callee.property as AstNode;
+        if (obj.type === "Identifier" && prop.type === "Identifier") {
+          const expected = MEMBER_STORE_CREATORS[(obj as AstIdentifier).name];
+          if (expected && (prop as AstIdentifier).name === expected) {
+            isStore = true;
+          }
+        }
+      }
+
+      if (isStore) {
+        if (framework === "unknown") framework = "novoid";
+        const id = decl.id as AstNode;
+        if (id.type === "Identifier") {
+          storeVarNames.add((id as AstIdentifier).name);
+        }
+        // Extract state keys from the initial state object argument
+        const args = init.arguments as AstNode[];
+        if (args[0]?.type === "ObjectExpression") {
+          const props = args[0].properties as AstNode[];
+          for (const prop of props) {
+            if (prop.type === "Property") {
+              const key = prop.key as AstNode;
+              let keyName = "";
+              if (key.type === "Identifier") keyName = (key as AstIdentifier).name;
+              else if (key.type === "Literal" && typeof (key as AstNode & { value: unknown }).value === "string")
+                keyName = (key as AstNode & { value: unknown }).value as string;
+              if (keyName) {
+                // Each store state key is an implicit named signal
+                signals.push({ getter: `store:${keyName}`, setter: `store:${keyName}`, initialValue: undefined, named: true, line: getLine(node) });
+              }
+            }
+          }
+        }
+        continue;
+      }
 
       // Check if this is a signal creation call
       let detectedFw: Framework | null = null;
@@ -175,6 +226,28 @@ export function detectPatterns(ast: Program): DetectedPattern {
 
         if (getter) getterNames.add(getter);
         signals.push({ getter, setter, initialValue, named, line: getLine(node) });
+      }
+    }
+  });
+
+  // Store select pass: var x = store.select('key') → x is a signal getter
+  walk(ast, (node: AstNode) => {
+    if (node.type !== "VariableDeclaration") return;
+    const declarations = node.declarations as AstNode[];
+    for (const decl of declarations) {
+      const init = decl.init as AstNode | null;
+      if (!init || init.type !== "CallExpression") continue;
+      const callee = init.callee as AstNode;
+      if (callee.type !== "MemberExpression") continue;
+      const obj = callee.object as AstNode;
+      const prop = callee.property as AstNode;
+      if (obj.type !== "Identifier" || prop.type !== "Identifier") continue;
+      if (!storeVarNames.has((obj as AstIdentifier).name)) continue;
+      if ((prop as AstIdentifier).name !== "select") continue;
+      // This is store.select(...) — the variable is a signal getter
+      const id = decl.id as AstNode;
+      if (id.type === "Identifier") {
+        getterNames.add((id as AstIdentifier).name);
       }
     }
   });
