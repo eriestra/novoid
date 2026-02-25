@@ -75,11 +75,13 @@ Use `Novoid.list` for keyed reconciliation of arrays. Do not manually map elemen
 const ul = Novoid.h('ul', { class: 'nv-list' });
 const items = store.select('todos');
 
-Novoid.list(ul, items, 
+Novoid.list(ul, items,
   (t) => t.id,           // key function
-  (t) => Novoid.h('li', {}, t.text) // render function
+  (item) => Novoid.h('li', {}, () => item().text) // item is a getter — use () => item().field for reactivity
 );
 ```
+
+`renderFn` receives a **getter function**, not a plain object. Each row is created once; field updates flow through the signal. Wrap field access in `() =>` for reactive text/attributes. Legacy code passing `(t) => h('li', {}, t.text)` still works — the row renders once with the initial value and is never destroyed/recreated.
 
 ## 4. Test Spec Format
 Every app gets a `.test.json` testing the store APIs (not the DOM).

@@ -456,7 +456,7 @@ const Novoid = (() => {
   // ─── 10. LIST ──────────────────────────────────────────
   function list(container, items, keyFn, renderFn) {
     const nodeMap = new Map();
-    const dataMap = new Map();
+    const signalMap = new Map();
     let currentKeys = [];
 
     effect(() => {
@@ -471,29 +471,27 @@ const Novoid = (() => {
           const node = nodeMap.get(key);
           if (node) { _disposeTree(node); node.remove(); }
           nodeMap.delete(key);
-          dataMap.delete(key);
+          signalMap.delete(key);
         }
       }
 
-      // Create or re-render nodes
+      // Create or update items
       for (let i = 0; i < data.length; i++) {
         const key = newKeys[i];
-        const prev = dataMap.get(key);
         const item = data[i];
-        const changed = prev !== undefined && prev !== item
-          && JSON.stringify(prev) !== JSON.stringify(item);
 
-        if (!nodeMap.has(key) || changed) {
-          const oldNode = nodeMap.get(key);
+        if (!nodeMap.has(key)) {
+          // New key — create signal + render once
+          const [getItem, setItem] = signal(item);
+          signalMap.set(key, [getItem, setItem]);
           const node = renderFn(item, i);
           node.dataset.nvKey = key;
-          if (oldNode && oldNode.parentNode) {
-            _disposeTree(oldNode);
-            oldNode.parentNode.replaceChild(node, oldNode);
-          }
           nodeMap.set(key, node);
+        } else {
+          // Existing key — update the signal (no DOM replacement)
+          const [, setItem] = signalMap.get(key);
+          setItem(item);
         }
-        dataMap.set(key, item);
       }
 
       // Reorder
