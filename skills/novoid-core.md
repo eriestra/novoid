@@ -95,7 +95,27 @@ Every app gets a `.test.json` testing the store APIs (not the DOM).
 * `read` resource matches store state keys.
 * `call` tool matches store actions.
 
-## 5. Security & Conventions
+## 5. Common Mistakes
+
+1. **`store.get()` or `store.state`, not `store.state.x` directly** — `store.state` is an alias for `store.get()` and returns the full state object. Use `store.get().field` or `store.state.field`. Use `store.select('field')` for reactive UI bindings.
+
+2. **Never mutate store objects** — Store state is frozen. Mutations throw `TypeError`. Always return new objects via spread.
+   - Wrong: `conv.messages.push(msg)` / `msg.content += delta`
+   - Right: `{ ...conv, messages: [...conv.messages, msg] }`
+
+3. **Use `N.list` on pre-created containers** — Don't pass `N.list` as a child of `h()`.
+   - Wrong: `h('div', {}, N.list(h('div'), items, ...))`
+   - Right: `const c = h('div'); N.list(c, items, ...); parent.appendChild(c);`
+
+4. **Same for `N.when`** — Use direct DOM + `N.effect` with display toggling instead of nesting `N.when` inside `h()` children.
+
+5. **CSP blocks external APIs** — Declare needed domains via meta tag:
+   ```html
+   <meta name="novoid-connect" content="https://openrouter.ai https://api.stripe.com">
+   ```
+   The server parses this and adds the domains to `connect-src`. Only `https://` URLs are accepted. For APIs that don't support CORS, use Convex HTTP actions as a proxy.
+
+## 6. Security & Conventions
 - **Naming:** Name all raw signals: `Novoid.signal(0, 'name')`.
 - **Script Boundary:** Use `'</' + 'script>'` in JS strings.
 - **Eval Blocked:** CSP blocks `eval`/`new Function`. Use `Novoid.template` or inline expressions.

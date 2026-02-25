@@ -220,13 +220,16 @@ const Novoid = (() => {
 
   // ─── 7. STORE ──────────────────────────────────────────
   function createStore(initialState, actions = {}) {
+    if (typeof initialState === 'object' && initialState !== null) Object.freeze(initialState);
     const [getState, setState] = signal(initialState);
     const listeners = new Set();
 
     const store = {
       get: getState,
       set: (updater) => {
-        setState(updater);
+        const next = typeof updater === 'function' ? updater(getState()) : updater;
+        if (typeof next === 'object' && next !== null) Object.freeze(next);
+        setState(next);
         listeners.forEach(fn => fn(getState()));
       },
       subscribe: (fn) => {
@@ -236,6 +239,7 @@ const Novoid = (() => {
       actions: {},
     };
 
+    Object.defineProperty(store, 'state', { get: getState });
     store.select = (key) => computed(() => getState()[key]);
 
     for (const [key, action] of Object.entries(actions)) {
@@ -505,6 +509,8 @@ const Novoid = (() => {
 
       currentKeys = newKeys;
     });
+
+    return container;
   }
 
   // ─── 11. CONDITIONAL RENDERING ─────────────────────────

@@ -152,7 +152,7 @@ export default defineSchema({
   jobs: defineTable({
     prompt: v.string(),
     slug: v.optional(v.string()),
-    status: v.union(v.literal("pending"), v.literal("claimed"), v.literal("building"), v.literal("done"), v.literal("error")),
+    status: v.union(v.literal("pending"), v.literal("claimed"), v.literal("building"), v.literal("done"), v.literal("error"), v.literal("cancelled")),
     agentId: v.optional(v.string()),
     result: v.optional(v.string()),
     context: v.optional(v.string()),
@@ -212,7 +212,7 @@ export default defineSchema({
 
   nex_jobs: defineTable({
     orgId: v.string(),
-    type: v.union(v.literal("chat"), v.literal("channel"), v.literal("canvas"), v.literal("heartbeat"), v.literal("memorize"), v.literal("recall")),
+    type: v.union(v.literal("chat"), v.literal("channel"), v.literal("canvas"), v.literal("heartbeat"), v.literal("memorize"), v.literal("recall"), v.literal("voice")),
     payload: v.string(),                  // JSON-encoded payload
     status: v.union(v.literal("pending"), v.literal("claimed"), v.literal("building"), v.literal("done"), v.literal("error"), v.literal("interrupted")),
     agentId: v.optional(v.string()),
@@ -411,7 +411,7 @@ export default defineSchema({
     name: v.string(),
     description: v.string(),
     command: v.string(),                 // slash command trigger (e.g., "/weather")
-    type: v.union(v.literal("builtin"), v.literal("learned"), v.literal("certified")),
+    type: v.union(v.literal("builtin"), v.literal("learned"), v.literal("certified"), v.literal("knowledge")),
     handler: v.string(),                 // job payload template (JSON)
     enabled: v.boolean(),
     metadata: v.optional(v.object({

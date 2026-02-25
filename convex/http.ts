@@ -209,7 +209,7 @@ http.route({
       });
     }
 
-    // Build CSP with per-page iframe origins
+    // Build CSP with per-page overrides
     const appHeaders = { ...APP_SECURITY_HEADERS };
     if (page.iframeOrigins && page.iframeOrigins.length > 0) {
       const csp = appHeaders["Content-Security-Policy"].replace(
@@ -217,6 +217,18 @@ http.route({
         "frame-ancestors * " + page.iframeOrigins.join(" ")
       );
       appHeaders["Content-Security-Policy"] = csp;
+    }
+
+    // Parse <meta name="novoid-connect" content="https://..."> for connect-src extensions
+    const connectMeta = html.match(/<meta\s+name=["']novoid-connect["']\s+content=["']([^"']+)["']/i);
+    if (connectMeta) {
+      const domains = connectMeta[1].split(/\s+/).filter((d: string) => /^https?:\/\//.test(d));
+      if (domains.length > 0) {
+        appHeaders["Content-Security-Policy"] = appHeaders["Content-Security-Policy"].replace(
+          /connect-src([^;]*)/,
+          "connect-src$1 " + domains.join(" ")
+        );
+      }
     }
 
     return new Response(html, {
@@ -1902,6 +1914,84 @@ http.route({
     } catch (e: any) {
       return new Response(JSON.stringify({ error: e.message || "Usage check failed" }), { status: 500, headers });
     }
+  }),
+});
+
+// POST /api/chat — OpenRouter proxy for chatnovoid (streams SSE)
+http.route({
+  path: "/api/chat",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const corsHeaders: Record<string, string> = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "Content-Type",
+    };
+    try {
+      const body = await request.json();
+      const { messages, model } = body;
+      if (!messages || !Array.isArray(messages)) {
+        return new Response(JSON.stringify({ error: "messages required" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      const apiKey = await ctx.runQuery(internal.nexMemory.getApiKey, { name: "OPENROUTER_KEY" });
+      if (!apiKey) {
+        return new Response(JSON.stringify({ error: "OPENROUTER_KEY not configured" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      const upstream = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://secret-aardvark-418.convex.site/app/chatnovoid",
+          "X-Title": "chatnovoid",
+        },
+        body: JSON.stringify({
+          model: model || "openai/gpt-4o-mini",
+          messages,
+          stream: true,
+        }),
+      });
+      if (!upstream.ok) {
+        const err = await upstream.text();
+        return new Response(err, {
+          status: upstream.status,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      return new Response(upstream.body, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          ...corsHeaders,
+        },
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: e.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+  }),
+});
+http.route({
+  path: "/api/chat",
+  method: "OPTIONS",
+  handler: httpAction(async () => {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Max-Age": "86400",
+      },
+    });
   }),
 });
 
