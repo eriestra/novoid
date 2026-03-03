@@ -77,19 +77,32 @@ if [ -z "$START" ]; then
   exit 1
 fi
 
-# Find end line
+# Find end line (depth-aware: skip nested #region/#endregion pairs)
 END=""
 n=0
+depth=0
 while IFS= read -r line; do
   n=$((n + 1))
   [ "$n" -le "$START" ] && continue
   case "$line" in
     *"#endregion"*)
       name=$(echo "$line" | sed -n 's/.*#endregion  *\([a-zA-Z0-9_:.=-]*\).*/\1/p')
-      if [ "$name" = "$REGION" ] || [ -z "$name" ]; then
+      if [ "$name" = "$REGION" ]; then
         END=$n
         break
+      elif [ -z "$name" ] && [ "$depth" -eq 0 ]; then
+        END=$n
+        break
+      else
+        depth=$((depth > 0 ? depth - 1 : 0))
       fi
+      ;;
+    *"#region "*)
+      # Nested region — increase depth
+      case "$line" in
+        *"#endregion"*) ;;  # skip lines that have both (unlikely but safe)
+        *) depth=$((depth + 1)) ;;
+      esac
       ;;
   esac
 done < "$FILE"

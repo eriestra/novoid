@@ -1,6 +1,6 @@
 import { internalMutation, internalQuery, query } from "./_generated/server";
 import { v } from "convex/values";
-import { hashSecret } from "./lib";
+import { hashSecret, timingSafeEqual } from "./lib";
 
 // Internal only — never exposed to clients
 export const set = internalMutation({
@@ -39,6 +39,6 @@ export const verify = query({
       .first();
     if (!key) return false;
     const hash = await hashSecret(token);
-    return key.value === hash;
+    return timingSafeEqual(key.value, hash);
   },
 });

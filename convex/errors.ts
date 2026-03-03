@@ -60,10 +60,10 @@ export const clear = mutation({
     const errors = await ctx.db
       .query("errors")
       .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .collect();
+      .take(500);
     for (const error of errors) {
       await ctx.db.delete(error._id);
     }
-    return { deleted: errors.length };
+    return { deleted: errors.length, hasMore: errors.length === 500 };
   },
 });

@@ -11,6 +11,15 @@ export async function hashSecret(value: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+export function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 export async function verifySecret(
   ctx: GenericQueryCtx<DataModel>,
   secret: string
@@ -21,7 +30,7 @@ export async function verifySecret(
     .first();
   if (!key) throw new Error("Unauthorized");
   const hash = await hashSecret(secret);
-  if (key.value !== hash) {
+  if (!timingSafeEqual(key.value, hash)) {
     throw new Error("Unauthorized");
   }
 }
@@ -32,9 +41,18 @@ const PBKDF2_ITERATIONS = 100_000;
 
 function generateSalt(length = 32): string {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+  const limit = 256 - (256 % chars.length); // 248 — eliminates modulo bias
+  const result: string[] = [];
+  while (result.length < length) {
+    const bytes = new Uint8Array(length * 2);
+    crypto.getRandomValues(bytes);
+    for (const b of bytes) {
+      if (b < limit && result.length < length) {
+        result.push(chars[b % chars.length]);
+      }
+    }
+  }
+  return result.join("");
 }
 
 async function pbkdf2(password: string, salt: string, iterations: number): Promise<string> {
@@ -65,14 +83,23 @@ export async function verifyPassword(password: string, stored: string): Promise<
   const [salt, iterStr, storedHash] = stored.split(":");
   const iterations = parseInt(iterStr, 10);
   const hash = await pbkdf2(password, salt, iterations);
-  return hash === storedHash;
+  return timingSafeEqual(hash, storedHash);
 }
 
 export function generateToken(): string {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const bytes = new Uint8Array(64);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+  const limit = 256 - (256 % chars.length);
+  const result: string[] = [];
+  while (result.length < 64) {
+    const bytes = new Uint8Array(128);
+    crypto.getRandomValues(bytes);
+    for (const b of bytes) {
+      if (b < limit && result.length < 64) {
+        result.push(chars[b % chars.length]);
+      }
+    }
+  }
+  return result.join("");
 }
 
 export async function hashToken(token: string): Promise<string> {

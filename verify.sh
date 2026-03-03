@@ -204,10 +204,11 @@ except Exception as ex:
     ACT_REFS=$(grep -oE 'useAction\([^,]+,\s*"[^"]+' "$FILE" 2>/dev/null | sed 's/.*"\([^"]*\)$/\1/' | sort -u)
     AI_REFS=$(grep -oE 'useAI\([^,]+,\s*"[^"]+' "$FILE" 2>/dev/null | sed 's/.*"\([^"]*\)$/\1/' | sort -u)
     if [ -n "$MUT_REFS" ] || [ -n "$ACT_REFS" ] || [ -n "$AI_REFS" ]; then
-      python3 -c "
-import json, sys
+      VERIFY_MUT_REFS="$MUT_REFS" VERIFY_ACT_REFS="$ACT_REFS" VERIFY_AI_REFS="$AI_REFS" \
+        VERIFY_BROWSER_FILE="$BROWSER_JSON_FILE" python3 -c "
+import json, sys, os
 try:
-    with open('$BROWSER_JSON_FILE') as f:
+    with open(os.environ['VERIFY_BROWSER_FILE']) as f:
         d = json.load(f)
 except: sys.exit(0)
 if 'convex' not in d or d['convex'] is None:
@@ -215,19 +216,19 @@ if 'convex' not in d or d['convex'] is None:
 cvx = d['convex']
 existing_muts = {m.get('ref','') for m in cvx.get('mutations',[])}
 existing_acts = {a.get('ref','') for a in cvx.get('actions',[])}
-for ref in '''$MUT_REFS'''.strip().split('\n'):
+for ref in os.environ.get('VERIFY_MUT_REFS','').strip().split('\n'):
     ref = ref.strip()
     if ref and ref not in existing_muts:
         cvx.setdefault('mutations',[]).append({'ref':ref,'args':None})
-for ref in '''$ACT_REFS'''.strip().split('\n'):
+for ref in os.environ.get('VERIFY_ACT_REFS','').strip().split('\n'):
     ref = ref.strip()
     if ref and ref not in existing_acts:
         cvx.setdefault('actions',[]).append({'ref':ref,'args':None})
-for ref in '''$AI_REFS'''.strip().split('\n'):
+for ref in os.environ.get('VERIFY_AI_REFS','').strip().split('\n'):
     ref = ref.strip()
     if ref and ref not in existing_acts:
         cvx.setdefault('actions',[]).append({'ref':ref,'args':None})
-with open('$BROWSER_JSON_FILE','w') as f:
+with open(os.environ['VERIFY_BROWSER_FILE'],'w') as f:
     json.dump(d, f)
 " 2>/dev/null
       STATIC_COUNT=0
@@ -264,7 +265,7 @@ elif [ ! -f "$TEST_SPEC" ]; then
 fi
 
 # ─── Phase 4: Secret leak detection ──────────────────────
-if grep -qE 'PUBLISH_SECRET|sk-[a-zA-Z0-9]{20,}|secret.*=.*["\x27][a-zA-Z0-9_-]{20,}["\x27]' "$FILE" 2>/dev/null; then
+if grep -qE 'PUBLISH_SECRET|sk-[a-zA-Z0-9]{20,}|secret.*=.*["'"'"'][a-zA-Z0-9_-]{20,}["'"'"']' "$FILE" 2>/dev/null; then
   echo "│ secrets ✗ possible secret or API key in source"
   FAILED=1
 else

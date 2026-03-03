@@ -498,7 +498,7 @@ http.route({
     if (!slug || !SLUG_PATTERN.test(slug)) {
       return new Response("Invalid slug", { status: 400 });
     }
-    // Reject oversized payloads
+    // Reject oversized payloads (header check + body check)
     const contentLength = request.headers.get("Content-Length");
     if (contentLength && parseInt(contentLength, 10) > 4096) {
       return new Response("Payload too large", {
@@ -507,7 +507,14 @@ http.route({
       });
     }
     try {
-      const body = await request.json();
+      const rawBody = await request.text();
+      if (rawBody.length > 4096) {
+        return new Response("Payload too large", {
+          status: 413,
+          headers: { "Access-Control-Allow-Origin": "*" },
+        });
+      }
+      const body = JSON.parse(rawBody);
       await ctx.runMutation(api.errors.log, {
         slug,
         message: String(body.message || "Unknown error").slice(0, 1024),
@@ -814,6 +821,9 @@ http.route({
 });
 
 // POST /publish/:slug — publish a page via HTTP (used by publish.sh)
+// Accepts JSON body: { html, nousReport?, browserSchema? }
+// Or raw text body (plain HTML, no schemas) for backwards compat.
+// Auth: Bearer <PUBLISH_SECRET>
 http.route({
   pathPrefix: "/publish/",
   method: "POST",
@@ -834,18 +844,33 @@ http.route({
       });
     }
     const secret = auth.slice(7);
-    const html = await request.text();
+    const contentType = request.headers.get("Content-Type") || "";
+    let html: string;
+    let nousReport: string | undefined;
+    let browserSchema: string | undefined;
+    if (contentType.includes("application/json")) {
+      const body = await request.json() as { html: string; nousReport?: string; browserSchema?: string };
+      html = body.html;
+      nousReport = body.nousReport;
+      browserSchema = body.browserSchema;
+    } else {
+      html = await request.text();
+    }
     try {
-      await ctx.runMutation(api.pages.publish, { slug, html, secret });
-      return new Response("ok", {
+      await ctx.runMutation(api.pages.publish, {
+        slug, html, secret,
+        ...(nousReport ? { nousReport } : {}),
+        ...(browserSchema ? { browserSchema } : {}),
+      });
+      return new Response(JSON.stringify({ ok: true, slug }), {
         status: 200,
-        headers: adminCorsHeaders(request),
+        headers: { ...adminCorsHeaders(request), "Content-Type": "application/json" },
       });
     } catch (e) {
       console.error(`publish/${slug} failed:`, e);
-      return new Response("Unauthorized", {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: adminCorsHeaders(request),
+        headers: { ...adminCorsHeaders(request), "Content-Type": "application/json" },
       });
     }
   }),

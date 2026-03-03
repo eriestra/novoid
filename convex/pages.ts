@@ -64,7 +64,7 @@ export const version = query({
     const page = await ctx.db
       .query("pages")
       .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .unique();
+      .first();
     return page?.updatedAt ?? 0;
   },
 });
