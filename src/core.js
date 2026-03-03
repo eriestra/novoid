@@ -227,7 +227,8 @@ const Novoid = (() => {
     const store = {
       get: getState,
       set: (updater) => {
-        const next = typeof updater === 'function' ? updater(getState()) : updater;
+        const val = typeof updater === 'function' ? updater(getState()) : updater;
+        const next = (typeof val === 'object' && val !== null) ? Object.assign({}, getState(), val) : val;
         if (typeof next === 'object' && next !== null) Object.freeze(next);
         setState(next);
         listeners.forEach(fn => fn(getState()));
@@ -245,7 +246,7 @@ const Novoid = (() => {
     for (const [key, action] of Object.entries(actions)) {
       store.actions[key] = (...args) => {
         const partial = action(getState(), ...args);
-        store.set(Object.assign({}, getState(), partial));
+        store.set(partial);
       };
     }
 

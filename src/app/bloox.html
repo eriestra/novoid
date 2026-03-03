@@ -486,6 +486,7 @@
       undoStack: [],
       redoStack: [],
       _focusGen: 0,
+      _contentGen: 0,
     }, {
       // ── Block CRUD ──
       addBlock: function(state, opts) {
@@ -538,7 +539,11 @@
         }
         var u = pushUndo(state, false);
         // No `blocks` key — list() sees no change, skips re-render, focus preserved
-        return Object.assign({ focusId: id, focusOffset: offset != null ? offset : content.length }, u);
+        return Object.assign({
+          focusId: id,
+          focusOffset: offset != null ? offset : content.length,
+          _contentGen: state._contentGen + 1
+        }, u);
       },
 
       setBlockMeta: function(state, opts) {
@@ -1487,11 +1492,13 @@
         if (behavior === 'split') {
           e.preventDefault();
           var el = e.target;
+          var liveContent = el.textContent || '';
           var offset = getCursorOffset(el);
+          // Flush live DOM text before structural split/add operations.
+          store.actions.updateContent({ id: blockId, content: liveContent, offset: offset, editPos: offset });
           // Heading: split creates paragraph (not another heading)
           if (block.type === 'heading') {
-            var content = el.textContent || '';
-            if (offset >= content.length) {
+            if (offset >= liveContent.length) {
               // At end → just add paragraph below
               store.actions.addBlock({ afterId: blockId, type: 'paragraph' });
             } else {
@@ -1506,7 +1513,10 @@
         if (behavior === 'continue') {
           e.preventDefault();
           var el = e.target;
+          var liveContent2 = el.textContent || '';
           var offset = getCursorOffset(el);
+          // Keep list split/continue in sync with live DOM text.
+          store.actions.updateContent({ id: blockId, content: liveContent2, offset: offset, editPos: offset });
           store.actions.continueList({ id: blockId, offset: offset });
           return;
         }
@@ -1985,47 +1995,61 @@
     var docInfo = parseHash();
     var docId = docInfo.docId;
     var writeToken = docInfo.writeToken;
+    var isReadOnly = !writeToken;
     if (!writeToken) saveStatus[1]('readonly');
+    var _lastRemoteUpdatedAt = 0;
+    var _viewerSyncTimer = null;
 
-    // Load document on startup
-    (function loadDoc() {
-      fetch(ORIGIN + '/docs/' + docId).then(function(r) {
-        if (!r.ok) return; // 404 = new doc, nothing to load
+    function applyLoadedDoc(doc) {
+      if (!doc || doc.error) return;
+      var blocks = JSON.parse(doc.blocks);
+      // Restore custom block types first
+      if (doc.customBlocks) {
+        try {
+          var defs = JSON.parse(doc.customBlocks);
+          defs.forEach(function(def) { registerBlockTypeFull(def); });
+        } catch(e) {}
+      }
+      if (blocks.length) syncUidCounter(blocks);
+      batch(function() {
+        store.set({
+          doc: { title: doc.title || '', icon: doc.icon || '📝' },
+          blocks: blocks.length ? blocks : [makeBlock('paragraph', '')],
+          mode: 'edit',
+          focusId: null,
+          focusOffset: 0,
+          selectedIds: [],
+          handleMenuBlockId: null,
+          slashMenu: { active: false, blockId: null, query: '', x: 0, y: 0, idx: 0 },
+          expandedToggles: {},
+          undoStack: [],
+          redoStack: [],
+          _focusGen: 0,
+          _contentGen: 0,
+        });
+      });
+      // Set title in contenteditable after mount
+      requestAnimationFrame(function() {
+        var titleEl = document.querySelector('.b-title');
+        if (titleEl && doc.title) titleEl.textContent = doc.title;
+      });
+    }
+
+    function fetchDoc(opts) {
+      opts = opts || {};
+      return fetch(ORIGIN + '/docs/' + docId).then(function(r) {
+        if (!r.ok) return null; // 404 = new doc, nothing to load
         return r.json();
       }).then(function(doc) {
         if (!doc || doc.error) return;
-        var blocks = JSON.parse(doc.blocks);
-        // Restore custom block types first
-        if (doc.customBlocks) {
-          try {
-            var defs = JSON.parse(doc.customBlocks);
-            defs.forEach(function(def) { registerBlockTypeFull(def); });
-          } catch(e) {}
-        }
-        if (blocks.length) syncUidCounter(blocks);
-        batch(function() {
-          store.set({
-            doc: { title: doc.title || '', icon: doc.icon || '📝' },
-            blocks: blocks.length ? blocks : [makeBlock('paragraph', '')],
-            mode: 'edit',
-            focusId: null,
-            focusOffset: 0,
-            selectedIds: [],
-            handleMenuBlockId: null,
-            slashMenu: { active: false, blockId: null, query: '', x: 0, y: 0, idx: 0 },
-            expandedToggles: {},
-            undoStack: [],
-            redoStack: [],
-            _focusGen: 0,
-          });
-        });
-        // Set title in contenteditable after mount
-        requestAnimationFrame(function() {
-          var titleEl = document.querySelector('.b-title');
-          if (titleEl && doc.title) titleEl.textContent = doc.title;
-        });
+        if (!opts.force && doc.updatedAt && _lastRemoteUpdatedAt && doc.updatedAt <= _lastRemoteUpdatedAt) return;
+        _lastRemoteUpdatedAt = doc.updatedAt || Date.now();
+        applyLoadedDoc(doc);
       }).catch(function() {});
-    })();
+    }
+
+    // Load document on startup
+    (function loadDoc() { fetchDoc({ force: true }); })();
 
     // Auto-save: debounced, triggers on blocks or doc changes
     var _saveTimer = null;
@@ -2072,19 +2096,57 @@
       }).catch(function() { saveStatus[1]('error'); });
     }
 
-    function scheduleSave() {
+    function scheduleSave(delay) {
       clearTimeout(_saveTimer);
-      _saveTimer = setTimeout(autoSave, 1500);
+      _saveTimer = setTimeout(autoSave, delay == null ? 600 : delay);
     }
 
-    // Watch blocks + doc for changes
+    // Watch blocks + content generation + doc for changes
     var blocksForSave = store.select('blocks');
+    var contentGenForSave = store.select('_contentGen');
     var docForSave = store.select('doc');
+    var _saveEffectInit = false;
+    var _prevBlocksRef = null;
+    var _prevDocRef = null;
+    var _prevContentGen = null;
     effect(function() {
-      blocksForSave();
-      docForSave();
-      scheduleSave();
+      var blocksRef = blocksForSave();
+      var contentGen = contentGenForSave();
+      var docRef = docForSave();
+      if (!_saveEffectInit) {
+        _saveEffectInit = true;
+        _prevBlocksRef = blocksRef;
+        _prevDocRef = docRef;
+        _prevContentGen = contentGen;
+        return;
+      }
+      var blocksChanged = blocksRef !== _prevBlocksRef;
+      var docChanged = docRef !== _prevDocRef;
+      var contentChanged = contentGen !== _prevContentGen;
+      _prevBlocksRef = blocksRef;
+      _prevDocRef = docRef;
+      _prevContentGen = contentGen;
+      if (!writeToken) return;
+      // Tight debounce for typing, looser for structural/doc edits.
+      scheduleSave(contentChanged && !blocksChanged && !docChanged ? 200 : 600);
     });
+
+    // Read-only viewers poll for remote updates and never edit local DOM.
+    if (isReadOnly) {
+      _viewerSyncTimer = setInterval(function() {
+        fetchDoc({ force: false });
+      }, 300);
+
+      effect(function() {
+        blocksForSave();
+        requestAnimationFrame(function() {
+          var editableEls = document.querySelectorAll('.b-title, .b-content');
+          for (var i = 0; i < editableEls.length; i++) {
+            editableEls[i].setAttribute('contenteditable', 'false');
+          }
+        });
+      });
+    }
 
     // ── Mount ──
     N.mount('#app', function() {

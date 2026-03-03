@@ -53,23 +53,37 @@ fi
 . scripts/lib.sh
 load_env || exit 1
 
-# ─── Build publish args with schemas ─────────────────────
-HTML_JSON=$(json_file "$FILE")
-
-SCHEMA_ARGS=""
-if [ -s "$NOUS_JSON" ]; then
-  NOUS_ESC=$(json_file "$NOUS_JSON")
-  SCHEMA_ARGS="$SCHEMA_ARGS,\"nousReport\":$NOUS_ESC"
-fi
-if [ -s "$BROWSER_JSON" ]; then
-  BROWSER_ESC=$(json_file "$BROWSER_JSON")
-  SCHEMA_ARGS="$SCHEMA_ARGS,\"browserSchema\":$BROWSER_ESC"
-fi
+# ─── Build publish payload (JSON → temp file) ────────────
+PUBLISH_PAYLOAD="/tmp/novoid-publish-${$}.json"
+python3 -c "
+import sys, json
+html = open(sys.argv[1]).read()
+body = {'html': html}
+for label, path in [('nousReport', sys.argv[2]), ('browserSchema', sys.argv[3])]:
+    try:
+        c = open(path).read().strip()
+        if c: body[label] = c
+    except: pass
+with open(sys.argv[4], 'w') as f:
+    json.dump(body, f)
+" "$FILE" "$NOUS_JSON" "$BROWSER_JSON" "$PUBLISH_PAYLOAD"
 
 # Temp files cleaned up by EXIT trap
 
-# ─── Publish ───────────────────────────────────────────────
-npx convex run pages:publish "{\"slug\":\"$SLUG\",\"html\":$HTML_JSON,\"secret\":\"$PUBLISH_SECRET\"$SCHEMA_ARGS}"
+# ─── Publish via HTTP action (no npx cold start) ─────────
+PUBLISH_RESP=$(curl -s -w "\n%{http_code}" -X POST \
+  "${CONVEX_SITE_URL}/publish/${SLUG}" \
+  -H "Authorization: Bearer ${PUBLISH_SECRET}" \
+  -H "Content-Type: application/json" \
+  --data-binary "@${PUBLISH_PAYLOAD}")
+PUBLISH_HTTP=$(echo "$PUBLISH_RESP" | tail -1)
+PUBLISH_OUT=$(echo "$PUBLISH_RESP" | sed '$d')
+rm -f "$PUBLISH_PAYLOAD"
+
+if [ "$PUBLISH_HTTP" != "200" ]; then
+  echo "Publish failed (HTTP $PUBLISH_HTTP): $PUBLISH_OUT"
+  exit 1
+fi
 
 LIVE_URL="${CONVEX_SITE_URL}/app/${SLUG}"
 MCP_URL="${CONVEX_SITE_URL}/mcp/${SLUG}"
@@ -116,7 +130,6 @@ else
 fi
 
 # Phase 3: Sentinel (runtime errors from real browsers)
-sleep 2
 SENTINEL_OUT=$(npx convex run errors:recent "{\"slug\":\"${SLUG}\",\"limit\":5}" 2>/dev/null)
 SENTINEL_COUNT=$(printf '%s\n' "$SENTINEL_OUT" | python3 -c "
 import sys, json
