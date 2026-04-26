@@ -1,7 +1,7 @@
 {
   "steps": [
     { "action": "read", "resource": "isPlaying", "assert": { "eq": false } },
-    { "action": "read", "resource": "selectedCategory", "assert": { "eq": "Todas" } },
+    { "action": "read", "resource": "selectedCategory", "assert": { "eq": "All" } },
     { "action": "read", "resource": "searchQuery", "assert": { "eq": "" } },
     {
       "action": "call",
@@ -33,14 +33,14 @@
     {
       "action": "call",
       "tool": "selectCategory",
-      "args": "Audioguía",
-      "then": { "read": "selectedCategory", "assert": { "eq": "Audioguía" } }
+      "args": "Argument",
+      "then": { "read": "selectedCategory", "assert": { "eq": "Argument" } }
     },
     {
       "action": "call",
       "tool": "setSearch",
-      "args": "textil",
-      "then": { "read": "searchQuery", "assert": { "eq": "textil" } }
+      "args": "evidence",
+      "then": { "read": "searchQuery", "assert": { "eq": "evidence" } }
     },
     {
       "action": "call",
