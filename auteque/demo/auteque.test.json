@@ -1,0 +1,49 @@
+{
+  "steps": [
+    { "action": "read", "resource": "isPlaying", "assert": { "eq": false } },
+    { "action": "read", "resource": "highlighted", "assert": { "eq": "" } },
+    { "action": "read", "resource": "hoverRatio", "assert": { "eq": -1 } },
+    {
+      "action": "call",
+      "tool": "play",
+      "then": { "read": "isPlaying", "assert": { "eq": true } }
+    },
+    {
+      "action": "call",
+      "tool": "pause",
+      "then": { "read": "isPlaying", "assert": { "eq": false } }
+    },
+    {
+      "action": "call",
+      "tool": "toggle",
+      "then": { "read": "isPlaying", "assert": { "eq": true } }
+    },
+    {
+      "action": "call",
+      "tool": "ended",
+      "then": { "read": "isPlaying", "assert": { "eq": false } }
+    },
+    {
+      "action": "call",
+      "tool": "highlightConcept",
+      "args": "empathy-reduction",
+      "then": { "read": "highlighted", "assert": { "eq": "empathy-reduction" } }
+    },
+    {
+      "action": "call",
+      "tool": "clearHighlight",
+      "then": { "read": "highlighted", "assert": { "eq": "" } }
+    },
+    {
+      "action": "call",
+      "tool": "setHover",
+      "args": 0.5,
+      "then": { "read": "hoverRatio", "assert": { "eq": 0.5 } }
+    },
+    {
+      "action": "call",
+      "tool": "clearHover",
+      "then": { "read": "hoverRatio", "assert": { "eq": -1 } }
+    }
+  ]
+}

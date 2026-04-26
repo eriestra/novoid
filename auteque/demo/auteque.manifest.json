@@ -1,0 +1,153 @@
+{
+  "source": {
+    "name": "auteque-FVtvr-LgD_M.mp3",
+    "url": "/img/auteque-FVtvr-LgD_M.mp3",
+    "youtubeUrl": "https://www.youtube.com/watch?v=FVtvr-LgD_M",
+    "videoId": "FVtvr-LgD_M",
+    "title": "Why Politicians Keep Getting It So Wrong",
+    "uploader": "Barry's Economics",
+    "channelUrl": "https://www.youtube.com/channel/UCmdly8Nbb8Tki-hti9kC_zQ"
+  },
+  "duration": 1087,
+  "concepts": [
+    {
+      "id": "privilege-awareness",
+      "label": "Awareness of Privilege",
+      "color": "#10b981",
+      "ranges": [
+        {
+          "start": 0,
+          "end": 10,
+          "intensity": 0.8
+        },
+        {
+          "start": 36,
+          "end": 51,
+          "intensity": 0.7
+        },
+        {
+          "start": 209,
+          "end": 239,
+          "intensity": 0.6
+        },
+        {
+          "start": 1074,
+          "end": 1087,
+          "intensity": 0.5
+        }
+      ]
+    },
+    {
+      "id": "neuroscience-impacts",
+      "label": "Neuroscience Impacts",
+      "color": "#06b6d4",
+      "ranges": [
+        {
+          "start": 14,
+          "end": 38,
+          "intensity": 0.9
+        },
+        {
+          "start": 110,
+          "end": 138,
+          "intensity": 0.8
+        },
+        {
+          "start": 488,
+          "end": 517,
+          "intensity": 0.7
+        }
+      ]
+    },
+    {
+      "id": "empathy-reduction",
+      "label": "Empathy Reduction",
+      "color": "#ef4444",
+      "ranges": [
+        {
+          "start": 30,
+          "end": 58,
+          "intensity": 0.9
+        },
+        {
+          "start": 317,
+          "end": 341,
+          "intensity": 0.8
+        },
+        {
+          "start": 527,
+          "end": 550,
+          "intensity": 0.7
+        }
+      ]
+    },
+    {
+      "id": "homophily-concept",
+      "label": "Homophily Concept",
+      "color": "#f59e0b",
+      "ranges": [
+        {
+          "start": 103,
+          "end": 126,
+          "intensity": 0.8
+        },
+        {
+          "start": 417,
+          "end": 436,
+          "intensity": 0.7
+        },
+        {
+          "start": 951,
+          "end": 971,
+          "intensity": 0.5
+        }
+      ]
+    },
+    {
+      "id": "structural-filters",
+      "label": "Structural Filtering",
+      "color": "#14b8a6",
+      "ranges": [
+        {
+          "start": 206,
+          "end": 224,
+          "intensity": 0.9
+        },
+        {
+          "start": 414,
+          "end": 441,
+          "intensity": 0.6
+        },
+        {
+          "start": 785,
+          "end": 809,
+          "intensity": 0.5
+        }
+      ]
+    },
+    {
+      "id": "policy-bias",
+      "label": "Policy Bias",
+      "color": "#8b5cf6",
+      "ranges": [
+        {
+          "start": 568,
+          "end": 591,
+          "intensity": 0.8
+        },
+        {
+          "start": 975,
+          "end": 999,
+          "intensity": 0.6
+        },
+        {
+          "start": 1008,
+          "end": 1049,
+          "intensity": 0.7
+        }
+      ]
+    }
+  ],
+  "generatedAt": "2026-04-26T16:55:58.271Z",
+  "model": "openai/gpt-4o-mini"
+}

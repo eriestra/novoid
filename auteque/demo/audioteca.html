@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Audioteca — Why Politicians Keep Getting It So Wrong</title>
-  <meta name="description" content="A single talk segmented into navigable chunks. Built with no∅ as the auteque example.">
+  <title>Audioteca — no∅ example</title>
+  <meta name="description" content="Author-curated audio library built with novoid. Browse, filter, and play curated audio tracks.">
   <meta name="novoid-media" content="https://secret-aardvark-418.convex.site">
   <script>document.documentElement.setAttribute('data-theme','dark');</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -246,12 +246,12 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
         <div class="brand-mark">♪</div>
         <div class="brand-text">
           <h1>Audioteca</h1>
-          <p>Why Politicians Keep Getting It So Wrong · Barry's Economics</p>
+          <p>Colección curada · EVE Museografía</p>
         </div>
       </div>
       <div class="search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="search" type="text" placeholder="Search the audioteca…" autocomplete="off" spellcheck="false">
+        <input id="search" type="text" placeholder="Buscar en la audioteca…" autocomplete="off" spellcheck="false">
       </div>
     </header>
 
@@ -328,63 +328,71 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
     const SEED = [
       {
         id: 't1',
-        title: "Context of Benefit System Debate",
-        author: "Barry's Economics",
-        category: 'Premise',
-        icon: 'lecture',
+        title: 'Bienvenida a la Audioteca',
+        author: 'EVE Museografía',
+        category: 'Introducción',
+        icon: 'intro',
         url: '/img/audioteca-t1.mp3'
       },
       {
         id: 't2',
-        title: "Science's Role in Understanding Poverty",
-        author: "Barry's Economics",
-        category: 'Argument',
+        title: 'La narrativa en la museografía contemporánea',
+        author: 'Dra. Elena Vargas',
+        category: 'Conferencia',
         icon: 'lecture',
         url: '/img/audioteca-t2.mp3'
       },
       {
         id: 't3',
-        title: "Empathy Reduction in Wealthy Individuals",
-        author: "Barry's Economics",
-        category: 'Evidence',
-        icon: 'lecture',
+        title: 'Sala 4 · Arte prehispánico',
+        author: 'Audioguía oficial',
+        category: 'Audioguía',
+        icon: 'guide',
         url: '/img/audioteca-t3.mp3'
       },
       {
         id: 't4',
-        title: "Consequences of Homophily in Policy Making",
-        author: "Barry's Economics",
-        category: 'Argument',
+        title: 'Diseño de experiencias inmersivas',
+        author: 'Arq. Manuel Herrera',
+        category: 'Conferencia',
         icon: 'lecture',
         url: '/img/audioteca-t4.mp3'
       },
       {
         id: 't5',
-        title: "Blind Spots in Economic Policy",
-        author: "Barry's Economics",
-        category: 'Synthesis',
-        icon: 'lecture',
+        title: 'Conversación con Isabela Trejo',
+        author: 'Podcast EVE',
+        category: 'Entrevista',
+        icon: 'interview',
         url: '/img/audioteca-t5.mp3'
       },
       {
         id: 't6',
-        title: "Strategies for Inclusive Decision Making",
-        author: "Barry's Economics",
-        category: 'Synthesis',
+        title: 'Sala 7 · Colección textil',
+        author: 'Audioguía oficial',
+        category: 'Audioguía',
         icon: 'guide',
         url: '/img/audioteca-t6.mp3'
       },
       {
         id: 't7',
-        title: "The Importance of Evidence-Based Debates",
-        author: "Barry's Economics",
-        category: 'Argument',
-        icon: 'guide',
+        title: 'Iluminación museográfica',
+        author: 'Ing. Claudia Ríos',
+        category: 'Conferencia',
+        icon: 'lecture',
         url: '/img/audioteca-t7.mp3'
+      },
+      {
+        id: 't8',
+        title: 'Entrevista · Curaduría emergente',
+        author: 'Podcast EVE',
+        category: 'Entrevista',
+        icon: 'interview',
+        url: '/img/audioteca-t8.mp3'
       }
     ];
 
-    const CATEGORIES = ['All', 'Premise', 'Argument', 'Evidence', 'Synthesis'];
+    const CATEGORIES = ['Todas', 'Introducción', 'Conferencia', 'Audioguía', 'Entrevista'];
 
     // ── Store ─────────────────────────────────────────────────────
     const store = N.createStore(
@@ -392,7 +400,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
         tracks: SEED,
         currentTrackId: null,
         isPlaying: false,
-        selectedCategory: 'All',
+        selectedCategory: 'Todas',
         searchQuery: '',
         currentTime: 0,
         duration: 0,
@@ -437,7 +445,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
       const q = (state.searchQuery || '').trim().toLowerCase();
       const cat = state.selectedCategory;
       return state.tracks.filter(t => {
-        if (cat !== 'All' && t.category !== cat) return false;
+        if (cat !== 'Todas' && t.category !== cat) return false;
         if (q && !(t.title.toLowerCase().includes(q) || t.author.toLowerCase().includes(q))) return false;
         return true;
       });
@@ -531,7 +539,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
       if (!list.length) {
         const empty = document.createElement('div');
         empty.className = 'empty';
-        empty.innerHTML = '<div class="empty-icon">∅</div><div class="empty-title">No results</div><div class="empty-sub">Try a different category or search term.</div>';
+        empty.innerHTML = '<div class="empty-icon">∅</div><div class="empty-title">Sin resultados</div><div class="empty-sub">Prueba otra categoría o término de búsqueda.</div>';
         tracksEl.appendChild(empty);
         return;
       }

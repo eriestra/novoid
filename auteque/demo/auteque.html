@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>auteque — Meaning Timeline</title>
+  <meta name="description" content="A talk turned into a visual map of meaning over time. Built with no∅.">
+  <meta name="novoid-media" content="https://secret-aardvark-418.convex.site">
+  <script>document.documentElement.setAttribute('data-theme','dark');</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/core.min.css">
+  <link rel="stylesheet" href="../css/components.min.css">
+  <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0a0b10;
+  color: #d4d6dc;
+  font-family: var(--nv-font-sans);
+  min-height: 100vh;
+  padding-bottom: 7rem;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(ellipse 55% 40% at 15% 10%, rgba(168,85,247,0.09) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 50% at 85% 80%, rgba(6,182,212,0.06) 0%, transparent 65%);
+}
+
+.page { max-width: 960px; margin: 0 auto; padding: 0 1.5rem; }
+
+/* ── Header ─────────────────────────────────── */
+.top {
+  padding: 4rem 0 2rem;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 2rem; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 0.85rem; }
+.brand-mark {
+  width: 48px; height: 48px; border-radius: 12px;
+  background: linear-gradient(135deg, #a855f7 0%, #06b6d4 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; color: white;
+  box-shadow: 0 8px 24px rgba(168,85,247,0.25);
+}
+.brand-text h1 {
+  font-family: var(--nv-font-display);
+  font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em;
+  color: #f2f3f7;
+}
+.brand-text p {
+  font-size: 0.82rem; color: #7a7e90;
+}
+
+.tagline {
+  font-size: 0.78rem; color: #7a7e90;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  font-family: var(--nv-font-mono);
+}
+
+/* ── Source attribution ─────────────────────── */
+.source {
+  margin-bottom: 2rem;
+  padding: 0.9rem 1.1rem;
+  background: #12131a; border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+}
+.source-title { font-weight: 600; color: #f0f1f5; font-size: 0.95rem; }
+.source-meta { font-size: 0.78rem; color: #7a7e90; }
+.source-link {
+  font-size: 0.75rem; color: #a855f7;
+  font-family: var(--nv-font-mono);
+}
+.source-link:hover { text-decoration: underline; }
+
+/* ── Plot ───────────────────────────────────── */
+.plot-wrap {
+  position: relative;
+  margin-bottom: 1.25rem;
+  padding: 1.25rem 0.5rem 0.5rem;
+  background: #0e0f15;
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 14px;
+}
+.plot-svg {
+  display: block; width: 100%; height: 280px;
+  cursor: crosshair;
+  user-select: none;
+}
+.axis {
+  display: flex; justify-content: space-between;
+  padding: 0.25rem 0.75rem 0;
+  font-family: var(--nv-font-mono);
+  font-size: 0.7rem; color: #5a5d6e;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(15, 16, 22, 0.96);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.78rem;
+  color: #e5e7ee;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+  min-width: 140px;
+  z-index: 5;
+  transform: translate(-50%, calc(-100% - 12px));
+  opacity: 0; transition: opacity 0.12s;
+}
+.tooltip.visible { opacity: 1; }
+.tooltip-time {
+  font-family: var(--nv-font-mono);
+  font-size: 0.74rem; color: #9397a8;
+  margin-bottom: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+.tt-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 0.18rem;
+  font-size: 0.74rem;
+}
+.tt-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tt-label { flex: 1; color: #c8ccdb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tt-val {
+  font-family: var(--nv-font-mono);
+  color: #9397a8;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Lens chips ─────────────────────────────── */
+.lenses-label {
+  margin-top: 1.5rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b6f80;
+  font-family: var(--nv-font-mono);
+}
+.chips {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem;
+}
+.chip {
+  padding: 0.45rem 0.85rem 0.45rem 0.7rem;
+  border-radius: 999px; font-size: 0.82rem; font-weight: 500;
+  background: #13141b; border: 1px solid rgba(255,255,255,0.06);
+  color: #8e92a5;
+  display: flex; align-items: center; gap: 0.5rem;
+  transition: all 0.18s;
+}
+.chip:hover { color: #d4d6dc; border-color: rgba(255,255,255,0.16); }
+.chip-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #888; flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.4) inset;
+  transition: all 0.18s;
+}
+.chip.active { color: #f2f3f7; border-color: rgba(255,255,255,0.18); }
+.chip.dim { opacity: 0.35; }
+
+/* ── Player bar (sticky bottom) ─────────────── */
+.player {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: rgba(10, 11, 16, 0.92);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 0.9rem 1.5rem;
+  z-index: 50;
+}
+.player-inner {
+  max-width: 960px; margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.2fr);
+  align-items: center; gap: 1.5rem;
+}
+.player-track { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.player-cover {
+  width: 42px; height: 42px; border-radius: 8px;
+  background: linear-gradient(135deg, #a855f7, #06b6d4);
+  display: flex; align-items: center; justify-content: center;
+  color: white; flex-shrink: 0;
+  font-weight: 700;
+}
+.player-info { min-width: 0; }
+.player-title {
+  font-size: 0.88rem; font-weight: 600; color: #f0f1f5;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.player-author {
+  font-size: 0.75rem; color: #7a7e90;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.player-controls { display: flex; align-items: center; gap: 0.5rem; justify-content: center; }
+.ctrl {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #9397a8; transition: all 0.18s;
+}
+.ctrl:hover { color: #f2f3f7; background: rgba(255,255,255,0.05); }
+.ctrl.primary {
+  width: 42px; height: 42px;
+  background: #f2f3f7; color: #0a0b10;
+}
+.ctrl.primary:hover { background: white; transform: scale(1.05); }
+.player-seek { display: flex; align-items: center; gap: 0.75rem; }
+.time {
+  font-family: var(--nv-font-mono);
+  font-size: 0.75rem; color: #7a7e90;
+  font-variant-numeric: tabular-nums;
+  min-width: 3rem; text-align: center;
+}
+.seekbar {
+  flex: 1; height: 4px;
+  background: rgba(255,255,255,0.08); border-radius: 2px;
+  position: relative; cursor: pointer; overflow: hidden;
+}
+.seekbar-fill {
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, #a855f7, #06b6d4);
+  transform-origin: left;
+}
+
+@media (max-width: 720px) {
+  .top { padding: 2.5rem 0 1.5rem; }
+  .plot-svg { height: 220px; }
+  .player-inner { grid-template-columns: minmax(0, 1fr) auto; }
+  .player-seek { display: none; }
+}
+  </style>
+</head>
+<body>
+  <div class="ambient"></div>
+  <main class="page">
+    <header class="top">
+      <div class="brand">
+        <div class="brand-mark">∿</div>
+        <div class="brand-text">
+          <h1>auteque</h1>
+          <p>Meaning Timeline · audio stops being linear</p>
+        </div>
+      </div>
+      <div class="tagline">v1 · concepts on a shared timeline</div>
+    </header>
+
+    <div class="source" id="source">
+      <div>
+        <div class="source-title" id="srcTitle">—</div>
+        <div class="source-meta" id="srcMeta">—</div>
+      </div>
+      <a id="srcLink" href="#" target="_blank" rel="noopener" class="source-link">↗ source</a>
+    </div>
+
+    <div class="plot-wrap">
+      <svg id="plot" class="plot-svg" viewBox="0 0 960 280" preserveAspectRatio="none"></svg>
+      <div id="tooltip" class="tooltip"></div>
+    </div>
+    <div id="axis" class="axis"></div>
+
+    <div class="lenses-label">Lenses</div>
+    <div id="chips" class="chips"></div>
+  </main>
+
+  <div class="player">
+    <div class="player-inner">
+      <div class="player-track">
+        <div class="player-cover">∿</div>
+        <div class="player-info">
+          <div id="pTitle" class="player-title">—</div>
+          <div id="pAuthor" class="player-author">—</div>
+        </div>
+      </div>
+      <div class="player-controls">
+        <button id="btnPlay" class="ctrl primary" aria-label="Play/Pause">
+          <svg id="iconPlay" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:block"><path d="M8 5v14l11-7z"/></svg>
+          <svg id="iconPause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+        </button>
+      </div>
+      <div class="player-seek">
+        <span id="tCur" class="time">0:00</span>
+        <div id="seekbar" class="seekbar">
+          <div id="seekFill" class="seekbar-fill" style="transform: scaleX(0)"></div>
+        </div>
+        <span id="tDur" class="time">0:00</span>
+      </div>
+    </div>
+  </div>
+
+  <script>window.__AUTEQUE__={"source":{"name":"auteque-FVtvr-LgD_M.mp3","url":"/img/auteque-FVtvr-LgD_M.mp3","youtubeUrl":"https://www.youtube.com/watch?v=FVtvr-LgD_M","videoId":"FVtvr-LgD_M","title":"Why Politicians Keep Getting It So Wrong","uploader":"Barry's Economics","channelUrl":"https://www.youtube.com/channel/UCmdly8Nbb8Tki-hti9kC_zQ"},"duration":1087,"concepts":[{"id":"privilege-awareness","label":"Awareness of Privilege","color":"#10b981","ranges":[{"start":0,"end":10,"intensity":0.8},{"start":36,"end":51,"intensity":0.7},{"start":209,"end":239,"intensity":0.6},{"start":1074,"end":1087,"intensity":0.5}]},{"id":"neuroscience-impacts","label":"Neuroscience Impacts","color":"#06b6d4","ranges":[{"start":14,"end":38,"intensity":0.9},{"start":110,"end":138,"intensity":0.8},{"start":488,"end":517,"intensity":0.7}]},{"id":"empathy-reduction","label":"Empathy Reduction","color":"#ef4444","ranges":[{"start":30,"end":58,"intensity":0.9},{"start":317,"end":341,"intensity":0.8},{"start":527,"end":550,"intensity":0.7}]},{"id":"homophily-concept","label":"Homophily Concept","color":"#f59e0b","ranges":[{"start":103,"end":126,"intensity":0.8},{"start":417,"end":436,"intensity":0.7},{"start":951,"end":971,"intensity":0.5}]},{"id":"structural-filters","label":"Structural Filtering","color":"#14b8a6","ranges":[{"start":206,"end":224,"intensity":0.9},{"start":414,"end":441,"intensity":0.6},{"start":785,"end":809,"intensity":0.5}]},{"id":"policy-bias","label":"Policy Bias","color":"#8b5cf6","ranges":[{"start":568,"end":591,"intensity":0.8},{"start":975,"end":999,"intensity":0.6},{"start":1008,"end":1049,"intensity":0.7}]}],"generatedAt":"2026-04-26T16:55:58.271Z","model":"openai/gpt-4o-mini"};</script>
+  <script src="../js/core.min.js"></script>
+  <script>
+  (function () {
+    const N = Novoid;
+
+    // ── Manifest (inlined at gen time) ────────────────────────────
+    const MANIFEST = window.__AUTEQUE__;
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+
+    const PLOT_W = 960;
+    const PLOT_H = 280;
+    const PAD_L = 12, PAD_R = 12, PAD_T = 12, PAD_B = 28;
+    const INNER_W = PLOT_W - PAD_L - PAD_R;
+    const INNER_H = PLOT_H - PAD_T - PAD_B;
+    const N_SAMPLES = 200;
+
+    const fmtTime = (s) => {
+      if (!s || !isFinite(s)) return '0:00';
+      const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+      return m + ':' + (sec < 10 ? '0' : '') + sec;
+    };
+
+    // ── Density (KDE on ranges) ───────────────────────────────────
+    // Each range contributes a Gaussian centered at its midpoint with sigma
+    // proportional to its width. Result: smooth concept curves per spec §6.1.
+    function rangesToCurve(ranges, duration, samples) {
+      const ys = new Array(samples).fill(0);
+      for (let i = 0; i < samples; i++) {
+        const x = (i / (samples - 1)) * duration;
+        for (const r of ranges) {
+          const center = (r.start + r.end) / 2;
+          const halfWidth = (r.end - r.start) / 2;
+          const sigma = Math.max(halfWidth + 18, 22);
+          const z = (x - center) / sigma;
+          ys[i] += r.intensity * Math.exp(-z * z * 0.5);
+        }
+      }
+      let max = 0;
+      for (const v of ys) if (v > max) max = v;
+      if (max > 0) for (let i = 0; i < samples; i++) ys[i] /= max;
+      return ys;
+    }
+
+    // Pre-compute curves once per concept (manifest is static)
+    const conceptCurves = MANIFEST.concepts.map(c => ({
+      ...c,
+      curve: rangesToCurve(c.ranges, MANIFEST.duration, N_SAMPLES)
+    }));
+
+    // ── Store ─────────────────────────────────────────────────────
+    const initialActive = {};
+    for (const c of conceptCurves) initialActive[c.id] = true;
+
+    const store = N.createStore(
+      {
+        currentTime: 0,
+        duration: MANIFEST.duration,
+        isPlaying: false,
+        active: initialActive,
+        highlighted: '',
+        hoverRatio: -1,
+        seekRequest: null
+      },
+      {
+        play() { return { isPlaying: true }; },
+        pause() { return { isPlaying: false }; },
+        toggle(state) { return { isPlaying: !state.isPlaying }; },
+        ended() { return { isPlaying: false, currentTime: 0 }; },
+        setTime(_, { currentTime, duration }) {
+          return { currentTime, duration: duration || MANIFEST.duration };
+        },
+        seek(_, ratio) { return { seekRequest: { ratio, at: Date.now() } }; },
+        toggleConcept(state, id) {
+          const next = Object.assign({}, state.active);
+          next[id] = !next[id];
+          return { active: next };
+        },
+        highlightConcept(_, id) { return { highlighted: id }; },
+        clearHighlight() { return { highlighted: '' }; },
+        setHover(_, ratio) { return { hoverRatio: ratio }; },
+        clearHover() { return { hoverRatio: -1 }; }
+      }
+    );
+
+    // ── Source attribution ────────────────────────────────────────
+    document.getElementById('srcTitle').textContent = MANIFEST.source.title;
+    document.getElementById('srcMeta').textContent = MANIFEST.source.uploader + ' · ' + fmtTime(MANIFEST.duration);
+    const srcLink = document.getElementById('srcLink');
+    srcLink.href = MANIFEST.source.youtubeUrl;
+    document.getElementById('pTitle').textContent = MANIFEST.source.title;
+    document.getElementById('pAuthor').textContent = MANIFEST.source.uploader;
+
+    // ── Audio singleton (guarded for headless verifier) ───────────
+    const currentTime = store.select('currentTime');
+    const isPlaying = store.select('isPlaying');
+    const seekReq = store.select('seekRequest');
+    const audio = (typeof Audio !== 'undefined') ? new Audio() : null;
+
+    if (audio) {
+      audio.preload = 'metadata';
+      audio.src = MANIFEST.source.url;
+      audio.addEventListener('timeupdate', () => {
+        store.actions.setTime({ currentTime: audio.currentTime, duration: audio.duration || MANIFEST.duration });
+      });
+      audio.addEventListener('loadedmetadata', () => {
+        store.actions.setTime({ currentTime: audio.currentTime, duration: audio.duration || MANIFEST.duration });
+      });
+      audio.addEventListener('ended', () => store.actions.ended());
+
+      N.effect(() => {
+        const playing = isPlaying();
+        if (playing) {
+          const p = audio.play();
+          if (p && p.catch) p.catch(() => store.actions.pause());
+        } else {
+          audio.pause();
+        }
+      });
+
+      N.effect(() => {
+        const req = seekReq();
+        if (!req) return;
+        const d = audio.duration || MANIFEST.duration;
+        if (d) audio.currentTime = req.ratio * d;
+      });
+    }
+
+    // ── SVG plot ──────────────────────────────────────────────────
+    const svg = document.getElementById('plot');
+
+    // Background grid lines (subtle, every 25%)
+    for (let i = 1; i <= 3; i++) {
+      const y = PAD_T + (INNER_H * i) / 4;
+      const ln = document.createElementNS(SVG_NS, 'line');
+      ln.setAttribute('x1', PAD_L);
+      ln.setAttribute('x2', PLOT_W - PAD_R);
+      ln.setAttribute('y1', y);
+      ln.setAttribute('y2', y);
+      ln.setAttribute('stroke', 'rgba(255,255,255,0.03)');
+      ln.setAttribute('stroke-width', '1');
+      svg.appendChild(ln);
+    }
+
+    // Helpers
+    function buildPath(ys) {
+      let d = '';
+      for (let i = 0; i < ys.length; i++) {
+        const x = PAD_L + (i / (ys.length - 1)) * INNER_W;
+        const y = PAD_T + INNER_H - ys[i] * INNER_H;
+        d += (i === 0 ? 'M' : 'L') + x.toFixed(2) + ',' + y.toFixed(2);
+      }
+      return d;
+    }
+    function buildArea(ys) {
+      const line = buildPath(ys);
+      const xN = PAD_L + INNER_W;
+      const yBase = PAD_T + INNER_H;
+      return line + ' L' + xN.toFixed(2) + ',' + yBase + ' L' + PAD_L + ',' + yBase + ' Z';
+    }
+
+    // Render concept paths
+    const conceptElems = {};
+    for (const c of conceptCurves) {
+      const g = document.createElementNS(SVG_NS, 'g');
+      g.setAttribute('data-concept', c.id);
+      const area = document.createElementNS(SVG_NS, 'path');
+      area.setAttribute('d', buildArea(c.curve));
+      area.setAttribute('fill', c.color);
+      area.setAttribute('fill-opacity', '0.12');
+      area.setAttribute('stroke', 'none');
+      const stroke = document.createElementNS(SVG_NS, 'path');
+      stroke.setAttribute('d', buildPath(c.curve));
+      stroke.setAttribute('fill', 'none');
+      stroke.setAttribute('stroke', c.color);
+      stroke.setAttribute('stroke-width', '1.8');
+      stroke.setAttribute('stroke-linejoin', 'round');
+      stroke.setAttribute('stroke-linecap', 'round');
+      g.appendChild(area);
+      g.appendChild(stroke);
+      svg.appendChild(g);
+      conceptElems[c.id] = { g, area, stroke };
+    }
+
+    // Hover guide line + playhead (drawn last so they sit on top)
+    const hoverLine = document.createElementNS(SVG_NS, 'line');
+    hoverLine.setAttribute('y1', PAD_T);
+    hoverLine.setAttribute('y2', PAD_T + INNER_H);
+    hoverLine.setAttribute('stroke', 'rgba(255,255,255,0.25)');
+    hoverLine.setAttribute('stroke-width', '1');
+    hoverLine.setAttribute('stroke-dasharray', '3,3');
+    hoverLine.setAttribute('opacity', '0');
+    svg.appendChild(hoverLine);
+
+    const playhead = document.createElementNS(SVG_NS, 'line');
+    playhead.setAttribute('y1', PAD_T);
+    playhead.setAttribute('y2', PAD_T + INNER_H);
+    playhead.setAttribute('stroke', '#f97316');
+    playhead.setAttribute('stroke-width', '2');
+    playhead.setAttribute('opacity', '0');
+    svg.appendChild(playhead);
+
+    // ── Reactivity: visibility + highlight ────────────────────────
+    const active = store.select('active');
+    const highlighted = store.select('highlighted');
+    N.effect(() => {
+      const a = active();
+      const h = highlighted();
+      for (const c of conceptCurves) {
+        const isActive = a[c.id] !== false;
+        const dim = h && h !== c.id;
+        const els = conceptElems[c.id];
+        if (!isActive) {
+          els.area.setAttribute('fill-opacity', '0');
+          els.stroke.setAttribute('stroke-opacity', '0');
+          continue;
+        }
+        if (h) {
+          if (dim) {
+            els.area.setAttribute('fill-opacity', '0');
+            els.stroke.setAttribute('stroke-opacity', '0.18');
+          } else {
+            els.area.setAttribute('fill-opacity', '0.22');
+            els.stroke.setAttribute('stroke-opacity', '1');
+          }
+        } else {
+          els.area.setAttribute('fill-opacity', '0.12');
+          els.stroke.setAttribute('stroke-opacity', '1');
+        }
+      }
+    });
+
+    // Playhead position
+    const duration = store.select('duration');
+    N.effect(() => {
+      const c = currentTime();
+      const d = duration() || MANIFEST.duration;
+      if (!d) return;
+      const ratio = Math.max(0, Math.min(1, c / d));
+      const x = PAD_L + ratio * INNER_W;
+      playhead.setAttribute('x1', x);
+      playhead.setAttribute('x2', x);
+      playhead.setAttribute('opacity', c > 0 ? '1' : '0');
+    });
+
+    // Hover line position
+    const hoverRatio = store.select('hoverRatio');
+    N.effect(() => {
+      const r = hoverRatio();
+      if (r < 0) {
+        hoverLine.setAttribute('opacity', '0');
+        return;
+      }
+      const x = PAD_L + r * INNER_W;
+      hoverLine.setAttribute('x1', x);
+      hoverLine.setAttribute('x2', x);
+      hoverLine.setAttribute('opacity', '1');
+    });
+
+    // ── Tooltip ───────────────────────────────────────────────────
+    const tooltipEl = document.getElementById('tooltip');
+    const plotWrap = svg.parentElement;
+    function valueAt(curve, ratio) {
+      const idx = Math.max(0, Math.min(N_SAMPLES - 1, Math.round(ratio * (N_SAMPLES - 1))));
+      return curve[idx];
+    }
+    N.effect(() => {
+      const r = hoverRatio();
+      const a = active();
+      if (r < 0) {
+        tooltipEl.classList.remove('visible');
+        return;
+      }
+      const t = r * MANIFEST.duration;
+      const rows = conceptCurves
+        .filter(c => a[c.id] !== false)
+        .map(c => ({ c, v: valueAt(c.curve, r) }))
+        .sort((x, y) => y.v - x.v)
+        .slice(0, 4);
+      tooltipEl.innerHTML =
+        '<div class="tooltip-time">' + fmtTime(t) + '</div>' +
+        rows.map(({ c, v }) =>
+          '<div class="tt-row">' +
+            '<span class="tt-dot" style="background:' + c.color + '"></span>' +
+            '<span class="tt-label">' + c.label + '</span>' +
+            '<span class="tt-val">' + v.toFixed(2) + '</span>' +
+          '</div>'
+        ).join('');
+      const wrapW = plotWrap.clientWidth || PLOT_W;
+      const px = r * wrapW;
+      tooltipEl.style.left = px + 'px';
+      tooltipEl.style.top = '60px';
+      tooltipEl.classList.add('visible');
+    });
+
+    // ── Plot interactions ─────────────────────────────────────────
+    function ratioFromEvent(ev) {
+      const rect = svg.getBoundingClientRect();
+      const x = ev.clientX - rect.left;
+      return Math.max(0, Math.min(1, x / rect.width));
+    }
+    svg.addEventListener('mousemove', (ev) => store.actions.setHover(ratioFromEvent(ev)));
+    svg.addEventListener('mouseleave', () => store.actions.clearHover());
+    svg.addEventListener('click', (ev) => {
+      const r = ratioFromEvent(ev);
+      store.actions.seek(r);
+      if (!isPlaying()) store.actions.play();
+    });
+
+    // ── Time axis ─────────────────────────────────────────────────
+    const axisEl = document.getElementById('axis');
+    function buildAxis() {
+      const d = MANIFEST.duration;
+      const stepCandidates = [30, 60, 120, 180, 300, 600];
+      let step = stepCandidates[0];
+      for (const s of stepCandidates) { if (d / s <= 8) { step = s; break; } }
+      const ticks = [];
+      for (let t = 0; t <= d + 0.5; t += step) ticks.push(Math.min(t, d));
+      if (ticks[ticks.length - 1] < d - 1) ticks.push(d);
+      axisEl.innerHTML = '';
+      for (let i = 0; i < ticks.length; i++) {
+        const span = document.createElement('span');
+        span.textContent = fmtTime(ticks[i]);
+        axisEl.appendChild(span);
+      }
+    }
+    buildAxis();
+
+    // ── Lens chips ────────────────────────────────────────────────
+    const chipsEl = document.getElementById('chips');
+    for (const c of conceptCurves) {
+      const b = document.createElement('button');
+      b.className = 'chip';
+      b.innerHTML = '<span class="chip-dot"></span><span>' + c.label + '</span>';
+      const dot = b.querySelector('.chip-dot');
+      if (dot) dot.style.background = c.color;
+      b.addEventListener('click', () => store.actions.toggleConcept(c.id));
+      b.addEventListener('mouseenter', () => store.actions.highlightConcept(c.id));
+      b.addEventListener('mouseleave', () => store.actions.clearHighlight());
+      chipsEl.appendChild(b);
+      N.effect(() => {
+        const a = active();
+        const h = highlighted();
+        const isActive = a[c.id] !== false;
+        b.classList.toggle('active', isActive);
+        b.classList.toggle('dim', h !== '' && h !== c.id);
+        if (dot) {
+          dot.style.boxShadow = isActive
+            ? '0 0 8px ' + c.color
+            : '0 0 0 2px rgba(0,0,0,0.4) inset';
+        }
+      });
+    }
+
+    // ── Player bar bindings ───────────────────────────────────────
+    const tCur = document.getElementById('tCur');
+    const tDur = document.getElementById('tDur');
+    const seekFill = document.getElementById('seekFill');
+    const seekbar = document.getElementById('seekbar');
+    const iconPlay = document.getElementById('iconPlay');
+    const iconPause = document.getElementById('iconPause');
+    const btnPlay = document.getElementById('btnPlay');
+
+    N.effect(() => {
+      const c = currentTime(), d = duration() || MANIFEST.duration;
+      tCur.textContent = fmtTime(c);
+      tDur.textContent = fmtTime(d);
+      const ratio = d > 0 ? c / d : 0;
+      seekFill.style.transform = 'scaleX(' + ratio + ')';
+    });
+    N.effect(() => {
+      const p = isPlaying();
+      iconPlay.style.display = p ? 'none' : 'block';
+      iconPause.style.display = p ? 'block' : 'none';
+    });
+
+    btnPlay.addEventListener('click', () => store.actions.toggle());
+    seekbar.addEventListener('click', (ev) => {
+      const rect = seekbar.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+      store.actions.seek(ratio);
+    });
+
+    // Expose for MCP test harness
+    window.__store = store;
+  })();
+  </script>
+</body>
+</html>

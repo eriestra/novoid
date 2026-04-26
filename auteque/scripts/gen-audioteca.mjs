@@ -150,11 +150,12 @@ async function uploadMp3(name, buffer) {
     console.log(`   ${role.padEnd(15)} ${v.name} (${v.voice_id})`);
   }
 
+  const FORCE = process.env.FORCE === '1';
   const urls = {};
   for (const track of TRACKS) {
     const name = `audioteca-${track.id}.mp3`;
     const existing = await convex.query('files:getUrl', { name });
-    if (existing) {
+    if (existing && !FORCE) {
       urls[track.id] = `/img/${name}`;
       console.log(`→ ${track.id} [cached] ${track.title}`);
       continue;
