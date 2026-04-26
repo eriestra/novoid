@@ -1,0 +1,51 @@
+{
+  "steps": [
+    { "action": "read", "resource": "isPlaying", "assert": { "eq": false } },
+    { "action": "read", "resource": "selectedCategory", "assert": { "eq": "Todas" } },
+    { "action": "read", "resource": "searchQuery", "assert": { "eq": "" } },
+    {
+      "action": "call",
+      "tool": "play",
+      "args": "t1",
+      "then": { "read": "currentTrackId", "assert": { "eq": "t1" } }
+    },
+    { "action": "read", "resource": "isPlaying", "assert": { "eq": true } },
+    {
+      "action": "call",
+      "tool": "pause",
+      "then": { "read": "isPlaying", "assert": { "eq": false } }
+    },
+    {
+      "action": "call",
+      "tool": "toggle",
+      "then": { "read": "isPlaying", "assert": { "eq": true } }
+    },
+    {
+      "action": "call",
+      "tool": "next",
+      "then": { "read": "currentTrackId", "assert": { "eq": "t2" } }
+    },
+    {
+      "action": "call",
+      "tool": "previous",
+      "then": { "read": "currentTrackId", "assert": { "eq": "t1" } }
+    },
+    {
+      "action": "call",
+      "tool": "selectCategory",
+      "args": "Audioguía",
+      "then": { "read": "selectedCategory", "assert": { "eq": "Audioguía" } }
+    },
+    {
+      "action": "call",
+      "tool": "setSearch",
+      "args": "textil",
+      "then": { "read": "searchQuery", "assert": { "eq": "textil" } }
+    },
+    {
+      "action": "call",
+      "tool": "ended",
+      "then": { "read": "isPlaying", "assert": { "eq": false } }
+    }
+  ]
+}
