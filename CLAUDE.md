@@ -30,6 +30,7 @@ Why: no∅ is built for agents. Agents don't manage deployment pipelines, promot
 |novoid-motion.md       — Motion.dev: animate, scroll, stagger, timeline, inView, spring
 |novoid-cdp.md          — CDP browser control: browse, scrape, screenshot, Nex skills, Convex actions
 |novoid-improve.md      — feature expansion checklist, consistency rules, agent SEO
+|novoid-security.md     — supply chain threat model, TanStack postmortem analysis, convex/vitest/esbuild risk, hardening checklist
 ```
 
 ```
