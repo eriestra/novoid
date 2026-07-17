@@ -1,26 +1,59 @@
-# novoid-minimal — the minimal tier
+---
+name: novoid
+description: Build a live web app from a plain description using no∅'s minimal tier — one self-contained HTML file with a ~2.5 KB inline reactive core, zero build/npm/CDN. Use when asked to build a UI, app, tool, dashboard, form, calculator, or interactive page and a single portable file that just runs in a browser fits. Triggers: "build an app", "make a tool/dashboard/page", novoid, no∅.
+---
 
-The smallest no∅: a **single self-contained HTML file**, zero build, zero CDN,
-zero framework fetch — still testable with the standard `.test.json` harness.
-Prefer this tier for most apps. Reach for the full tier (`render.js` + component
-sheet) only when an app needs declarative tables/forms/panels.
+# novoid — minimal tier
 
-## When to use which tier
+no∅ (novoid) is an agent-first web framework. Its **minimal tier** is a ~120-line
+reactive core you paste into one HTML file — no bundler, no npm, no CDN, no server.
+The output is a single file that opens in any browser and is testable headlessly.
 
-- **Minimal (this skill):** dashboards, tools, calculators, CRUD, anything you'd
-  build with signals + `h()`. One file, ~2.5 KB core. Default.
-- **Full (`novoid-core.md` + `novoid-render.md`):** when you want declarative
-  `sections: [...]` rendering, the 28-component CSS system, or plugins
-  (router/auth/convex). Opt in per app.
+This skill is self-contained: the exact runtime is embedded at the bottom.
 
-## The runtime — paste these two blocks verbatim
+## When to use
 
-A minimal-tier app inlines the core in a `<script>` and the styles in a `<style>`.
-Both blocks below are the exact, tested source — kept in sync with
-`minimal/nv-core.js` and `minimal/nv-min.css` by `minimal/sync-skill.mjs` (do not
-hand-edit them here; edit the source file and re-run the sync). Copy as-is.
+- Most apps: dashboards, tools, calculators, CRUD, forms, interactive pages.
+- One self-contained HTML file, zero build.
+- For declarative `sections: [...]` rendering or the 28-component CSS system, use the
+  **full tier** instead (repo skills `novoid-render.md` / `novoid-css.md`).
 
-### Core — inline in a `<script>`, in its own tag before the app script
+## Build one app
+
+1. Put `<div id="app"></div>` in `<body>`.
+2. Paste the **Core** block (bottom) into its own `<script>`, then write the app in a
+   **separate** `<script>` — state via `createStore`, UI via `mount` + `h`.
+3. Paste the **Styles** block into a `<style>` (or link `../css/nv-min.css`).
+4. Save as one `.html` file. Done.
+
+## API — six primitives + a store
+
+```js
+const [get, set] = Novoid.signal(0, 'count');   // reactive value; get.peek()
+Novoid.computed(() => get() * 2);
+Novoid.effect(() => { /* reaction */ });
+Novoid.h(tag, attrs, ...children);                // fn children/attrs are reactive
+Novoid.mount('#app', () => h(...));
+Novoid.createStore(state, actions);               // action(state, ...args) → partial (merged)
+```
+
+Prefer `createStore`: each action is simultaneously the app's behavior, an MCP tool,
+and a test verb. `store.state.x` reads; `store.actions.name(args)` mutates.
+
+## Test (zero deps)
+
+Write `<slug>.test.json`, then (in the repo):
+
+```sh
+node test-runner/novoid-test.mjs --test <slug>.test.json <slug>.html --peek
+```
+
+Vocabulary: actions `read` / `call` / `push`; assertions `eq`, `length`, `contains`,
+`matches`, `eq_path` (deep-equal at a dotted path, e.g. `{ "0.done": true }`).
+
+---
+
+## Core — inline in a `<script>` (its own tag, before the app script)
 
 <!-- embed:nv-core.js:begin -->
 ```js
@@ -188,7 +221,7 @@ const Novoid = (() => {
 ```
 <!-- embed:nv-core.js:end -->
 
-### Styles — inline in a `<style>` (or link the served `../css/nv-min.css`)
+## Styles — inline in a `<style>`
 
 <!-- embed:nv-min.css:begin -->
 ```css
@@ -272,81 +305,9 @@ body {
 ```
 <!-- embed:nv-min.css:end -->
 
-Alternative to inlining — reference the seeded platform copies:
-`<script src="../js/nv-core.js"></script>` +
-`<link rel="stylesheet" href="../css/nv-min.css">`. Templates:
-`minimal/counter.html` (self-contained), `minimal/todos.html` (platform assets).
+---
 
-## API — six primitives + a store
-
-```js
-const [get, set] = Novoid.signal(0, 'count');  // reactive value; get.peek(); name it
-Novoid.computed(() => get() * 2);               // derived signal
-Novoid.effect(() => { ... });                   // reaction; auto-drops stale deps
-Novoid.h(tag, attrs, ...children);              // element; fn children/attrs are reactive
-Novoid.mount('#app', () => h(...));             // attach to a mount node
-Novoid.createStore(state, actions);             // the testable unit ↓
-// nv-core.js also ships: when(cond, thenFn, elseFn), list(parent, itemsFn, keyFn, renderFn)
-```
-
-- Function children/attrs are reactive: `h('p', {}, () => count())` re-renders on change.
-- `class`/`className` accept a string or a `() => string`.
-
-## createStore — one declaration, three uses
-
-A store action is simultaneously the app's behavior, its **MCP tool**, and its
-**test verb**. Actions take `(state, ...args)` and return a partial state that is
-auto-merged (`Object.assign`).
-
-```js
-const store = Novoid.createStore({ count: 0 }, {
-  increment: (s) => ({ count: s.count + 1 }),
-  setTo:     (s, args) => ({ count: args.value }),
-});
-store.actions.increment();               // in the app
-store.state.count;                        // read current state
-```
-
-The test harness reads `store.get.peek()` and calls `store.actions.<name>`, so
-minimal-tier apps need no special wiring to be testable.
-
-## Authoring checklist
-
-1. `<div id="app"></div>` mount node in `<body>`.
-2. Core in its **own `<script>`**, then the app in a **separate `<script>`**
-   (the test harness attaches its observer between them).
-3. `createStore` for state + actions; `mount` + `h` for UI.
-4. Keep CSS to `nv-min.css` tokens/classes, or hand-write in a `<style>`.
-5. Generate `<slug>.test.json` — read/call/push over the store (see below).
-
-## Testing
-
-Same rail as every no∅ app — pure JS, zero deps:
-
-```sh
-node test-runner/novoid-test.mjs --test <slug>.test.json <slug>.html --peek
-```
-
-Spec vocabulary: actions `read`/`call`/`push`; assertions `eq`, `length`,
-`contains`, `matches`, `eq_path` (deep-equal at dotted paths, e.g.
-`{ "0.done": true }`). `verify.sh` runs it automatically (`sh verify.sh <file>`).
-
-```jsonc
-{ "steps": [
-  { "action": "read", "resource": "count", "assert": { "eq": 0 } },
-  { "action": "call", "tool": "increment", "then": { "read": "count", "assert": { "eq": 1 } } }
-] }
-```
-
-## Footprint
-
-A self-contained minimal app is ~2.4 KB gzipped vs ~89 KB for a full render app
-(~37×), in one file that opens directly in a browser. Publishing is unchanged:
-`sh publish.sh <slug> <file>`.
-
-## Not included by design
-
-`render.js` (declarative sections), the 41 KB component sheet, router/auth/toast/
-convex plugins. Add them back only when needed — they are the opt-in full tier,
-not the entry tax. See `minimal/README.md` and `minimal/shake-css.mjs` (per-app
-CSS subset from the full system).
+The runtime above is the exact, tested source, synced from `minimal/nv-core.js` and
+`minimal/nv-min.css` by `minimal/sync-skill.mjs`. To install as a Claude Code skill,
+copy this file to `~/.claude/skills/novoid/SKILL.md`. Full reference:
+`skills/novoid-minimal.md`.

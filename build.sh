@@ -42,3 +42,9 @@ for plugin in router convex auth toast render; do
     printf "  %s.min.js    %sB\n" "$plugin" "$(wc -c < "$DIST/$plugin.min.js" | tr -d ' ')"
   fi
 done
+
+# Minimal-tier skill embeds must match minimal/nv-core.js + nv-min.css (soft check)
+if command -v node >/dev/null 2>&1 && [ -f minimal/sync-skill.mjs ]; then
+  node minimal/sync-skill.mjs --check >/dev/null 2>&1 || \
+    echo "  ⚠ skill embeds out of sync — run: node minimal/sync-skill.mjs"
+fi

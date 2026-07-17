@@ -15,6 +15,7 @@ inline core kept observer-compatible so the testability story survives.
 | `todos.html` | Multi-local-file variant (`<script src="nv-core.js">` + `<link nv-min.css>`). |
 | `*.test.json` | Behavioral specs — run with `test-runner/novoid-test.mjs`. |
 | `shake-css.mjs` | Emit a per-app CSS subset from the full system. |
+| `sync-skill.mjs` | Embed `nv-core.js`/`nv-min.css` into the skill docs (source of truth). |
 
 ## The core surface
 
@@ -85,6 +86,24 @@ write `nv-` classes directly, so they shake accurately. **Render apps apply clas
 at runtime inside `render.js`**, so a static shake undercounts them — those need the
 fuller sheet or a render-aware pass. This is another reason the minimal tier favors
 direct `h()` over the heavy declarative renderer for the default path.
+
+## Distribution — the skill is the package
+
+The whole minimal runtime is ~9.7 KB of text, so it ships **inside the skill**, not
+via npm/CDN/clone. `minimal/nv-core.js` + `minimal/nv-min.css` are the single source
+of truth; `sync-skill.mjs` embeds them verbatim into the skill docs between
+`<!-- embed:… -->` markers:
+
+```sh
+node minimal/sync-skill.mjs          # re-embed after editing the source
+node minimal/sync-skill.mjs --check  # verify in sync (exit 1 on drift; run by build.sh)
+```
+
+Embed targets: `skills/novoid-minimal.md` (repo skill, in the skills index) and
+`SKILL.md` (repo-root Claude Code manifest — self-contained; copy to
+`~/.claude/skills/novoid/SKILL.md` to install). An agent that has the skill has the
+framework: it reads the embedded block and inlines it — zero install, zero runtime
+dependency. Editing the embedded block by hand is a mistake; edit the source and sync.
 
 ## Not included (by design)
 
