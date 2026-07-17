@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Todos · no∅ minimal</title>
+<link rel="stylesheet" href="./nv-min.css">
+</head>
+<body>
+<div id="app"></div>
+
+<!-- core as a local file (zero build, zero CDN) — the multi-file minimal variant -->
+<script src="./nv-core.js"></script>
+
+<script>
+const { h, effect, mount, createStore } = Novoid;
+
+const store = createStore({ items: [], nextId: 1 }, {
+  add:       (s, args) => ({ items: [...s.items, { id: s.nextId, text: args.text, done: false }], nextId: s.nextId + 1 }),
+  toggle:    (s, args) => ({ items: s.items.map(i => i.id === args.id ? { ...i, done: !i.done } : i) }),
+  remove:    (s, args) => ({ items: s.items.filter(i => i.id !== args.id) }),
+  clearDone: (s)       => ({ items: s.items.filter(i => !i.done) }),
+});
+
+mount('#app', () => {
+  const input = h('input', { class: 'nv-input', placeholder: 'Add a task…' });
+  const submit = () => { const t = input.value.trim(); if (!t) return; store.actions.add({ text: t }); input.value = ''; };
+
+  const listEl = h('div', { class: 'nv-col' });
+  effect(() => {
+    const items = store.state.items;
+    while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+    for (const item of items) {
+      listEl.appendChild(
+        h('div', { class: 'nv-item' + (item.done ? ' done' : '') },
+          h('span', { class: 'nv-item-text', onClick: () => store.actions.toggle({ id: item.id }) }, item.text),
+          h('button', { class: 'nv-btn nv-btn-ghost', onClick: () => store.actions.remove({ id: item.id }) }, '✕'),
+        )
+      );
+    }
+  });
+
+  return h('div', { class: 'nv-container nv-col' },
+    h('h1', { class: 'nv-h1' }, 'Todos'),
+    h('p',  { class: 'nv-muted' }, () => `${store.state.items.filter(i => !i.done).length} open · no∅ minimal tier`),
+    h('div', { class: 'nv-row' },
+      h('div', { class: 'nv-grow' }, input),
+      h('button', { class: 'nv-btn nv-btn-primary', onClick: submit }, 'Add'),
+    ),
+    listEl,
+    h('button', { class: 'nv-btn nv-btn-ghost', onClick: () => store.actions.clearDone() }, 'Clear completed'),
+  );
+});
+</script>
+</body>
+</html>

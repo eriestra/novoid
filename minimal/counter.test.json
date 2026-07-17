@@ -1,0 +1,9 @@
+{
+  "steps": [
+    { "action": "read", "resource": "count", "assert": { "eq": 0 }, "label": "starts at zero" },
+    { "action": "call", "tool": "increment", "then": { "read": "count", "assert": { "eq": 1 } }, "label": "increment" },
+    { "action": "call", "tool": "increment", "then": { "read": "count", "assert": { "eq": 2 } }, "label": "increment again" },
+    { "action": "call", "tool": "decrement", "then": { "read": "count", "assert": { "eq": 1 } }, "label": "decrement" },
+    { "action": "call", "tool": "reset", "then": { "read": "count", "assert": { "eq": 0 } }, "label": "reset" }
+  ]
+}

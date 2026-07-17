@@ -6,7 +6,6 @@ Agent-guided first-run. Follow these steps in order.
 
 - Node.js 18+
 - A free [Convex](https://convex.dev) account
-- (Optional) Rust toolchain — for `novoid-browser` headless verifier
 
 ## Steps
 
@@ -60,14 +59,15 @@ sh url.sh novoid
 
 Visit the URL. You should see the no∅ landing page.
 
-## Optional: Headless Verifier
+## Optional: Static Analyzer
 
 ```sh
-cd nous && npm install       # Nous static analyzer
-cd browser && cargo build    # novoid-browser (requires Rust)
+cd nous && npm install       # Nous static analyzer (phase 1)
 ```
 
-These enable the full verification pipeline in `publish.sh`.
+The headless browse + test phases run via `test-runner/novoid-test.mjs` — pure
+Node, nothing to install or build. Together these enable the full verification
+pipeline in `publish.sh`.
 
 ## What's Running
 

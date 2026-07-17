@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counter · no∅ minimal</title>
+<style>
+:root{
+  --nv-bg:#fff;--nv-surface:#f7f7f8;--nv-border:#e4e4e7;--nv-text:#18181b;--nv-muted:#71717a;
+  --nv-primary:#4f46e5;--nv-primary-ink:#fff;--nv-radius:10px;--nv-gap:16px;
+  --nv-sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --nv-mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --nv-bg:#0d0d10;--nv-surface:#17171b;--nv-border:#27272a;--nv-text:#e7e7ea;--nv-muted:#a1a1aa;
+  --nv-primary:#818cf8;--nv-primary-ink:#0d0d10;}}
+[data-theme="dark"]{--nv-bg:#0d0d10;--nv-surface:#17171b;--nv-border:#27272a;--nv-text:#e7e7ea;--nv-muted:#a1a1aa;--nv-primary:#818cf8;--nv-primary-ink:#0d0d10;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--nv-bg);color:var(--nv-text);font-family:var(--nv-sans);
+  display:flex;justify-content:center;padding:48px 20px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.nv-card{background:var(--nv-surface);border:1px solid var(--nv-border);border-radius:var(--nv-radius);
+  padding:28px;display:flex;flex-direction:column;gap:var(--nv-gap);align-items:center;min-width:280px}
+.nv-h1{font-size:1.7rem;font-weight:700;letter-spacing:-.02em;margin:0}
+.nv-muted{color:var(--nv-muted);margin:0;font-size:.9rem}
+.nv-count{font-family:var(--nv-mono);font-size:3.4rem;font-weight:700;font-variant-numeric:tabular-nums;margin:4px 0}
+.nv-row{display:flex;gap:12px}
+.nv-btn{font:inherit;font-weight:600;cursor:pointer;padding:9px 18px;border-radius:8px;
+  border:1px solid var(--nv-border);background:var(--nv-bg);color:var(--nv-text);transition:filter .12s}
+.nv-btn:hover{filter:brightness(1.06)}
+.nv-btn:focus-visible{outline:2px solid var(--nv-primary);outline-offset:2px}
+.nv-btn-primary{background:var(--nv-primary);color:var(--nv-primary-ink);border-color:transparent}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- ── no∅ minimal core (copy verbatim; ~2.5 KB) ─────────────────────── -->
+<script>
+const Novoid = (() => {
+  let _active = null;
+  function signal(init, name) {
+    let val = init; const subs = new Set();
+    const get = () => { if (_active) { subs.add(_active); _active.deps.push(subs); } return val; };
+    get.peek = () => val; if (name) get.signalName = name;
+    const set = (nv) => { const r = typeof nv === 'function' ? nv(val) : nv;
+      if (Object.is(val, r)) return; val = r; for (const s of [...subs]) s(); };
+    return [get, set];
+  }
+  function effect(fn) {
+    const run = () => { for (const d of run.deps) d.delete(run); run.deps = [];
+      const prev = _active; _active = run; try { fn(); } finally { _active = prev; } };
+    run.deps = []; run(); return run;
+  }
+  function computed(fn) { const [g, s] = signal(); effect(() => s(fn())); return g; }
+  function createStore(initialState, actions = {}) {
+    const [get, set] = signal(initialState);
+    const store = {
+      get,
+      set(u){ const v = typeof u === 'function' ? u(get()) : u;
+        set((v && typeof v === 'object' && !Array.isArray(v)) ? Object.assign({}, get(), v) : v); },
+      subscribe(fn){ return effect(() => fn(get())); },
+      select(k){ return computed(() => get()[k]); },
+      actions: {},
+    };
+    Object.defineProperty(store, 'state', { get });
+    for (const [n, a] of Object.entries(actions)) {
+      store.actions[n] = (...args) => { const p = a(get(), ...args);
+        if (p && typeof p === 'object') store.set(p); return p; };
+    }
+    return store;
+  }
+  function appendChild(parent, child) {
+    if (child == null || child === false || child === true) return;
+    if (typeof child === 'function') { const t = document.createTextNode('');
+      parent.appendChild(t); effect(() => { const v = child(); t.textContent = v == null ? '' : String(v); }); }
+    else if (Array.isArray(child)) child.forEach(c => appendChild(parent, c));
+    else if (child && child.nodeType) parent.appendChild(child);
+    else parent.appendChild(document.createTextNode(String(child)));
+  }
+  function h(tag, attrs, ...children) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
+      else if (k === 'class' || k === 'className') { if (typeof v === 'function') effect(() => { el.className = v() || ''; }); else el.className = v || ''; }
+      else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+      else if (typeof v === 'function') effect(() => { const r = v(); (r == null || r === false) ? el.removeAttribute(k) : el.setAttribute(k, r === true ? '' : r); });
+      else if (v != null && v !== false) el.setAttribute(k, v === true ? '' : v);
+    }
+    for (const c of children) appendChild(el, c);
+    return el;
+  }
+  function mount(sel, fn) { const root = typeof sel === 'string' ? document.querySelector(sel) : sel; if (root) appendChild(root, fn()); return root; }
+  const api = { signal, computed, effect, createStore, h, mount };
+  if (typeof window !== 'undefined') window.Novoid = api;
+  return api;
+})();
+</script>
+
+<!-- ── the app ───────────────────────────────────────────────────────── -->
+<script>
+const store = Novoid.createStore({ count: 0 }, {
+  increment: (s) => ({ count: s.count + 1 }),
+  decrement: (s) => ({ count: s.count - 1 }),
+  reset:     ()  => ({ count: 0 }),
+});
+const { h, mount } = Novoid;
+mount('#app', () => h('div', { class: 'nv-card' },
+  h('h1', { class: 'nv-h1' }, 'Counter'),
+  h('p',  { class: 'nv-muted' }, 'no∅ minimal tier · one file · zero build'),
+  h('div', { class: 'nv-count' }, () => store.state.count),
+  h('div', { class: 'nv-row' },
+    h('button', { class: 'nv-btn', onClick: () => store.actions.decrement() }, '−'),
+    h('button', { class: 'nv-btn', onClick: () => store.actions.reset() }, 'Reset'),
+    h('button', { class: 'nv-btn nv-btn-primary', onClick: () => store.actions.increment() }, '+'),
+  ),
+));
+</script>
+</body>
+</html>

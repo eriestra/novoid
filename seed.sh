@@ -53,9 +53,23 @@ for plugin in core router convex auth toast render; do
   fi
 done
 
-# 5. Browse polyfills (concatenated from browser/js/)
+# 4b. Minimal tier assets (nv-core.js + nv-min.css) — zero-build single-file apps.
+# Served at /js/nv-core.js and /css/nv-min.css by the existing asset routes.
+echo "4b/7 Uploading minimal-tier assets..."
+if [ -f minimal/nv-core.js ]; then
+  echo "  → nv-core.js"
+  NVCORE=$(json_file minimal/nv-core.js)
+  npx convex run seed:seedAsset "{\"name\":\"nv-core.js\",\"content\":$NVCORE,\"contentType\":\"application/javascript\"}"
+fi
+if [ -f minimal/nv-min.css ]; then
+  echo "  → nv-min.css"
+  NVCSS=$(json_file minimal/nv-min.css)
+  npx convex run seed:seedAsset "{\"name\":\"nv-min.css\",\"content\":$NVCSS,\"contentType\":\"text/css\"}"
+fi
+
+# 5. Browse polyfills (concatenated from test-runner/shims/)
 echo "5/5 Uploading browse-polyfills.js..."
-cat browser/js/convex-mock.js browser/js/observer.js > /tmp/browse-polyfills.js
+cat test-runner/shims/convex-mock.js test-runner/shims/observer.js > /tmp/browse-polyfills.js
 BROWSE_JS=$(json_file /tmp/browse-polyfills.js)
 npx convex run seed:seedAsset "{\"name\":\"browse-polyfills.js\",\"content\":$BROWSE_JS,\"contentType\":\"application/javascript\"}"
 rm -f /tmp/browse-polyfills.js

@@ -1,0 +1,12 @@
+{
+  "steps": [
+    { "action": "read", "resource": "items", "assert": { "length": 0 }, "label": "empty at start" },
+    { "action": "call", "tool": "add", "args": { "text": "Buy milk" }, "then": { "read": "items", "assert": { "length": 1 } }, "label": "add first" },
+    { "action": "call", "tool": "add", "args": { "text": "Walk dog" }, "then": { "read": "items", "assert": { "length": 2 } }, "label": "add second" },
+    { "action": "read", "resource": "items", "assert": { "eq_path": { "0.text": "Buy milk", "0.done": false, "1.text": "Walk dog" } }, "label": "shape + order" },
+    { "action": "call", "tool": "toggle", "args": { "id": 1 }, "then": { "read": "items", "assert": { "eq_path": { "0.done": true } } }, "label": "toggle first done" },
+    { "action": "call", "tool": "clearDone", "then": { "read": "items", "assert": { "length": 1 } }, "label": "clear completed" },
+    { "action": "read", "resource": "items", "assert": { "eq_path": { "0.text": "Walk dog", "0.done": false } }, "label": "only open remains" },
+    { "action": "call", "tool": "remove", "args": { "id": 2 }, "then": { "read": "items", "assert": { "length": 0 } }, "label": "remove last" }
+  ]
+}

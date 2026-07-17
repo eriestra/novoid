@@ -1,6 +1,6 @@
 #!/bin/sh
 # Usage: sh verify.sh <file.html>
-# Runs Nous (static proof) + novoid-browser (empirical) on a no∅ app.
+# Runs Nous (static proof) + the JS headless runner (test-runner/) on a no∅ app.
 # Exit 0 = all clear, Exit 1 = issues found.
 # Can be called standalone or from publish.sh.
 
@@ -14,7 +14,6 @@ if [ ! -f "$FILE" ]; then
   exit 1
 fi
 
-BROWSER="./browser/target/debug/novoid-browser"
 NOUS="./nous/src/cli.ts"
 FAILED=0
 
@@ -112,8 +111,16 @@ else
   echo "│ nous   - not installed"
 fi
 
-# ─── Phase 2: novoid-browser (empirical) ──────────────────
-if [ -f "$BROWSER" ]; then
+# ─── Phase 2: headless browse (empirical) ──────────────────
+# Pure-JS headless browser (test-runner/novoid-test.mjs --browse): synthesizes the
+# app schema and surfaces runtime errors. Handles inline-core minimal-tier apps too.
+JS_RUNNER="./test-runner/novoid-test.mjs"
+BROWSE_CMD=""
+if [ -f "$JS_RUNNER" ] && command -v node >/dev/null 2>&1; then
+  BROWSE_CMD="node $JS_RUNNER --browse"
+fi
+
+if [ -n "$BROWSE_CMD" ]; then
   # Auto-detect hash-routed apps and set location.hash
   SEED_ARGS=""
   if grep -qE 'location\.hash' "$FILE" 2>/dev/null; then
@@ -128,7 +135,7 @@ if [ -f "$BROWSER" ]; then
     done
   fi
 
-  BROWSER_OUT=$("$BROWSER" "$FILE" $SEED_ARGS -c 2>&1) && BROWSER_OK=1 || BROWSER_OK=0
+  BROWSER_OUT=$($BROWSE_CMD "$FILE" $SEED_ARGS -c 2>&1) && BROWSER_OK=1 || BROWSER_OK=0
 
   printf '%s\n' "$BROWSER_OUT" > "$BROWSER_JSON_FILE"
 
@@ -239,13 +246,20 @@ with open(os.environ['VERIFY_BROWSER_FILE'],'w') as f:
     fi
   fi
 else
-  echo "│ browser - not built (cd browser && cargo build)"
+  echo "│ browser - node + test-runner/ required for verification"
 fi
 
 # ─── Phase 3: MCP test spec (behavioral assertions) ──────
+# Pure-JS runner (test-runner/novoid-test.mjs) — zero deps, agent-patchable.
 TEST_SPEC="${FILE%.html}.test.json"
-if [ -f "$TEST_SPEC" ] && [ -f "$BROWSER" ]; then
-  TEST_OUT=$("$BROWSER" --test "$TEST_SPEC" "$FILE" $SEED_ARGS --peek 2>&1) && TEST_OK=1 || TEST_OK=0
+JS_RUNNER="./test-runner/novoid-test.mjs"
+TEST_CMD=""
+if [ -f "$JS_RUNNER" ] && command -v node >/dev/null 2>&1; then
+  TEST_CMD="node $JS_RUNNER"
+fi
+
+if [ -f "$TEST_SPEC" ] && [ -n "$TEST_CMD" ]; then
+  TEST_OUT=$($TEST_CMD --test "$TEST_SPEC" "$FILE" $SEED_ARGS --peek 2>&1) && TEST_OK=1 || TEST_OK=0
 
   if [ $TEST_OK -eq 0 ]; then
     # Output already includes peek format on stderr, just mark failed
@@ -258,8 +272,8 @@ if [ -f "$TEST_SPEC" ] && [ -f "$BROWSER" ]; then
       echo "$line"
     done
   fi
-elif [ -f "$TEST_SPEC" ] && [ ! -f "$BROWSER" ]; then
-  echo "│ test    - novoid-browser not built (skipping $TEST_SPEC)"
+elif [ -f "$TEST_SPEC" ] && [ -z "$TEST_CMD" ]; then
+  echo "│ test    - node + test-runner/ required to run $TEST_SPEC"
 elif [ ! -f "$TEST_SPEC" ]; then
   echo "│ test    ~ missing ${TEST_SPEC} — generate a test spec for full coverage"
 fi

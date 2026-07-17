@@ -15,9 +15,10 @@ Codified knowledge lives in `skills/`. Each skill replaces reading multiple sour
 [novoid skills]|root: skills/
 |novoid-core.md        — reactive API: signals, computed, effect, h(), createStore, mount
 |novoid-render.md      — render plugin: declarative UI (sections, bindings, formats)
+|novoid-minimal.md     — minimal tier: single-file zero-build apps, ~2.5KB inline core, testable via createStore
 |novoid-css.md         — design system: variables, utilities, 25 component groups
 |novoid-publishing.md  — publish pipeline: verify → publish → post-publish E2E
-|novoid-verification.md — verification: Nous static + Qed headless + MCP test specs
+|novoid-verification.md — verification: Nous static + JS headless runner (test-runner/) + MCP test specs
 |novoid-agents.md      — Nex (replaces OpenClaw), Vox (vibe-coded app builder), personas, memory, multi-channel, inline apps
 |novoid-math.md        — KaTeX integration, TeX notation, MathML visibility
 |novoid-cdp.md         — CDP browser control: browse, scrape, screenshot, Nex skills
@@ -97,13 +98,13 @@ Never construct URLs manually — use tool output only. On failure: read error, 
 
 ## Verification
 
-`publish.sh` runs automatically: **Nous** (static analysis) → **Qed** (headless execution) → **MCP test specs** (if `.test.json` exists) → publish → **post-publish E2E** (live URL + MCP schema + sentinel errors).
+`publish.sh` runs automatically: **Nous** (static analysis) → **headless browse** (test-runner, JS) → **MCP test specs** (if `.test.json` exists) → publish → **post-publish E2E** (live URL + MCP schema + sentinel errors).
 
 ## E2E Test Specs
 
 **Always generate `<slug>.test.json` alongside `<slug>.html`.** It runs automatically on publish.
 
-**Use `createStore` for testability** — store actions become MCP-callable tools. Raw signals with DOM handlers are not testable by novoid-browser.
+**Use `createStore` for testability** — store actions become MCP-callable tools. Raw signals with DOM handlers are not testable by the headless runner.
 
 ```js
 // Testable: store actions are callable

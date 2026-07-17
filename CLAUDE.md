@@ -20,10 +20,11 @@ Why: no∅ is built for agents. Agents don't manage deployment pipelines, promot
 [novoid skills]|root: skills/
 |novoid-core.md         — signals, computed, effect, batch, h(), list, when, match, createStore, mount, createForm, useAsync
 |novoid-render.md       — declarative UI: sections, $expressions, formats, views, navigation, panels, data bindings, hybrid apps
+|novoid-minimal.md      — minimal tier: ~2.5KB inline core, single-file zero-build apps, testable via createStore (default tier)
 |novoid-css.md          — nv-* classes, --nv-* variables, components, layout, theming, dark mode, animations
 |novoid-publishing.md   — publish.sh, verify.sh, url.sh, build.sh, seed.sh, MCP endpoints, test specs, sentinel errors
 |fragment.md            — fragment.sh: read/write/list #region blocks in large single-file apps
-|novoid-verification.md — Nous static analysis, novoid-browser headless execution, MCP test harness
+|novoid-verification.md — Nous static analysis, JS headless runner (test-runner/), MCP test harness
 |novoid-agents.md       — Nex (replaces OpenClaw), Vox (vibe-coded app builder), personas, memory, multi-channel, inline apps
 |novoid-math.md         — KaTeX integration, TeX notation, MathML visibility fix
 |novoid-convex.md       — Convex client, reactive queries, mutations, actions, AI helper
@@ -64,7 +65,7 @@ On first command that needs credentials or dependencies:
 3. If no `.env.local`, tell user to run setup from README.md
 4. If no `dist/` or `src/js` symlink, run `sh build.sh` (creates minified assets + symlinks)
 5. If no `nous/node_modules/`, run `cd nous && npm install` (Nous static analyzer)
-6. If no `browser/target/debug/novoid-browser`, run `cd browser && cargo build` (Qed headless verifier — requires Rust)
+6. Headless verification (browse + test) runs via `test-runner/novoid-test.mjs` — pure Node, no build, no install
 7. Ecosystem apps (nex, vox, novoid) are auto-deployed by `seed.sh` on first run. Protected slugs — cannot be deleted, require `--force` to republish.
 
 ## Workflow

@@ -82,7 +82,7 @@ Visit your platform at `https://<deployment>.convex.site/platform`.
 
 ### Verification pipeline (optional but recommended)
 
-The full publish pipeline includes Nous (static analysis) and Qed (headless execution). Without these, `publish.sh` still works but skips verification phases.
+The full publish pipeline includes Nous (static analysis) and a headless JS runner (browse + test). Without these, `publish.sh` still works but skips verification phases.
 
 ```sh
 # Build framework assets (creates dist/ and src/js, src/css symlinks)
@@ -91,8 +91,7 @@ sh build.sh
 # Nous — static verification (TypeScript)
 cd nous && npm install && cd ..
 
-# Qed — headless verifier + MCP test harness (Rust, requires cargo)
-cd browser && cargo build && cd ..
+# Headless browse + test — pure Node, nothing to build (test-runner/novoid-test.mjs)
 ```
 
 After this, `publish.sh` runs all three verification phases automatically.
@@ -239,7 +238,7 @@ sh publish.sh <slug> src/app/<slug>.html
 Three verification layers:
 
 - **[Nous](NOUS.md)** (static) — formal verification engine (TypeScript). Proves structural contracts, layout feasibility, reactive dataflow acyclicity, dead signals, taint analysis, state machine reachability, cascade conflicts, accessibility. 87 tests.
-- **[Qed](BROWSER.md)** (empirical) — headless app verifier + MCP test harness (Rust/QuickJS). Executes apps in ~200ms, catches JS errors, introspects signals/stores/actions, supports behavioral test specs.
+- **[Qed](BROWSER.md)** (empirical) — headless app verifier + MCP test harness (pure Node, `test-runner/`). Executes apps in ~10ms, catches JS errors, synthesizes the schema (signals/stores/actions), runs behavioral test specs.
 - **Lux** (runtime) — post-publish sentinel. Injected server-side into every published page. Runtime errors flow from browsers back to Convex automatically.
 
 ---
@@ -256,7 +255,7 @@ POST /mcp/:slug   → MCP JSON-RPC (Streamable HTTP transport)
 - **Tools** — Convex mutations/actions and store actions become executable MCP tools
 - **Resources** — signals/stores become snapshot resources, Convex queries become live-readable
 - **Entities** — array collections get inferred schemas at `novoid://<slug>/entity/<path>`
-- **Zero config** — derived from novoid-browser's BrowseSchema at publish time
+- **Zero config** — derived from the headless runner's BrowseSchema at publish time
 
 ---
 
@@ -305,8 +304,9 @@ novoid/
 │   ├── src/thesis/     # Pillar II: presentation
 │   ├── src/kinesis/    # Pillar III: behavior
 │   └── src/cross/      # cross-pillar analysis
-├── browser/            # headless verifier + MCP test harness (Rust/QuickJS)
-├── verify.sh           # runs Nous + novoid-browser + test specs
+├── test-runner/        # headless verifier + MCP test harness (pure Node, zero deps)
+├── minimal/            # minimal tier — inline core + single-file apps
+├── verify.sh           # runs Nous + JS headless runner + test specs
 ├── publish.sh          # verify + publish + post-publish E2E
 ├── url.sh              # look up URLs for any slug
 ├── build.sh            # esbuild minification (23ms)
@@ -326,7 +326,7 @@ novoid/
 | `spec.md` | API specification (human reference) |
 | `render.md` | Render plugin specification (human reference) |
 | `NOUS.md` | Nous verification engine — architecture, three pillars, contracts |
-| `BROWSER.md` | Qed headless verifier — CLI, MCP test harness, BrowseSchema |
+| `BROWSER.md` | Qed headless verifier — now pure Node; see `test-runner/README.md` |
 
 ---
 

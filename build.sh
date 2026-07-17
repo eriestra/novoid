@@ -7,7 +7,7 @@ DIST="dist"
 
 mkdir -p "$DIST"
 
-# Symlinks so novoid-browser can resolve ../js/ and ../css/ from src/app/
+# Symlinks so the test runner can resolve ../js/ and ../css/ from src/app/
 ln -sf ../dist "$SRC/js" 2>/dev/null || true
 ln -sf ../dist "$SRC/css" 2>/dev/null || true
 
