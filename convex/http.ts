@@ -1476,7 +1476,7 @@ http.route({
     } catch {
       return new Response(JSON.stringify({
         slug,
-        error: "Stored schema is invalid JSON. Re-publish with novoid-browser built.",
+        error: "Stored schema is invalid JSON. Re-publish to regenerate it.",
       }), {
         status: 502,
         headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
@@ -1642,16 +1642,15 @@ http.route({
   handler: httpAction(async () => {
     const tools = [
       { name: "publish.sh", description: "Verify + publish + post-publish E2E", usage: "sh publish.sh <slug> <file>" },
-      { name: "verify.sh", description: "Nous static analysis + novoid-browser headless verification", usage: "sh verify.sh <file.html>" },
+      { name: "verify.sh", description: "Nous static analysis + JS headless runner (test-runner/) verification", usage: "sh verify.sh <file.html>" },
       { name: "build.sh", description: "Minify src/ → dist/ (framework dev only)", usage: "sh build.sh" },
       { name: "seed.sh", description: "Upload framework assets to Convex", usage: "sh seed.sh \"$CONVEX_URL\" \"$PUBLISH_SECRET\"" },
       { name: "fragment.sh", description: "Read/write #region blocks for multi-agent collaboration", usage: "sh fragment.sh <file> <region>" },
       { name: "url.sh", description: "Look up live URLs for a slug", usage: "sh url.sh <slug>" },
       { name: "upload-img.sh", description: "Upload images to Convex storage", usage: "sh upload-img.sh <file>" },
     ];
-    const binaries = [
-      { name: "novoid-browser-darwin-arm64", description: "Headless verifier + BrowseSchema extractor (macOS Apple Silicon)", size: "6.2MB", usage: "chmod +x novoid-browser-darwin-arm64 && ./novoid-browser-darwin-arm64 <file.html>" },
-    ];
+    // Verification is now pure Node (test-runner/) — no binary to download.
+    const binaries = [];
     return new Response(JSON.stringify({
       download: "GET /billing/tools/{name}",
       tools,

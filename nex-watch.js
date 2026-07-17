@@ -1151,10 +1151,10 @@ async function handleCanvas(job) {
 
       if (queryRefs.length > 0) {
         const seedArgs = queryRefs.flatMap(ref => ["--seed", ref, "[]"]);
-        const browserPath = path.resolve(__dirname, "browser", "target", "debug", "novoid-browser");
-        if (fs.existsSync(browserPath)) {
+        const runnerPath = path.resolve(__dirname, "test-runner", "novoid-test.mjs");
+        if (fs.existsSync(runnerPath)) {
           const { execFileSync } = require("child_process");
-          const out = execFileSync(browserPath, [appPath, ...seedArgs, "-c"], {
+          const out = execFileSync("node", [runnerPath, "--browse", appPath, ...seedArgs, "-c"], {
             timeout: 10000, encoding: "utf-8"
           });
           const data = JSON.parse(out);
