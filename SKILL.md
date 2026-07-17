@@ -22,7 +22,9 @@ This skill is self-contained: the exact runtime is embedded at the bottom.
 
 1. Put `<div id="app"></div>` in `<body>`.
 2. Paste the **Core** block (bottom) into its own `<script>`, then write the app in a
-   **separate** `<script>` — state via `createStore`, UI via `mount` + `h`.
+   **separate** `<script>` — state via `createStore`, UI via `mount` + `h`. Keep them
+   separate: the core must finish defining `window.Novoid` before the app runs (and,
+   in the repo, so the test harness can attach between the two).
 3. Paste the **Styles** block into a `<style>` (or link `../css/nv-min.css`).
 4. Save as one `.html` file. Done.
 
@@ -40,6 +42,15 @@ Novoid.createStore(state, actions);               // action(state, ...args) → 
 Prefer `createStore`: each action is simultaneously the app's behavior, an MCP tool,
 and a test verb. `store.state.x` reads; `store.actions.name(args)` mutates.
 
+Two gotchas worth knowing:
+- **Derived values must live in state to be testable.** The test harness reads store
+  *state*; `computed()`/`select()` make standalone signals, not state fields. So
+  compute derived values inside the action and merge them into the returned partial
+  (e.g. `setBill: (s, v) => derive({ ...s, bill: v })` where `derive` fills in totals).
+- **`h()` sets attributes, not DOM properties.** A reactive `value:` on an `<input>`
+  won't follow user typing. For a controlled field, drive it from a store action on
+  `oninput` (read `e.target.value`).
+
 ## Test (zero deps)
 
 Write `<slug>.test.json`, then (in the repo):
@@ -48,8 +59,24 @@ Write `<slug>.test.json`, then (in the repo):
 node test-runner/novoid-test.mjs --test <slug>.test.json <slug>.html --peek
 ```
 
-Vocabulary: actions `read` / `call` / `push`; assertions `eq`, `length`, `contains`,
-`matches`, `eq_path` (deep-equal at a dotted path, e.g. `{ "0.done": true }`).
+Each step is an object with an `action`:
+- `read` → `{ "action": "read", "resource": "<name>", "assert": { … } }`
+- `call` → `{ "action": "call", "tool": "<actionName>", "args": <value>, "then": { "read": "<name>", "assert": { … } } }`
+
+`args` is passed to the action after state (a bare value, or an array for multiple
+positional args). `resource`/`read` names resolve to a named signal, a `store_N`, or
+a key inside any store's state. Assertions: `eq` (deep-equal the whole value),
+`length`, `contains`, `matches` (substring), `eq_path` (deep-equal at dotted paths).
+
+```json
+{
+  "steps": [
+    { "action": "read", "resource": "count", "assert": { "eq": 0 } },
+    { "action": "call", "tool": "increment", "args": 5,
+      "then": { "read": "count", "assert": { "eq": 5 } } }
+  ]
+}
+```
 
 ---
 

@@ -81,6 +81,10 @@ function parseBodyElements(html) {
 }
 
 function parseHtml(html) {
+  // Strip HTML comments first: agents write explanatory comments that mention
+  // "<script>" / "</script>", and those literal tokens otherwise corrupt the
+  // regex-based script extraction below.
+  html = html.replace(/<!--[\s\S]*?-->/g, '');
   const scriptSrcs = [];
   const inlineScripts = [];
   let isNovoid = false;
@@ -99,7 +103,10 @@ function parseHtml(html) {
       const trimmed = body.trim();
       if (!trimmed) continue;
       inlineScripts.push(trimmed);
-      if (trimmed.includes('Novoid.')) isNovoid = true;
+      // Detect a no∅ app: namespaced use (`Novoid.`), the inline core's global
+      // assignment (`window.Novoid`), or a destructured grab (`= Novoid`) — the
+      // last is idiomatic (`const { h, mount } = Novoid`) and must not be missed.
+      if (/\bNovoid\./.test(trimmed) || /window\.Novoid/.test(trimmed) || /=\s*Novoid\b/.test(trimmed)) isNovoid = true;
     }
   }
   return { scriptSrcs, inlineScripts, isNovoid, bodyElements: parseBodyElements(html) };

@@ -310,6 +310,14 @@ store.state.count;                        // read current state
 The test harness reads `store.get.peek()` and calls `store.actions.<name>`, so
 minimal-tier apps need no special wiring to be testable.
 
+Two gotchas:
+- **Derived values must live in state to be testable.** `computed()`/`select()`
+  make standalone signals, not state fields, and the harness reads *state*. Compute
+  derived values inside the action and merge them into the returned partial.
+- **`h()` sets attributes, not properties.** A reactive `value:` on an `<input>`
+  won't follow user typing — for a controlled field, drive it from a store action on
+  `oninput` (`e.target.value`).
+
 ## Authoring checklist
 
 1. `<div id="app"></div>` mount node in `<body>`.
